@@ -17,6 +17,6 @@ class Player:
         
         p /= np.sum(p)
         
-        idx_a = np.random.choice(range(0, self.no_actions), 1, p)
+        idx_a = np.random.choice(range(0, self.no_actions), 1, True, np.transpose(p)[0])
         
         return idx_a
