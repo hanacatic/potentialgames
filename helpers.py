@@ -18,7 +18,7 @@ import numpy as np
 # def proposal_sampler(action_profile):
 #     return action_profile + np.random.normal(0, 0.1, size = action_profile.shape)
 
-def rejection_sampling(prob_func, initial_profile, action_space_size, M = 1.0, iterations = 100):
+def rejection_sampling(prob_func, initial_profile, action_space_size, M = 1.0, iterations = 1000):
     
     current_profile = initial_profile
     
