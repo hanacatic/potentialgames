@@ -5,25 +5,35 @@ from helpers import rejection_sampling
 
 class Game:
     
-    max_iter = 10000
+    max_iter = 20000   
     
     def __init__(self, no_players, rationality, action_space, utility_functions, potential_function, mu): # mu - initial distribution
         
-        self.players = np.array([ Player(i, rationality, len(action_space), utility_functions[i]) for i in range(0, no_players)], dtype = object)
+        self.action_space = action_space
+        self.no_players = no_players
+        self.players = np.array([ Player(i, rationality, len(self.action_space), utility_functions[i]) for i in range(0, self.no_players)], dtype = object)
         
-        self.action_profile = np.random.randint(0, len(action_space), no_players)
-        self.action_profile = rejection_sampling(mu, self.action_profile, len(action_space))
-        # self.action_profile = np.array([0, 0])
-        self.initial_action_profile = self.action_profile.copy()
-
+        self.action_profile = np.random.randint(0, len(self.action_space), no_players) # discrete uniform distribution
+        self.action_profile = self.sample_initial_action_profile(mu)
+        
+        self.action_profile_history = np.zeros((self.max_iter, self.no_players))
+        
         self.potential_function = potential_function
         self.potentials = np.zeros((self.max_iter, 1))
         
+    def sample_initial_action_profile(self, mu):
+        
+        self.initial_action_profile = rejection_sampling(mu, self.action_profile, len(self.action_space))
+        
+        return self.initial_action_profile
+        
     def play(self):
         
-        self.initial_action_profile = self.action_profile.copy()
+        self.action_profile = self.initial_action_profile.copy()
         
         for i in range(0, self.max_iter): 
+
+            self.action_profile_history[i] = self.action_profile.copy()
             
             player_id = np.random.randint(0, len(self.players), 1) # randomly choose a player
 
@@ -32,10 +42,7 @@ class Game:
             opponents_actions = self.action_profile.copy() # extract the opponents actions from the action profile
             opponents_actions = np.delete(opponents_actions, player_id)
             
-            # print('player_id: ', player_id)
-            # print('opponnents_actions: ', opponents_actions)
-            
             self.action_profile[player_id] = player.update(opponents_actions) # update the players action
             
-            self.potentials[i] = self.potential_function(player.id, self.action_profile[player_id], opponents_actions) # compute the value of the potential function
+            self.potentials[i] = self.potential_function(self.action_profile) # compute the value of the potential function
             

@@ -14,13 +14,11 @@ class Player:
         p = np.zeros((self.no_actions, 1))
         
         for i in range(0, self.no_actions):
-            # print(self.utility(self.id, i, idx_opponents_actions))
-            p[i] = np.exp(self.beta * self.utility(self.id, i, idx_opponents_actions)) # compute the probability of chosing any of the actions in the action space
+
+            p[i] = np.exp(self.beta * self.utility(i, idx_opponents_actions)) # compute the probability of chosing any of the actions in the action space
         
         p /= np.sum(p)
-        
-        # print('probability p: ', p)
-        
+                
         idx_a = np.random.choice(range(0, self.no_actions), 1, True, np.transpose(p)[0]) # randomly chose an action based on the computed probability distribution
         
         return idx_a
