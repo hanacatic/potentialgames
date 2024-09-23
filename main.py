@@ -3,23 +3,54 @@ import matplotlib.pyplot as plt
 
 from game import Game 
 
-RATIONALITY = 100   
+RATIONALITY = 50   
 EPS = 1e-1
+
+# # payoff = np.array([[0, 0, 0, 0], [0.5, 1, 0, 0], [0, 0, 0, 0], [0, 0, 0, 0.5]]) # trivial identical interest game
+# # payoff = np.array([[0.9, 0, 0.25, 0], [0.5, 1, 0.75, 0], [0, 0, 0, 0], [0, 0, 0, 0.5]]) # second identical interest game
+# payoff = np.array([[0.5, 0, 0.25, 0], [0.9, 1, 0.75, 0], [0, 0.8, 0, 0], [0, 0.9, 0.8, 0.5]]) # third identical interest game
+# # payoff = np.array([[0.5, 0, 0.25, 0], [0.9, 1, 0.75, 0], [0, 0.8, 0.5, 0.6], [0, 0.9, 0.8, 0.5]]) # fourth identical interest game
+
+
 
 def mu(action_profile):
     return 1.0/16.0
 
-def utility_function(player_action, opponents_action):
+# def utility_function_player_1(player_action, opponents_action):
     
-    payoff = np.array([[0, 0, 0, 0], [0.5, 1, 0, 0], [0, 0, 0, 0], [0, 0, 0, 0.5]]) # trivial identical interest game
-    payoff = np.array([[0.9, 0, 0.25, 0], [0.5, 1, 0.75, 0], [0, 0, 0, 0], [0, 0, 0, 0.5]]) # second identical interest game
-    payoff = np.array([[0.5, 0, 0.25, 0], [0.9, 1, 0.75, 0], [0, 0.8, 0, 0], [0, 0.9, 0.8, 0.5]]) # third identical interest game
+#     global payoff
+#     # payoff = np.array([[0, 0, 0, 0], [0.5, 1, 0, 0], [0, 0, 0, 0], [0, 0, 0, 0.5]]) # trivial identical interest game
+#     # payoff = np.array([[0.9, 0, 0.25, 0], [0.5, 1, 0.75, 0], [0, 0, 0, 0], [0, 0, 0, 0.5]]) # second identical interest game
+#     # payoff = np.array([[0.5, 0, 0.25, 0], [0.9, 1, 0.75, 0], [0, 0.8, 0, 0], [0, 0.9, 0.8, 0.5]]) # third identical interest game
+#     # payoff = np.array([[0.5, 0, 0.25, 0], [0.9, 1, 0.75, 0], [0, 0.8, 0.5, 0.6], [0, 0.9, 0.8, 0.5]]) # fourth identical interest game
+
+#     # payoff = np.zeros((4, 4))
+#     # payoff[1,1] = 1 
+
+#     return payoff[player_action, opponents_action]
+
+# def utility_function_player_2(player_action, opponents_action):
+    
+#     global payoff
+
+#     # payoff = np.zeros((4, 4))
+#     # payoff[1,1] = 1 
+
+#     return np.transpose(payoff)[player_action, opponents_action]
+
+def utility_function(player_id, player_action, opponents_action):
+    
+    # global payoff
+    # payoff = np.array([[0, 0, 0, 0], [0.5, 1, 0, 0], [0, 0, 0, 0], [0, 0, 0, 0.5]]) # trivial identical interest game
+    # payoff = np.array([[0.9, 0, 0.25, 0], [0.5, 1, 0.75, 0], [0, 0, 0, 0], [0, 0, 0, 0.5]]) # second identical interest game
+    # payoff = np.array([[0.5, 0, 0.25, 0], [0.9, 1, 0.75, 0], [0, 0.8, 0, 0], [0, 0.9, 0.8, 0.5]]) # third identical interest game
     payoff = np.array([[0.5, 0, 0.25, 0], [0.9, 1, 0.75, 0], [0, 0.8, 0.5, 0.6], [0, 0.9, 0.8, 0.5]]) # fourth identical interest game
 
     # payoff = np.zeros((4, 4))
     # payoff[1,1] = 1 
-
-    return payoff[player_action, opponents_action]
+    if player_id == 0:
+        return payoff[player_action, opponents_action]
+    return np.transpose(payoff)[player_action, opponents_action]
 
 if __name__ == '__main__':
     
@@ -37,5 +68,5 @@ if __name__ == '__main__':
     plt.plot(game.potentials)
     plt.ylabel('Potential')
     plt.xlabel('Iteration')
-    plt.title('Fourth game ( beta = ' + str(RATIONALITY) + ', mu = uniform, initial action profile: ' + str(game.initial_action_profile) + ' )')
+    plt.title('Second game ( beta = ' + str(RATIONALITY) + ', mu = uniform, initial action profile: ' + str(game.initial_action_profile) + ' )')
     plt.show()

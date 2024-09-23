@@ -11,13 +11,15 @@ class Player:
     
     def update(self, idx_opponents_actions): # choose a new action only based on the opponents action, in this case they will be the same as the actions in the previous step
         
-        p = np.zeros((self.no_actions,1))
+        p = np.zeros((self.no_actions, 1))
         
         for i in range(0, self.no_actions):
-            
-            p[i] = np.exp(self.beta * self.utility(i, idx_opponents_actions)) # compute the probability of chosing any of the actions in the action space
+            # print(self.utility(self.id, i, idx_opponents_actions))
+            p[i] = np.exp(self.beta * self.utility(self.id, i, idx_opponents_actions)) # compute the probability of chosing any of the actions in the action space
         
         p /= np.sum(p)
+        
+        # print('probability p: ', p)
         
         idx_a = np.random.choice(range(0, self.no_actions), 1, True, np.transpose(p)[0]) # randomly chose an action based on the computed probability distribution
         
