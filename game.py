@@ -32,19 +32,20 @@ class Game:
         
         self.initial_action_profile = rejection_sampling(mu, self.action_profile, len(self.action_space))
         
-        # self.initial_action_profile = np.array([3, 3])
-        # self.initial_action_profile = np.array([2, 0])
-        # self.initial_action_profile = np.array([0, 3])
-        
         return self.initial_action_profile
+    
+    def set_initial_action_profile(self, initial_action_profile):
         
-    def play(self):
+        self.initial_action_profile = initial_action_profile
         
-        self.action_profile = self.initial_action_profile.copy()
+    def play(self, initial_action_profile = None):
+        
+        if initial_action_profile == None:
+            self.action_profile = self.initial_action_profile.copy()
+        else:
+            self.action_profile = initial_action_profile
         
         for i in range(0, self.max_iter): 
-            # print("Iteration: ")
-            # print(i)
 
             self.action_profile_history[i] = self.action_profile.copy()
             
@@ -61,21 +62,43 @@ class Game:
             
             self.potentials_history[i] = self.potential_function(self.action_profile) # compute the value of the potential function
             self.player_converged_history[i] = player.converged
-            # print("Last change: ")
-            # print(self.last_change)
-            # print("Condition: ")
-            # print(len(np.unique(self.player_id_history[self.last_change:i])) == self.no_players)
-            # print(all(self.player_converged_history[self.last_change:i]))
-            # print((not self.converged))
-            # print("Player changed: ")
-            # print(player.changed)
+
             if player.changed*player.converged:
                 self.last_change = i
                 self.converged = False
             elif (not self.converged) and len(np.unique(self.player_id_history[self.last_change:i])) == self.no_players and all(self.player_converged_history[self.last_change:i]):
-                # print("I'm here")
                 self.converged = True
                 self.converged_iteration = i
-            # # print("Self.converged: ")
-            # print(self.converged)
-            # print(self.converged_iteration)
+
+class RandomIdenticalInterestGame:
+    
+    def __init__(self, action_space, firstNE, secondNE, delta): 
+        
+        self.no_players = 2
+        self.no_actions = len(action_space)
+        self.action_space = action_space
+        self.firstNE = firstNE
+        self.secondNE = secondNE
+        self.delta = delta
+        self.payoff = self.generate_payoff_matrix()
+    
+    def generate_payoff_matrix(self):
+        
+        payoff = np.random.uniform(0.0, 1 - self.delta, size = (self.no_actions, self.no_actions))
+        
+        payoff[self.firstNE[0], self.firstNE[1]] = 1
+        payoff[self.secondNE[0], self.secondNE[1]] = 1 - self.delta
+        
+        return payoff
+
+    def utility_function_player_1(self, player_action, opponents_action):
+
+        return self.payoff[player_action, opponents_action]
+
+    def utility_function_player_2(self, player_action, opponents_action):
+        
+        return np.transpose(self.payoff)[player_action, opponents_action]
+
+    def potential_function(self, action_profile):
+        
+        return self.payoff[action_profile[0], action_profile[1]]

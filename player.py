@@ -21,17 +21,13 @@ class Player:
             p[i] = np.exp(self.beta * self.utility(i, idx_opponents_actions)) # compute the probability of chosing any of the actions in the action space
         
         p /= np.sum(p)
-        
-        # print(p)
+
         
         idx_a = np.random.choice(range(0, self.no_actions), 1, True, np.transpose(p)[0]) # randomly chose an action based on the computed probability distribution
         
         self.converged = any(True for x in p if x > 0.999)
         self.converged = sum(1 for x in p if x < 1e-3) == (self.no_actions - 1)
-        # print("PLAYER: self.converged: ")
-        # print(self.converged)
-        # print("p:")
-        # print(p)
+
         if idx_a == self.past_action:
             self.changed = False
         else:
