@@ -21,6 +21,7 @@ def plot_potential(mean_potential, title = None, folder = None, save = False):
     plt.plot(mean_potential)
     plt.ylabel('Potential')
     plt.xlabel('Iteration [#]')
+    plt.ylim(0, 1)
     
     if save:
         plt.savefig('../WEEK 3/' + folder + '/' + title + '.png')
@@ -37,21 +38,24 @@ def plot_potential_with_std(mean_potential, std, title = None, folder = None, sa
     alpha=0.2, edgecolor='#089FFF', facecolor='#089FFF', linewidth=4, antialiased=True)
     plt.ylabel('Potential')
     plt.xlabel('Iteration [#]')
-    
+    plt.ylim(0, 1)
+
     if save:
         plt.savefig('../WEEK 3/' + folder + '/' + title + '.png')
     else:
         f.show()
 
-def plot_potential_history(potentials_history, title = None, folder = None, save = False):
+def plot_history(history, title = None, folder = None, save = False):
     
-    f = plt.figure(4)
+    f = plt.figure()
     f.clf()
-    for idx, potential in enumerate(potentials_history):
-        plt.plot(potential, label = str(idx))
+    for idx, element in enumerate(history):
+        plt.plot(element, label = str(idx))
 
     plt.ylabel('Potential')
     plt.xlabel('Iteration [#]')
+    plt.ylim(0, 1)
+
     
     if save:
         plt.savefig('../WEEK 3/' + folder + '/' + title + '.png')
