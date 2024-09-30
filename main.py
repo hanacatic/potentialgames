@@ -103,10 +103,14 @@ if __name__ == '__main__':
     firstNE = np.array([1,1])
     secondNE = np.array([3,3])
     
-    game = RandomIdenticalInterestGame(action_space, firstNE, secondNE, 0.25)
+    gameSetup = RandomIdenticalInterestGame(action_space, firstNE, secondNE, 0.25)
+    game = Game(gameSetup, mu=mu)
     
-    print(game.payoff)
-    plot_payoff(game.payoff)
+    game.play(beta=10)
+    
+    print(gameSetup.payoff)
+    print(game.action_profile)
+    plot_payoff(gameSetup.payoff)
     plt.show(block = False)
-    plt.pause(5)
+    plt.pause(3)
     plt.close() 

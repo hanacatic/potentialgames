@@ -10,7 +10,7 @@ def plot_payoff(payoff, title = "Payoff matrix", folder = None, save = False):
     plt.colorbar()
     
     if save:
-        plt.savefig('../WEEK 3/' + folder + '/' + title + '.png')
+        plt.savefig('../' + folder + '/' + title + '.png')
     else:
         f.show()
 
@@ -24,7 +24,7 @@ def plot_potential(mean_potential, title = None, folder = None, save = False):
     plt.ylim(0, 1)
     
     if save:
-        plt.savefig('../WEEK 3/' + folder + '/' + title + '.png')
+        plt.savefig('../' + folder + '/' + title + '.png')
     else:
         f.show()
         
@@ -41,7 +41,7 @@ def plot_potential_with_std(mean_potential, std, title = None, folder = None, sa
     plt.ylim(0, 1)
 
     if save:
-        plt.savefig('../WEEK 3/' + folder + '/' + title + '.png')
+        plt.savefig('../' + folder + '/' + title + '.png')
     else:
         f.show()
 
@@ -58,6 +58,6 @@ def plot_history(history, title = None, folder = None, save = False):
 
     
     if save:
-        plt.savefig('../WEEK 3/' + folder + '/' + title + '.png')
+        plt.savefig('../' + folder + '/' + title + '.png')
     else:
         f.show()
