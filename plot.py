@@ -46,13 +46,18 @@ def plot_potential_with_std(mean_potential, std, title = 'Average potential', fi
     else:
         f.show()
 
-def plot_lines(lines_to_plot, list_labels, title, file_name = None, folder = None, save = False):
+def plot_lines(lines_to_plot, list_labels, plot_e_efficient = False, title = 'Average potential', file_name = None, folder = None, save = False):
     
     f = plt.figure()
     f.clf()
+    
     for idx, element in enumerate(lines_to_plot):
-        plt.plot(element, label = list_labels[idx])
-
+        if idx < 5:
+            plt.plot(element, label = list_labels[idx])
+        elif plot_e_efficient:
+            plt.plot(element, 'k--', label =  list_labels[idx])
+        
+        
     # plt.xlabel('Potential', fontsize=15)
     plt.xlabel('time', fontsize=10)
     plt.legend(fontsize=15)
