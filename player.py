@@ -33,3 +33,8 @@ class Player:
             
         self.past_action = idx_a
         return idx_a
+    
+    def reset_player(self, no_actions, utility):
+
+        self.no_actions = no_actions # size of the actions space
+        self.utility = utility # utility function
