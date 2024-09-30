@@ -5,8 +5,7 @@ from helpers import rejection_sampling
 
 class Game:
     
-    
-    def __init__(self, game, algorithm = 'log_linear', max_iter = 1000, mu = None): # mu - initial distribution
+    def __init__(self, game, algorithm = 'log_linear',  max_iter = 1000, mu = None): # mu - initial distribution
         
         self.game = game # all the game rules and game data
         self.algorithm = algorithm
@@ -18,15 +17,15 @@ class Game:
         self.action_profile = self.sample_initial_action_profile(mu)
         
         self.action_profile_history = np.zeros((self.max_iter, self.game.no_players))
-        self.player_id_history = np.zeros((self.max_iter, 1))
+        # self.player_id_history = np.zeros((self.max_iter, 1))
         
         self.potentials_history = np.zeros((self.max_iter, 1))
         
-        self.last_change = 0
-        self.player_converged_history = np.zeros((self.max_iter, 1))
+        # self.last_change = 0
+        # self.player_converged_history = np.zeros((self.max_iter, 1))
         
-        self.converged = False
-        self.converged_iteration = self.max_iter - 1
+        # self.converged = False
+        # self.converged_iteration = self.max_iter - 1
         
     def sample_initial_action_profile(self, mu):
         
@@ -59,7 +58,7 @@ class Game:
             
             player_id = np.random.randint(0, len(self.players), 1) # randomly choose a player
             
-            self.player_id_history[i] = player_id
+            # self.player_id_history[i] = player_id
 
             player = self.players[player_id][0] 
             
@@ -70,16 +69,47 @@ class Game:
             
             self.potentials_history[i] = self.game.potential_function(self.action_profile) # compute the value of the potential function
             
-            self.player_converged_history[i] = player.converged
+            # self.player_converged_history[i] = player.converged
 
-            if player.changed*player.converged:
-                self.last_change = i
-                self.converged = False
+            # if player.changed*player.converged:
+            #     self.last_change = i
+            #     self.converged = False
                 
-            elif (not self.converged) and len(np.unique(self.player_id_history[self.last_change:i])) == self.game.no_players and all(self.player_converged_history[self.last_change:i]):
-                self.converged = True
-                self.converged_iteration = i
+            # elif (not self.converged) and len(np.unique(self.player_id_history[self.last_change:i])) == self.game.no_players and all(self.player_converged_history[self.last_change:i]):
+            #     self.converged = True
+            #     self.converged_iteration = i
+                
+    def compute_beta(self, epsilon):
+        
+        A = self.game.no_actions
+        N = self.game.no_players
+        delta = self.game.delta
+        
+        # return 1/max(epsilon/2, delta)*np.log(A**N*(1-epsilon/2)*(4/(epsilon*A**N*(epsilon/2)) - 1/(A**N*(epsilon/2))))
+        
+        return 1/max(epsilon, delta)*np.log(A**N/epsilon)
 
+    def compute_t(self, epsilon):
+        
+        A = self.game.no_actions
+        N = self.game.no_players
+        delta = self.game.delta
+        beta = self.compute_beta(epsilon)
+        
+        # return 25*N**2*A**5*np.exp(4*beta)/16/np.pi**2*(np.log(np.log(A**N)) + np.log(beta) + 2*np.log(4/epsilon))
+        
+        return N**2*A**5*(A**N/epsilon)**(1/max(epsilon, delta))
+        # return self.game.no_players*(self.game.no_players**self.game.no_actions/epsilon)**(1/max(epsilon, self.game.delta))
+
+    def set_max_iter(self, epsilon):
+        self.max_iter = int(min(1e5, self.compute_t(epsilon)))
+        
+        self.action_profile_history = np.zeros((self.max_iter, self.game.no_players))
+        self.player_id_history = np.zeros((self.max_iter, 1))
+        
+        self.potentials_history = np.zeros((self.max_iter, 1))
+        self.player_converged_history = np.zeros((self.max_iter, 1))
+        
 class RandomIdenticalInterestGame:
     
     def __init__(self, action_space, firstNE, secondNE, delta): 
