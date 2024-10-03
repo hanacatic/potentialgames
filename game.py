@@ -2,10 +2,11 @@ import numpy as np
 from player import Player
 from helpers import rejection_sampling
 
+rng = np.random.default_rng()
 
 class Game:
     
-    def __init__(self, gameSetup, algorithm = 'log_linear',  max_iter = 1000, mu = None): # mu - initial distribution
+    def __init__(self, gameSetup, algorithm = 'log_linear',  max_iter = 100000, mu = None): # mu - initial distribution
         
         self.gameSetup = gameSetup # all the game rules and game data
         self.algorithm = algorithm
@@ -16,7 +17,7 @@ class Game:
         self.action_profile = np.random.randint(0, self.gameSetup.no_players, self.gameSetup.no_players) # discrete uniform distribution
         self.action_profile = self.sample_initial_action_profile(mu)
         
-        self.action_profile_history = np.zeros((self.max_iter, self.gameSetup.no_players))
+        # self.action_profile_history = np.zeros((self.max_iter, self.gameSetup.no_players))
         # self.player_id_history = np.zeros((self.max_iter, 1))
         
         self.potentials_history = np.zeros((self.max_iter, 1))
@@ -47,38 +48,41 @@ class Game:
         match self.algorithm:
             case "log_linear":
                 self.log_linear(beta)
+            case "log_linear_t":
+                self.log_linear_t()
             case _:
                 self.log_linear(beta)
         
     def log_linear(self, beta):
         
         for i in range(0, self.max_iter): 
+            
+            self.log_linear_iteration(i, beta)
+    
+    def log_linear_t(self):
+        
+        for i in range(self.max_iter): 
 
-            self.action_profile_history[i] = self.action_profile.copy()
+            # beta = np.log(i+1)*(self.gameSetup.no_players**2+1)/self.gameSetup.no_players
             
-            player_id = np.random.randint(0, len(self.players), 1) # randomly choose a player
+            beta = min((i+1), 200)
             
-            # self.player_id_history[i] = player_id
-
-            player = self.players[player_id][0] 
+            self.log_linear_iteration(i, beta)
+                           
+    def log_linear_iteration(self, i, beta):
+        
+        player_id = rng.integers(0, len(self.players), 1) # randomly choose a player
             
-            opponents_actions = self.action_profile.copy() # extract the opponents actions from the action profile
-            opponents_actions = np.delete(opponents_actions, player_id)
+        player = self.players[player_id][0] 
             
-            self.action_profile[player_id] = player.update_log_linear(beta, opponents_actions) # update the players action
+        mask = np.arange(len(self.action_profile)) != player_id
+        opponents_actions = self.action_profile[mask] # extract the opponents actions from the action profile
             
-            self.potentials_history[i] = self.gameSetup.potential_function(self.action_profile) # compute the value of the potential function
+        self.action_profile[player_id] = player.update_log_linear(beta, opponents_actions) # update the players action
             
-            # self.player_converged_history[i] = player.converged
-
-            # if player.changed*player.converged:
-            #     self.last_change = i
-            #     self.converged = False
-                
-            # elif (not self.converged) and len(np.unique(self.player_id_history[self.last_change:i])) == self.game.no_players and all(self.player_converged_history[self.last_change:i]):
-            #     self.converged = True
-            #     self.converged_iteration = i
-                
+        self.potentials_history[i] = self.gameSetup.potential_function(self.action_profile) # compute the value of the potential function
+         
+                          
     def compute_beta(self, epsilon):
         
         A = self.gameSetup.no_actions
@@ -87,7 +91,7 @@ class Game:
         
         # return 1/max(epsilon/2, delta)*np.log(A**N*(1-epsilon/2)*(4/(epsilon*A**N*(epsilon/2)) - 1/(A**N*(epsilon/2))))
         
-        return 1/max(epsilon, delta)*np.log(A**N/epsilon)
+        return 1/max(epsilon, delta)*np.log10(A**N/epsilon)
 
     def compute_t(self, epsilon):
         
@@ -115,8 +119,6 @@ class Game:
         self.gameSetup = gameSetup
         [self.players[i].reset_player(self.gameSetup.no_actions, gameSetup.utility_functions[i]) for i in range(0, self.gameSetup.no_players)]
 
-        
-                
 class RandomIdenticalInterestGame:
     
     def __init__(self, action_space, firstNE, secondNE, delta): 
@@ -132,10 +134,12 @@ class RandomIdenticalInterestGame:
     
     def generate_payoff_matrix(self):
         
-        self.payoff = np.random.uniform(0.0, 1 - self.delta, size = (self.no_actions, self.no_actions))
+        self.payoff_player_1 = np.random.uniform(0.0, 1 - self.delta, size = (self.no_actions, self.no_actions))
         
-        self.payoff[self.firstNE[0], self.firstNE[1]] = 1
-        self.payoff[self.secondNE[0], self.secondNE[1]] = 1 - self.delta
+        self.payoff_player_1[self.firstNE[0], self.firstNE[1]] = 1
+        self.payoff_player_1[self.secondNE[0], self.secondNE[1]] = 1 - self.delta
+        
+        self.payoff_player_2 = np.transpose(self.payoff_player_1)
     
     def reset_payoff_matrix(self, delta = None):
         
@@ -146,12 +150,12 @@ class RandomIdenticalInterestGame:
         
     def utility_function_player_1(self, player_action, opponents_action):
 
-        return self.payoff[player_action, opponents_action]
+        return self.payoff_player_1[player_action, opponents_action]
 
     def utility_function_player_2(self, player_action, opponents_action):
         
-        return np.transpose(self.payoff)[player_action, opponents_action]
+        return self.payoff_player_2[player_action, opponents_action]
 
     def potential_function(self, action_profile):
         
-        return self.payoff[action_profile[0], action_profile[1]]
+        return self.payoff_player_1[action_profile[0], action_profile[1]]
