@@ -22,10 +22,19 @@ class Player:
         
         idx_a = rng.choice(self.action_space[0], size=1, p=self.p[0])
 
-    
         self.past_action = idx_a
         return idx_a
     
+    def best_response(self, idx_opponents_actions):
+        
+        utilities = np.array([self.utility(i, idx_opponents_actions) for i in range(self.no_actions)]).reshape(1, self.no_actions)
+
+        idx_a = np.argmax(utilities)
+        
+        self.past_action = idx_a
+        
+        return idx_a
+        
     def reset_player(self, no_actions, utility):
 
         self.no_actions = no_actions # size of the actions space

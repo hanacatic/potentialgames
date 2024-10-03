@@ -6,7 +6,7 @@ rng = np.random.default_rng()
 
 class Game:
     
-    def __init__(self, gameSetup, algorithm = 'log_linear',  max_iter = 100000, mu = None): # mu - initial distribution
+    def __init__(self, gameSetup, algorithm = 'log_linear',  max_iter = 1000, mu = None): # mu - initial distribution
         
         self.gameSetup = gameSetup # all the game rules and game data
         self.algorithm = algorithm
@@ -50,6 +50,8 @@ class Game:
                 self.log_linear(beta)
             case "log_linear_t":
                 self.log_linear_t()
+            case "best_response":
+                self.best_response()
             case _:
                 self.log_linear(beta)
         
@@ -65,7 +67,9 @@ class Game:
 
             # beta = np.log(i+1)*(self.gameSetup.no_players**2+1)/self.gameSetup.no_players
             
-            beta = min((i+1), 200)
+            beta = np.log(i+1)
+            
+            # beta = min((i+1), 200)
             
             self.log_linear_iteration(i, beta)
                            
@@ -82,7 +86,22 @@ class Game:
             
         self.potentials_history[i] = self.gameSetup.potential_function(self.action_profile) # compute the value of the potential function
          
-                          
+    def best_response(self):
+        
+        for i in range(self.max_iter):
+            
+            player_id = rng.integers(0, len(self.players), 1) # randomly choose a player
+            
+            player = self.players[player_id][0] 
+            
+            mask = np.arange(len(self.action_profile)) != player_id
+            opponents_actions = self.action_profile[mask] # extract the opponents actions from the action profile
+        
+            self.action_profile[player_id] = player.best_response(opponents_actions) # update the players action
+
+            self.potentials_history[i] = self.gameSetup.potential_function(self.action_profile) # compute the value of the potential function
+
+                                  
     def compute_beta(self, epsilon):
         
         A = self.gameSetup.no_actions
