@@ -11,7 +11,8 @@ class Player:
         self.utility = utility # utility function
         self.past_action = None
         self.action_space = np.arange(self.no_actions).reshape(1, self.no_actions)
-    
+        self.p = 1/self.no_actions*np.ones([1, self.no_actions])
+        
     def update_log_linear(self, beta, idx_opponents_actions): # choose a new action only based on the opponents action, in this case they will be the same as the actions in the previous step
 
         utilities = np.array([self.utility(i, idx_opponents_actions) for i in range(self.no_actions)]).reshape(1, self.no_actions)
@@ -34,6 +35,10 @@ class Player:
         self.past_action = idx_a
         
         return idx_a
+    
+    def mixed_strategy(self):
+        
+        return self.p
         
     def reset_player(self, no_actions, utility):
 

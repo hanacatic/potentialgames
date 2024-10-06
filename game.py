@@ -95,8 +95,19 @@ class Game:
             self.potentials_history[i] = self.gameSetup.potential_function(self.action_profile) # compute the value of the potential function
     
     def multiplicative_weight_update(self):
-        
-        a = 1
+                
+        for i in range(self.max_iter):
+            mixed_strategies = np.zeros([self.gameSetup.no_players, self.gameSetup.no_actions])
+            played_action = np.zeros([self.gameSetup.no_players, 1])
+            
+            for player_id in range(self.gameSetup.no_players):
+                
+                player = self.players[player_id]
+                
+                mixed_strategies[player_id, i] = player.mixedStrategy
+                
+                played_action[player_id] = rng.choice(self.gameSetup.action_space, 1, p = mixed_strategies[player_id])
+
                                       
     def compute_beta(self, epsilon):
         
@@ -104,9 +115,9 @@ class Game:
         N = self.gameSetup.no_players
         delta = self.gameSetup.delta
         
-        # return 1/max(epsilon/2, delta)*np.log(A**N*(1-epsilon/2)*(4/(epsilon*A**N*(epsilon/2)) - 1/(A**N*(epsilon/2))))
+        return 1/max(epsilon/2, delta)*np.log(A**N*(1-epsilon/2)*(4/(epsilon*A**N*(epsilon/2)) - 1/(A**N*(epsilon/2))))
         
-        return 1/max(epsilon, delta)*np.log(A**N/epsilon)
+        # return 1/max(epsilon, delta)*np.log(A**N/epsilon)
 
     def compute_t(self, epsilon):
         
@@ -129,10 +140,10 @@ class Game:
         self.potentials_history = np.zeros((self.max_iter, 1))
         self.player_converged_history = np.zeros((self.max_iter, 1))
     
-    def reset_game(self, gameSetup):
+    def reset_game(self):
         
-        self.gameSetup = gameSetup
-        [self.players[i].reset_player(self.gameSetup.no_actions, gameSetup.utility_functions[i]) for i in range(0, self.gameSetup.no_players)]
+        # self.gameSetup = gameSetup
+        [self.players[i].reset_player(self.gameSetup.no_actions, self.gameSetup.utility_functions[i]) for i in range(0, self.gameSetup.no_players)]
 
 class RandomIdenticalInterestGame:
     
@@ -149,12 +160,17 @@ class RandomIdenticalInterestGame:
     
     def generate_payoff_matrix(self):
         
-        self.payoff_player_1 = np.random.uniform(0.0, 1 - self.delta, size = (self.no_actions, self.no_actions))
+        self.payoff = []
         
-        self.payoff_player_1[self.firstNE[0], self.firstNE[1]] = 1
-        self.payoff_player_1[self.secondNE[0], self.secondNE[1]] = 1 - self.delta
+        payoff_player_1 = np.random.uniform(0.0, 1 - self.delta, size = (self.no_actions, self.no_actions))
         
-        self.payoff_player_2 = np.transpose(self.payoff_player_1)
+        payoff_player_1[self.firstNE[0], self.firstNE[1]] = 1
+        payoff_player_1[self.secondNE[0], self.secondNE[1]] = 1 - self.delta
+        
+        payoff_player_2 = np.transpose(payoff_player_1)
+
+        self.payoff.append(payoff_player_1)
+        self.payoff.append(payoff_player_2)
     
     def reset_payoff_matrix(self, delta = None):
         
@@ -165,11 +181,11 @@ class RandomIdenticalInterestGame:
         
     def utility_function_player_1(self, player_action, opponents_action):
 
-        return self.payoff_player_1[player_action, opponents_action]
+        return self.payoff[0][player_action, opponents_action]
 
     def utility_function_player_2(self, player_action, opponents_action):
         
-        return self.payoff_player_2[player_action, opponents_action]
+        return self.payoff[1][player_action, opponents_action]
 
     def potential_function(self, action_profile):
         
