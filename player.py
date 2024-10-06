@@ -40,7 +40,18 @@ class Player:
         
         return self.p
         
+    def update_mw(self, idx_opponents_actions, gamma_t = 0.5):
+        
+        utilities = np.array([self.utility(i, idx_opponents_actions) for i in range(self.no_actions)]).reshape(1, self.no_actions)
+
+        losses = np.ones(self.no_actions) - utilities
+        
+        self.p = np.multiply( self.p, 1 + gamma_t * (-losses))
+        
+        self.p = self.p / np.sum(self.p)
+        
     def reset_player(self, no_actions, utility):
 
         self.no_actions = no_actions # size of the actions space
         self.utility = utility # utility function
+        

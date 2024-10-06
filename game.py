@@ -44,7 +44,7 @@ class Game:
             case "best_response":
                 self.best_response()
             case "multiplicative_weight":
-                self.multiplicative_weight_update()
+                self.multiplicative_weight()
             case _:
                 self.log_linear(beta)
         
@@ -94,20 +94,32 @@ class Game:
 
             self.potentials_history[i] = self.gameSetup.potential_function(self.action_profile) # compute the value of the potential function
     
-    def multiplicative_weight_update(self):
-                
+    def multiplicative_weight(self):
+        
+        gamma_t = np.sqrt(np.log(self.gameSetup.no_players)/self.max_iter) 
+              
         for i in range(self.max_iter):
-            mixed_strategies = np.zeros([self.gameSetup.no_players, self.gameSetup.no_actions])
-            played_action = np.zeros([self.gameSetup.no_players, 1])
             
+            mixed_strategies = np.zeros([self.gameSetup.no_players, self.gameSetup.no_actions])
+                        
             for player_id in range(self.gameSetup.no_players):
                 
                 player = self.players[player_id]
                 
-                mixed_strategies[player_id, i] = player.mixedStrategy
+                mixed_strategies[player_id] = player.mixed_strategy()
                 
-                played_action[player_id] = rng.choice(self.gameSetup.action_space, 1, p = mixed_strategies[player_id])
+                self.action_profile[player_id] = rng.choice(self.gameSetup.action_space, 1, p = mixed_strategies[player_id])
+            
+            self.potentials_history[i] = self.gameSetup.potential_function(self.action_profile) # compute the value of the potential function
 
+            for player_id in range(self.gameSetup.no_players):
+                
+                mask = np.arange(len(self.action_profile)) != player_id
+                opponents_actions = self.action_profile[mask] # extract the opponents actions from the action profile
+                
+                player = self.players[player_id]
+                
+                player.update_mw(opponents_actions, gamma_t = gamma_t)
                                       
     def compute_beta(self, epsilon):
         
@@ -160,17 +172,12 @@ class RandomIdenticalInterestGame:
     
     def generate_payoff_matrix(self):
         
-        self.payoff = []
+        self.payoff_player_1 = np.random.uniform(0.0, 1 - self.delta, size = (self.no_actions, self.no_actions))
         
-        payoff_player_1 = np.random.uniform(0.0, 1 - self.delta, size = (self.no_actions, self.no_actions))
+        self.payoff_player_1[self.firstNE[0], self.firstNE[1]] = 1
+        self.payoff_player_1[self.secondNE[0], self.secondNE[1]] = 1 - self.delta
         
-        payoff_player_1[self.firstNE[0], self.firstNE[1]] = 1
-        payoff_player_1[self.secondNE[0], self.secondNE[1]] = 1 - self.delta
-        
-        payoff_player_2 = np.transpose(payoff_player_1)
-
-        self.payoff.append(payoff_player_1)
-        self.payoff.append(payoff_player_2)
+        self.payoff_player_2 = np.transpose(self.payoff_player_1)
     
     def reset_payoff_matrix(self, delta = None):
         
@@ -181,11 +188,11 @@ class RandomIdenticalInterestGame:
         
     def utility_function_player_1(self, player_action, opponents_action):
 
-        return self.payoff[0][player_action, opponents_action]
+        return self.payoff_player_1[player_action, opponents_action]
 
     def utility_function_player_2(self, player_action, opponents_action):
         
-        return self.payoff[1][player_action, opponents_action]
+        return self.payoff_player_2[player_action, opponents_action]
 
     def potential_function(self, action_profile):
         

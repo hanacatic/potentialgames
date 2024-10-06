@@ -17,7 +17,7 @@ def beta_experiments(game, n_exp = 10, save = False, folder = None, file_name = 
     print(beta_t)
     print(game.max_iter)
         
-    plot_payoff(game.gameSetup.payoff[0], folder = folder, save = save)
+    plot_payoff(game.gameSetup.payoff_player_1, folder = folder, save = save)
     mean_potential_history = np.zeros((7, game.max_iter))
     betas = np.arange(beta_t/2, beta_t + beta_t/8.0, beta_t/8.0)
     
@@ -55,7 +55,7 @@ def beta_experiments(game, n_exp = 10, save = False, folder = None, file_name = 
 def delta_experiments(game, deltas = [0.9, 0.75, 0.5, 0.25, 0.1],  n_exp = 10, save = False, folder = None, file_name = None, title = 'Average potential'):
        
     beta_t = game.compute_beta(EPS)
-    plot_payoff(game.gameSetup.payoff[0])
+    plot_payoff(game.gameSetup.payoff_player_1)
     mean_potential_history = np.zeros((6, game.max_iter))
     
     for idx, delta in enumerate(deltas):
@@ -63,7 +63,7 @@ def delta_experiments(game, deltas = [0.9, 0.75, 0.5, 0.25, 0.1],  n_exp = 10, s
         print(delta)
         game.gameSetup.reset_payoff_matrix(delta)
         game.reset_game()
-        plot_payoff(game.gameSetup.payoff[0])
+        plot_payoff(game.gameSetup.payoff_player_1)
         beta_t = game.compute_beta(EPS)
         print(beta_t)
         
@@ -207,7 +207,7 @@ def main():
     
     # game = Game(gameSetup, algorithm = "best_response", mu=mu)
     # game.set_initial_action_profile(secondNE)
-    # plot_payoff(game.gameSetup.payoff[0])
+    # plot_payoff(game.gameSetup.payoff_player_1)
     
     # for _ in range(n_exp):
                 
@@ -239,10 +239,11 @@ def test():
     # game = Game(gameSetup, algorithm = "log_linear_t", mu=mu)
     # game.set_initial_action_profile(secondNE)
     
-    game = Game(gameSetup, algorithm = "best_response", max_iter = 100, mu=mu)
+    game = Game(gameSetup, algorithm = "multiplicative_weight", max_iter = 5000, mu=mu)
     game.set_initial_action_profile(secondNE)
-    plot_payoff(game.gameSetup.payoff[0])
-    
+    game.play()
+    plot_payoff(game.gameSetup.payoff_player_1)
+    plot_potential(game.potentials_history)
     print(game.action_profile)
     plt.show(block = False)
     plt.pause(20)
