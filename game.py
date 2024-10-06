@@ -6,7 +6,7 @@ rng = np.random.default_rng()
 
 class Game:
     
-    def __init__(self, gameSetup, algorithm = 'log_linear',  max_iter = 1000, mu = None): # mu - initial distribution
+    def __init__(self, gameSetup, algorithm = 'log_linear',  max_iter = 200000, mu = None): # mu - initial distribution
         
         self.gameSetup = gameSetup # all the game rules and game data
         self.algorithm = algorithm
@@ -16,17 +16,8 @@ class Game:
         
         self.action_profile = np.random.randint(0, self.gameSetup.no_players, self.gameSetup.no_players) # discrete uniform distribution
         self.action_profile = self.sample_initial_action_profile(mu)
-        
-        # self.action_profile_history = np.zeros((self.max_iter, self.gameSetup.no_players))
-        # self.player_id_history = np.zeros((self.max_iter, 1))
-        
+           
         self.potentials_history = np.zeros((self.max_iter, 1))
-        
-        # self.last_change = 0
-        # self.player_converged_history = np.zeros((self.max_iter, 1))
-        
-        # self.converged = False
-        # self.converged_iteration = self.max_iter - 1
         
     def sample_initial_action_profile(self, mu):
         
@@ -52,6 +43,8 @@ class Game:
                 self.log_linear_t()
             case "best_response":
                 self.best_response()
+            case "multiplicative_weight":
+                self.multiplicative_weight_update()
             case _:
                 self.log_linear(beta)
         
@@ -67,9 +60,9 @@ class Game:
 
             # beta = np.log(i+1)*(self.gameSetup.no_players**2+1)/self.gameSetup.no_players
             
-            beta = np.log(i+1)
+            # beta = np.log(i+1)
             
-            # beta = min((i+1), 200)
+            beta = min((i+1), 500)
             
             self.log_linear_iteration(i, beta)
                            
@@ -100,8 +93,11 @@ class Game:
             self.action_profile[player_id] = player.best_response(opponents_actions) # update the players action
 
             self.potentials_history[i] = self.gameSetup.potential_function(self.action_profile) # compute the value of the potential function
-
-                                  
+    
+    def multiplicative_weight_update(self):
+        
+        a = 1
+                                      
     def compute_beta(self, epsilon):
         
         A = self.gameSetup.no_actions
@@ -110,7 +106,7 @@ class Game:
         
         # return 1/max(epsilon/2, delta)*np.log(A**N*(1-epsilon/2)*(4/(epsilon*A**N*(epsilon/2)) - 1/(A**N*(epsilon/2))))
         
-        return 1/max(epsilon, delta)*np.log10(A**N/epsilon)
+        return 1/max(epsilon, delta)*np.log(A**N/epsilon)
 
     def compute_t(self, epsilon):
         

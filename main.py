@@ -10,42 +10,44 @@ EPS = 0.5e-1
 def mu(action_profile):
     return 1.0/16.0
 
-def beta_experiments(delta = 0.25):
+def beta_experiments(game, save = False, folder = None, file_name = None, title = 'Average potential'):
     
-    action_space = [0, 1, 2, 3]
     
-    firstNE = np.array([1,1])
-    secondNE = np.array([3,3])
-    
-    gameSetup = RandomIdenticalInterestGame(action_space, firstNE, secondNE, delta)
-    game = Game(gameSetup, mu=mu)
-    game.set_initial_action_profile(secondNE)
     beta_t = game.compute_beta(EPS)
     # game.set_max_iter(EPS)
     print(beta_t)
     print(game.max_iter)
     
-    save = False 
-    folder = 'WEEK 4'
-    title = 'Average potential'
-    n_exp = 25
+    n_exp = 10
+    
     plot_payoff(game.gameSetup.payoff_player_1, folder = folder, save = save)
-    mean_potential_history = np.zeros((6, game.max_iter))
+    mean_potential_history = np.zeros((7, game.max_iter))
     betas = np.arange(beta_t/2, beta_t + beta_t/8.0, beta_t/8.0)
     
     for idx, beta in enumerate(betas):
         print(beta)
         potentials_history = np.zeros((n_exp, game.max_iter))
         for i in range(0, n_exp):
-            potentials_history[i] = np.transpose(game.potentials_history).copy()
+            potentials_history[i] = np.transpose(game.potentials_history)
             game.play(beta=beta)
             
         mean_potential_history[idx] = np.mean(potentials_history, 0)
     
-    mean_potential_history[5] = (1-EPS) * np.ones((1, game.max_iter))
-    labels = [ r'$\frac{\beta_T}{2}$', r'$\frac{5\beta_T}{8}$', r'$\frac{6\beta_T}{8}$', r'$\frac{7\beta_T}{8}$', r'$\beta_T$', r'$\Phi(a^*) - \epsilon$']
+    game = Game(game.gameSetup, algorithm = "log_linear_t", mu=mu)
+    game.set_initial_action_profile(game.initial_action_profile)
+    
+    potentials_history = np.zeros((n_exp, game.max_iter))
+
+    for i in range(0, n_exp):
+        game.play()
+        potentials_history[i] = np.transpose(game.potentials_history)
    
-    plot_lines(mean_potential_history, labels, True, title)
+    mean_potential_history[5] = np.mean(potentials_history, 0)
+
+    mean_potential_history[6] = (1-EPS) * np.ones((1, game.max_iter))
+    labels = [ r'$\frac{\beta_T}{2}$', r'$\frac{5\beta_T}{8}$', r'$\frac{6\beta_T}{8}$', r'$\frac{7\beta_T}{8}$', r'$\beta_T$', r'$\beta(t)$', r'$\Phi(a^*) - \epsilon$']
+   
+    plot_lines(mean_potential_history, labels, True, title, file_name = file_name, save = save, folder = folder)
 
     if not save:
         # plt.show()
@@ -142,45 +144,70 @@ def epsilon_experiments(delta = 0.25, epsilons = [0.2, 0.1, 0.05, 0.01, 0.001]):
         # plt.close()
 
 def main():
+    action_space = [0, 1, 2, 3]
     
-    # beta_experiments(0.25)
+    firstNE = np.array([1,1])
+    secondNE = np.array([3,3])
+    initial_action_profile = secondNE
+    
+    delta = 0.25
+    
+    gameSetup = RandomIdenticalInterestGame(action_space, firstNE, secondNE, delta)
+    game = Game(gameSetup, mu=mu)
+    game.set_initial_action_profile(initial_action_profile)
+
+    beta_experiments(game, save = True, folder = 'WEEK 4', file_name = 'Average potential beta (3,3)')
+    
+    initial_action_profile = np.array([1,3])
+    game.set_initial_action_profile(initial_action_profile)
+
+    beta_experiments(game, save = True, folder = 'WEEK 4', file_name = 'Average potential beta (1,3)')
+
+    initial_action_profile = np.array([0,2])
+    game.set_initial_action_profile(initial_action_profile)
+
+    beta_experiments(game, save = True, folder = 'WEEK 4', file_name = 'Average potential beta (0,2)')
     
     # delta_experiments()
     
     # epsilon_experiments()
     
-    action_space = [0, 1, 2, 3]
+    # action_space = [0, 1, 2, 3]
     
-    firstNE = np.array([1,1])
-    secondNE = np.array([3,3])
+    # firstNE = np.array([1,1])
+    # secondNE = np.array([3,3])
     
-    save = False 
-    folder = 'WEEK 4'
-    title = 'Average potential'
-    n_exp = 5
+    # save = False 
+    # folder = 'WEEK 4'
+    # title = 'Average potential'
+    # n_exp = 10
     
-    # mean_potential_history = np.zeros((1, game.max_iter))
+    # # mean_potential_history = np.zeros((1, game.max_iter))
         
-    gameSetup = RandomIdenticalInterestGame(action_space, firstNE, secondNE, 0.25)
-    game = Game(gameSetup, algorithm = "log_linear_t", mu=mu)
-    game.set_initial_action_profile(secondNE)
-    plot_payoff(game.gameSetup.payoff_player_1)
+    # gameSetup = RandomIdenticalInterestGame(action_space, firstNE, secondNE, 0.25)
+    # # game = Game(gameSetup, algorithm = "log_linear_t", mu=mu)
+    # # game.set_initial_action_profile(secondNE)
     
-    for _ in range(n_exp):
+    # game = Game(gameSetup, algorithm = "best_response", mu=mu)
+    # game.set_initial_action_profile(secondNE)
+    # plot_payoff(game.gameSetup.payoff_player_1)
+    
+    # for _ in range(n_exp):
                 
-        potentials_history = np.zeros((n_exp, game.max_iter))
-        for i in range(0, n_exp):
-            potentials_history[i] = np.transpose(game.potentials_history).copy()
-            game.play()
+    #     potentials_history = np.zeros((n_exp, game.max_iter))
+    #     for i in range(0, n_exp):
+    #         game.play()
+    #         potentials_history[i] = np.transpose(game.potentials_history).copy()
+
             
-    mean_potential_history = np.mean(potentials_history, 0)
+    # mean_potential_history = np.mean(potentials_history, 0)
     
             
-    print(game.action_profile)
-    plot_potential(mean_potential_history)
-    plt.show(block = False)
-    plt.pause(20)
-    plt.close()
+    # print(game.action_profile)
+    # plot_potential(mean_potential_history)
+    # plt.show(block = False)
+    # plt.pause(20)
+    # plt.close()
 
 if __name__ == '__main__':
     

@@ -53,7 +53,7 @@ def plot_lines(lines_to_plot, list_labels, plot_e_efficient = False, title = 'Av
     f.clf()
     
     for idx, element in enumerate(lines_to_plot):
-        if idx < 5:
+        if idx < len(lines_to_plot) - 1:
             plt.plot(element, label = list_labels[idx])
         elif plot_e_efficient:
             plt.plot(element, 'k--', label =  list_labels[idx])
