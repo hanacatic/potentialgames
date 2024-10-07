@@ -18,7 +18,7 @@ class Game:
         self.action_profile = self.sample_initial_action_profile(mu)
            
         self.potentials_history = np.zeros((self.max_iter, 1))
-        
+               
     def sample_initial_action_profile(self, mu):
         
         self.initial_action_profile = rejection_sampling(mu, self.action_profile, self.gameSetup.no_actions)
@@ -28,7 +28,7 @@ class Game:
     def set_initial_action_profile(self, initial_action_profile):
         
         self.initial_action_profile = initial_action_profile
-        
+    
     def play(self, initial_action_profile = None, beta = None):
         
         if initial_action_profile == None:
@@ -157,9 +157,9 @@ class Game:
         # self.gameSetup = gameSetup
         [self.players[i].reset_player(self.gameSetup.no_actions, self.gameSetup.utility_functions[i]) for i in range(0, self.gameSetup.no_players)]
 
-class AsymmetricalIdenticalInterestGame:
+class IdenticalInterestGame:
     
-    def __init__(self, action_space, firstNE, secondNE, delta, payoff_matrix = None): 
+    def __init__(self, action_space, firstNE, secondNE, delta, type = "Asymmetrical", payoff_matrix = None): 
         
         self.no_players = 2
         self.no_actions = len(action_space)
@@ -167,6 +167,8 @@ class AsymmetricalIdenticalInterestGame:
         self.firstNE = firstNE
         self.secondNE = secondNE
         self.delta = delta
+        self.type = type
+        
         if payoff_matrix:
             self.set_payoff_matrix(payoff_matrix)
         else:
@@ -180,7 +182,10 @@ class AsymmetricalIdenticalInterestGame:
         self.payoff_player_1[self.firstNE[0], self.firstNE[1]] = 1
         self.payoff_player_1[self.secondNE[0], self.secondNE[1]] = 1 - self.delta
         
-        self.payoff_player_2 = np.transpose(self.payoff_player_1)
+        if self.type == "Asymmetrical": 
+            self.payoff_player_2 = np.transpose(self.payoff_player_1)
+        else: 
+            self.payoff_player_2 = self.payoff_player_1
     
     def reset_payoff_matrix(self, delta = None):
         
@@ -192,57 +197,11 @@ class AsymmetricalIdenticalInterestGame:
     def set_payoff_matrix(self, payoff):
         
         self.payoff_player_1 = payoff
-        self.payoff_player_2 = np.transpose(payoff)   
-        
-    def utility_function_player_1(self, player_action, opponents_action):
-
-        return self.payoff_player_1[player_action, opponents_action]
-
-    def utility_function_player_2(self, player_action, opponents_action):
-        
-        return self.payoff_player_2[player_action, opponents_action]
-
-    def potential_function(self, action_profile):
-        
-        return self.payoff_player_1[action_profile[0], action_profile[1]]
-    
-class SymmetricalIdenticalInterestGame:
-    
-    def __init__(self, action_space, firstNE, secondNE, delta, payoff_matrix = None): 
-        
-        self.no_players = 2
-        self.no_actions = len(action_space)
-        self.action_space = action_space
-        self.firstNE = firstNE
-        self.secondNE = secondNE
-        self.delta = delta
-        if payoff_matrix:
-            self.set_payoff_matrix(payoff_matrix)
+        if self.type == "Asymmetrical":
+            self.payoff_player_2 = np.transpose(payoff)  
         else:
-            self.generate_payoff_matrix()
-        self.utility_functions = [self.utility_function_player_1, self.utility_function_player_2]
-    
-    def generate_payoff_matrix(self):
+            self.payoff_player_2 = self.payoff_player_1 
         
-        self.payoff_player_1 = np.random.uniform(0.0, 1 - self.delta, size = (self.no_actions, self.no_actions))
-        
-        self.payoff_player_1[self.firstNE[0], self.firstNE[1]] = 1
-        self.payoff_player_1[self.secondNE[0], self.secondNE[1]] = 1 - self.delta
-        
-        self.payoff_player_2 = self.payoff_player_1
-    
-    def reset_payoff_matrix(self, delta = None):
-        
-        if delta:
-            self.delta = delta
-            
-        self.generate_payoff_matrix()
-        
-    def set_payoff_matrix(self, payoff):
-        
-        self.payoff_player_1 = payoff
-        self.payoff_player_2 = payoff
-         
     def utility_function_player_1(self, player_action, opponents_action):
 
         return self.payoff_player_1[player_action, opponents_action]
@@ -254,3 +213,4 @@ class SymmetricalIdenticalInterestGame:
     def potential_function(self, action_profile):
         
         return self.payoff_player_1[action_profile[0], action_profile[1]]
+    

@@ -1,5 +1,5 @@
 import numpy as np
-from game import Game, AsymmetricalIdenticalInterestGame 
+from game import Game, IdenticalInterestGame 
 from plot import *
 
 import cProfile
@@ -130,7 +130,7 @@ def main():
     
     delta = 0.25
     
-    gameSetup = AsymmetricalIdenticalInterestGame(action_space, firstNE, secondNE, delta)
+    gameSetup = IdenticalInterestGame(action_space, firstNE, secondNE, delta)
     game = Game(gameSetup, mu=mu)
     game.set_initial_action_profile(initial_action_profile)
 
@@ -154,7 +154,7 @@ def main():
     
     delta = 0.25
     
-    gameSetup = AsymmetricalIdenticalInterestGame(action_space, firstNE, secondNE, delta)
+    gameSetup = IdenticalInterestGame(action_space, firstNE, secondNE, delta)
     game = Game(gameSetup, mu=mu)
     game.set_initial_action_profile(initial_action_profile)
 
@@ -178,7 +178,7 @@ def main():
     
     delta = 0.25
     
-    gameSetup = AsymmetricalIdenticalInterestGame(action_space, firstNE, secondNE, delta)
+    gameSetup = IdenticalInterestGame(action_space, firstNE, secondNE, delta)
     game = Game(gameSetup, mu=mu)
     game.set_initial_action_profile(initial_action_profile)
 
@@ -244,7 +244,7 @@ def test():
     
     # mean_potential_history = np.zeros((1, game.max_iter))
         
-    gameSetup = AsymmetricalIdenticalInterestGame(action_space, firstNE, secondNE, 0.25)
+    gameSetup = IdenticalInterestGame(action_space, firstNE, secondNE, 0.25)
     # game = Game(gameSetup, algorithm = "log_linear_t", mu=mu)
     # game.set_initial_action_profile(secondNE)
     
