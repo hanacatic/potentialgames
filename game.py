@@ -28,7 +28,7 @@ class Game:
     def set_initial_action_profile(self, initial_action_profile):
         
         self.initial_action_profile = initial_action_profile
-    
+        
     def play(self, initial_action_profile = None, beta = None):
         
         if initial_action_profile == None:
@@ -163,6 +163,7 @@ class IdenticalInterestGame:
         
         self.no_players = 2
         self.no_actions = len(action_space)
+        self.no_action_profiles = self.no_actions**self.no_players
         self.action_space = action_space
         self.firstNE = firstNE
         self.secondNE = secondNE
@@ -175,6 +176,30 @@ class IdenticalInterestGame:
             self.generate_payoff_matrix()
         self.utility_functions = [self.utility_function_player_1, self.utility_function_player_2]
         
+    def formulate_transition_matrix(self, beta):
+    
+        self.P = np.zeros([self.no_action_profiles, self.no_action_profiles])
+        
+        for k in range(self.no_actions):
+            for j in range(self.no_actions):
+                
+                utilities = np.array([self.utility_functions[0](i, j) for i in range(self.no_actions)])
+                exp_values = np.exp(beta * utilities)
+        
+                p = exp_values/np.sum(exp_values)
+                
+                self.P[k*self.no_actions+j, j*self.no_actions:(j+1)*self.no_actions] += 1/self.no_players*p
+        
+        for j in range(self.no_actions):
+            for k in range(self.no_actions):
+                
+                utilities = np.array([self.utility_functions[1](i, k) for i in range(self.no_actions)])
+                exp_values = np.exp(beta * utilities)
+        
+                p = exp_values/np.sum(exp_values)
+                
+                self.P[k*self.no_actions+j, k::self.no_actions] += 1/self.no_players*p
+                
     def generate_payoff_matrix(self):
         
         self.payoff_player_1 = np.random.uniform(0.0, 1 - self.delta, size = (self.no_actions, self.no_actions))

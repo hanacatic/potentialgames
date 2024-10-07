@@ -269,8 +269,24 @@ def test():
     plt.pause(20)
     plt.close()
 
+def test_transition_matrix():
+    
+    action_space = [0, 1, 2, 3]
+
+    firstNE = np.array([1,1])
+    secondNE = np.array([3,3])
+    
+    # mean_potential_history = np.zeros((1, game.max_iter))
+        
+    gameSetup = IdenticalInterestGame(action_space, firstNE, secondNE, 0.25)
+    # game = Game(gameSetup, algorithm = "log_linear_t", mu=mu)
+    # game.set_initial_action_profile(secondNE)
+    
+    game = Game(gameSetup, algorithm = "log_linear", max_iter = 5000, mu=mu)
+    beta_t = game.compute_beta(EPS)
+    game.gameSetup.formulate_transition_matrix(beta_t)
 
 if __name__ == '__main__':
     
-    test()
+    test_transition_matrix()
     # cProfile.run('main()')
