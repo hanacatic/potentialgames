@@ -28,7 +28,11 @@ class Game:
     def set_initial_action_profile(self, initial_action_profile):
         
         self.initial_action_profile = initial_action_profile
+    
+    def set_mu_matrix(self, mu_matrix):
         
+        self.mu_matrix = mu_matrix
+
     def play(self, initial_action_profile = None, beta = None):
         
         if initial_action_profile == None:
@@ -41,6 +45,9 @@ class Game:
                 self.log_linear(beta)
             case "log_linear_t":
                 self.log_linear_t()
+            case "log_linear_fast":
+                # self.set_mu_matrix(mu_matrix)
+                self.log_linear_fast(beta)
             case "best_response":
                 self.best_response()
             case "multiplicative_weight":
@@ -65,6 +72,19 @@ class Game:
             beta = min((i+1), 500)
             
             self.log_linear_iteration(i, beta)
+    
+    def log_linear_fast(self, beta):
+        
+        P = self.gameSetup.formulate_transition_matrix(beta)
+        mu0 = self.mu_matrix.copy()
+        
+        for i in range(self.max_iter):
+            
+            mu = mu0 @ P
+            
+            mu0 = mu
+        
+        self.stationary = mu
                            
     def log_linear_iteration(self, i, beta):
         
@@ -199,7 +219,9 @@ class IdenticalInterestGame:
                 p = exp_values/np.sum(exp_values)
                 
                 self.P[k*self.no_actions+j, k::self.no_actions] += 1/self.no_players*p
-                
+        
+        return self.P
+           
     def generate_payoff_matrix(self):
         
         self.payoff_player_1 = np.random.uniform(0.0, 1 - self.delta, size = (self.no_actions, self.no_actions))

@@ -278,14 +278,19 @@ def test_transition_matrix():
     
     # mean_potential_history = np.zeros((1, game.max_iter))
         
-    gameSetup = IdenticalInterestGame(action_space, firstNE, secondNE, 0.25)
+    gameSetup = IdenticalInterestGame(action_space, firstNE, secondNE, 0.1)
     # game = Game(gameSetup, algorithm = "log_linear_t", mu=mu)
     # game.set_initial_action_profile(secondNE)
     
-    game = Game(gameSetup, algorithm = "log_linear", max_iter = 5000, mu=mu)
+    mu_matrix = np.zeros([1, 16])
+    mu_matrix[0, 15] = 1
+    game = Game(gameSetup, algorithm = "log_linear_fast", max_iter = 10000000, mu=mu)
     beta_t = game.compute_beta(EPS)
-    game.gameSetup.formulate_transition_matrix(beta_t)
-
+    
+    game.set_mu_matrix(mu_matrix)
+    game.play(beta = beta_t)
+    print(game.stationary)
+    
 if __name__ == '__main__':
     
     test_transition_matrix()
