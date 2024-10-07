@@ -1,5 +1,5 @@
 import numpy as np
-from game import Game, RandomIdenticalInterestGame 
+from game import Game, AsymmetricalIdenticalInterestGame 
 from plot import *
 
 import cProfile
@@ -27,6 +27,9 @@ def beta_experiments(game, n_exp = 10, save = False, folder = None, file_name = 
         for i in range(0, n_exp):
             potentials_history[i] = np.transpose(game.potentials_history)
             game.play(beta=beta)
+            
+            game.gameSetup.reset_payoff_matrix()
+            game.reset_game()
             
         mean_potential_history[idx] = np.mean(potentials_history, 0)
     
@@ -72,6 +75,9 @@ def delta_experiments(game, deltas = [0.9, 0.75, 0.5, 0.25, 0.1],  n_exp = 10, s
             potentials_history[i] = np.transpose(game.potentials_history).copy()
             game.play(beta=beta_t)
             
+            game.gameSetup.reset_payoff_matrix(delta)
+            game.reset_game()
+            
         mean_potential_history[idx] = np.mean(potentials_history, 0)
     
     mean_potential_history[5] = (1-EPS) * np.ones((1, game.max_iter))
@@ -99,6 +105,9 @@ def epsilon_experiments(game, epsilons = [0.2, 0.1, 0.05, 0.01, 0.001], n_exp = 
             potentials_history[i] = np.transpose(game.potentials_history)
             game.play(beta=beta)
             
+            game.gameSetup.reset_payoff_matrix()
+            game.reset_game()
+            
         mean_potential_history[idx] = np.mean(potentials_history, 0)
     
         mean_potential_history[idx + 5] = (1 - eps) * np.ones((1, game.max_iter))
@@ -121,21 +130,21 @@ def main():
     
     delta = 0.25
     
-    gameSetup = RandomIdenticalInterestGame(action_space, firstNE, secondNE, delta)
+    gameSetup = AsymmetricalIdenticalInterestGame(action_space, firstNE, secondNE, delta)
     game = Game(gameSetup, mu=mu)
     game.set_initial_action_profile(initial_action_profile)
 
-    beta_experiments(game, save = True, folder = 'WEEK 4', file_name = 'Average potential beta (3,3) _')
+    beta_experiments(game, save = True, folder = 'WEEK 4', file_name = 'Average potential beta (3,3) random _')
     
     initial_action_profile = np.array([1,3])
     game.set_initial_action_profile(initial_action_profile)
 
-    beta_experiments(game, save = True, folder = 'WEEK 4', file_name = 'Average potential beta (1,3) _')
+    beta_experiments(game, save = True, folder = 'WEEK 4', file_name = 'Average potential beta (1,3) random _')
 
     initial_action_profile = np.array([0,2])
     game.set_initial_action_profile(initial_action_profile)
 
-    beta_experiments(game, save = True, folder = 'WEEK 4', file_name = 'Average potential beta (0,2) _')
+    beta_experiments(game, save = True, folder = 'WEEK 4', file_name = 'Average potential beta (0,2) random _')
     
     action_space = [0, 1, 2, 3]
     
@@ -145,21 +154,21 @@ def main():
     
     delta = 0.25
     
-    gameSetup = RandomIdenticalInterestGame(action_space, firstNE, secondNE, delta)
+    gameSetup = AsymmetricalIdenticalInterestGame(action_space, firstNE, secondNE, delta)
     game = Game(gameSetup, mu=mu)
     game.set_initial_action_profile(initial_action_profile)
 
-    delta_experiments(game, save = True, folder = 'WEEK 4', file_name = 'Average potential delta (3,3) _')
+    delta_experiments(game, save = True, folder = 'WEEK 4', file_name = 'Average potential delta (3,3) random _')
     
     initial_action_profile = np.array([1,3])
     game.set_initial_action_profile(initial_action_profile)
 
-    delta_experiments(game, save = True, folder = 'WEEK 4', file_name = 'Average potential delta (1,3) _')
+    delta_experiments(game, save = True, folder = 'WEEK 4', file_name = 'Average potential delta (1,3) random _')
 
     initial_action_profile = np.array([0,2])
     game.set_initial_action_profile(initial_action_profile)
 
-    delta_experiments(game, save = True, folder = 'WEEK 4', file_name = 'Average potential delta (0,2) _')
+    delta_experiments(game, save = True, folder = 'WEEK 4', file_name = 'Average potential delta (0,2) random _')
 
     action_space = [0, 1, 2, 3]
     
@@ -169,21 +178,21 @@ def main():
     
     delta = 0.25
     
-    gameSetup = RandomIdenticalInterestGame(action_space, firstNE, secondNE, delta)
+    gameSetup = AsymmetricalIdenticalInterestGame(action_space, firstNE, secondNE, delta)
     game = Game(gameSetup, mu=mu)
     game.set_initial_action_profile(initial_action_profile)
 
-    epsilon_experiments(game, save = True, folder = 'WEEK 4', file_name = 'Average potential epsilon (3,3) _')
+    epsilon_experiments(game, save = True, folder = 'WEEK 4', file_name = 'Average potential epsilon (3,3) random _')
     
     initial_action_profile = np.array([1,3])
     game.set_initial_action_profile(initial_action_profile)
 
-    epsilon_experiments(game, save = True, folder = 'WEEK 4', file_name = 'Average potential epsilon (1,3) _')
+    epsilon_experiments(game, save = True, folder = 'WEEK 4', file_name = 'Average potential epsilon (1,3) random _')
 
     initial_action_profile = np.array([0,2])
     game.set_initial_action_profile(initial_action_profile)
 
-    epsilon_experiments(game, save = True, folder = 'WEEK 4', file_name = 'Average potential epsilon (0,2) _')
+    epsilon_experiments(game, save = True, folder = 'WEEK 4', file_name = 'Average potential epsilon (0,2) random _')
 
     # delta_experiments()
     
@@ -235,15 +244,26 @@ def test():
     
     # mean_potential_history = np.zeros((1, game.max_iter))
         
-    gameSetup = RandomIdenticalInterestGame(action_space, firstNE, secondNE, 0.25)
+    gameSetup = AsymmetricalIdenticalInterestGame(action_space, firstNE, secondNE, 0.25)
     # game = Game(gameSetup, algorithm = "log_linear_t", mu=mu)
     # game.set_initial_action_profile(secondNE)
     
-    game = Game(gameSetup, algorithm = "multiplicative_weight", max_iter = 5000, mu=mu)
+    game = Game(gameSetup, algorithm = "best_response", max_iter = 5000, mu=mu)
     game.set_initial_action_profile(secondNE)
-    game.play()
+    game.set_initial_action_profile(np.array([1,3]))
+
+    potentials_history = np.zeros((10, game.max_iter))
+
+    
+    for i in range(10):
+        game.play()
+        potentials_history[i] = np.transpose(game.potentials_history).copy()
+
+            
+    mean_potential_history = np.mean(potentials_history, 0)
     plot_payoff(game.gameSetup.payoff_player_1)
-    plot_potential(game.potentials_history)
+    plot_potential(mean_potential_history)
+    
     print(game.action_profile)
     plt.show(block = False)
     plt.pause(20)
@@ -253,4 +273,4 @@ def test():
 if __name__ == '__main__':
     
     test()
-    # cProfile.run('test()')
+    # cProfile.run('main()')

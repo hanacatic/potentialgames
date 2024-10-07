@@ -127,9 +127,9 @@ class Game:
         N = self.gameSetup.no_players
         delta = self.gameSetup.delta
         
-        return 1/max(epsilon/2, delta)*np.log(A**N*(1-epsilon/2)*(4/(epsilon*A**N*(epsilon/2)) - 1/(A**N*(epsilon/2))))
+        # return 1/max(epsilon/2, delta)*np.log(A**N*(1-epsilon/2)*(4/(epsilon*A**N*(epsilon/2)) - 1/(A**N*(epsilon/2))))
         
-        # return 1/max(epsilon, delta)*np.log(A**N/epsilon)
+        return 1/max(epsilon, delta)*np.log(A**N/epsilon)
 
     def compute_t(self, epsilon):
         
@@ -157,9 +157,9 @@ class Game:
         # self.gameSetup = gameSetup
         [self.players[i].reset_player(self.gameSetup.no_actions, self.gameSetup.utility_functions[i]) for i in range(0, self.gameSetup.no_players)]
 
-class RandomIdenticalInterestGame:
+class AsymmetricalIdenticalInterestGame:
     
-    def __init__(self, action_space, firstNE, secondNE, delta): 
+    def __init__(self, action_space, firstNE, secondNE, delta, payoff_matrix = None): 
         
         self.no_players = 2
         self.no_actions = len(action_space)
@@ -167,9 +167,12 @@ class RandomIdenticalInterestGame:
         self.firstNE = firstNE
         self.secondNE = secondNE
         self.delta = delta
-        self.generate_payoff_matrix()
+        if payoff_matrix:
+            self.set_payoff_matrix(payoff_matrix)
+        else:
+            self.generate_payoff_matrix()
         self.utility_functions = [self.utility_function_player_1, self.utility_function_player_2]
-    
+        
     def generate_payoff_matrix(self):
         
         self.payoff_player_1 = np.random.uniform(0.0, 1 - self.delta, size = (self.no_actions, self.no_actions))
@@ -185,7 +188,61 @@ class RandomIdenticalInterestGame:
             self.delta = delta
             
         self.generate_payoff_matrix()
+     
+    def set_payoff_matrix(self, payoff):
         
+        self.payoff_player_1 = payoff
+        self.payoff_player_2 = np.transpose(payoff)   
+        
+    def utility_function_player_1(self, player_action, opponents_action):
+
+        return self.payoff_player_1[player_action, opponents_action]
+
+    def utility_function_player_2(self, player_action, opponents_action):
+        
+        return self.payoff_player_2[player_action, opponents_action]
+
+    def potential_function(self, action_profile):
+        
+        return self.payoff_player_1[action_profile[0], action_profile[1]]
+    
+class SymmetricalIdenticalInterestGame:
+    
+    def __init__(self, action_space, firstNE, secondNE, delta, payoff_matrix = None): 
+        
+        self.no_players = 2
+        self.no_actions = len(action_space)
+        self.action_space = action_space
+        self.firstNE = firstNE
+        self.secondNE = secondNE
+        self.delta = delta
+        if payoff_matrix:
+            self.set_payoff_matrix(payoff_matrix)
+        else:
+            self.generate_payoff_matrix()
+        self.utility_functions = [self.utility_function_player_1, self.utility_function_player_2]
+    
+    def generate_payoff_matrix(self):
+        
+        self.payoff_player_1 = np.random.uniform(0.0, 1 - self.delta, size = (self.no_actions, self.no_actions))
+        
+        self.payoff_player_1[self.firstNE[0], self.firstNE[1]] = 1
+        self.payoff_player_1[self.secondNE[0], self.secondNE[1]] = 1 - self.delta
+        
+        self.payoff_player_2 = self.payoff_player_1
+    
+    def reset_payoff_matrix(self, delta = None):
+        
+        if delta:
+            self.delta = delta
+            
+        self.generate_payoff_matrix()
+        
+    def set_payoff_matrix(self, payoff):
+        
+        self.payoff_player_1 = payoff
+        self.payoff_player_2 = payoff
+         
     def utility_function_player_1(self, player_action, opponents_action):
 
         return self.payoff_player_1[player_action, opponents_action]
