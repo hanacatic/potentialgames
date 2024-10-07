@@ -10,7 +10,7 @@ class Game:
         
         self.gameSetup = gameSetup # all the game rules and game data
         self.algorithm = algorithm
-        self.max_iter = max_iter
+        self.max_iter = int(max_iter)
         
         self.players = np.array([ Player(i, self.gameSetup.no_actions, gameSetup.utility_functions[i]) for i in range(0, self.gameSetup.no_players)], dtype = object)
         
@@ -18,6 +18,7 @@ class Game:
         self.action_profile = self.sample_initial_action_profile(mu)
            
         self.potentials_history = np.zeros((self.max_iter, 1))
+        self.expected_value = None
                
     def sample_initial_action_profile(self, mu):
         
@@ -76,13 +77,21 @@ class Game:
     def log_linear_fast(self, beta):
         
         P = self.gameSetup.formulate_transition_matrix(beta)
+        self.gameSetup.formulate_potential_vec()
         mu0 = self.mu_matrix.copy()
+        
+        
+        
+        self.expected_value = np.zeros((int(self.max_iter), 1))
         
         for i in range(self.max_iter):
             
             mu = mu0 @ P
             
             mu0 = mu
+            
+            self.expected_value[i] = mu @ self.gameSetup.potential
+
         
         self.stationary = mu
                            
@@ -261,3 +270,10 @@ class IdenticalInterestGame:
         
         return self.payoff_player_1[action_profile[0], action_profile[1]]
     
+    def formulate_potential_vec(self):
+        
+        self.potential = np.zeros([self.no_action_profiles, 1])
+        
+        for i in range(self.no_actions):
+            for j in range(self.no_actions):
+                self.potential[i * self.no_actions + j, 0] = self.potential_function(np.array([i, j]))
