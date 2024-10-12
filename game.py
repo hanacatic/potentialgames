@@ -240,6 +240,7 @@ class IdenticalInterestGame:
         if self.type == "Asymmetrical": 
             self.payoff_player_2 = np.transpose(self.payoff_player_1)
         else: 
+            self.payoff_player_1 = (self.payoff_player_1 + np.transpose(self.payoff_player_1)) / 2
             self.payoff_player_2 = self.payoff_player_1
     
     def reset_payoff_matrix(self, delta = None):
@@ -252,9 +253,11 @@ class IdenticalInterestGame:
     def set_payoff_matrix(self, payoff):
         
         self.payoff_player_1 = payoff
+        
         if self.type == "Asymmetrical":
             self.payoff_player_2 = np.transpose(payoff)  
         else:
+            self.payoff_player_1 = (self.payoff_player_1 + np.transpose(self.payoff_player_1)) / 2
             self.payoff_player_2 = self.payoff_player_1 
         
     def utility_function_player_1(self, player_action, opponents_action):
