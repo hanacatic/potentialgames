@@ -1,14 +1,8 @@
 import numpy as np
-from game import Game, IdenticalInterestGame 
+from game import Game, IdenticalInterestGame, rng 
 from plot import *
-from helpers import beta_experiments, delta_experiments, epsilon_experiments
+from experiments import mu, beta_experiments, delta_experiments, epsilon_experiments
 import cProfile
-
-RATIONALITY = 100
-EPS = 0.5e-1
-    
-def mu(action_profile):
-    return 1.0/16.0
 
 def main():
     # action_space = [0, 1, 2, 3]
@@ -199,6 +193,7 @@ def test_transition_matrix():
     plt.close()
  
 def test_custom_game():
+    
     action_space = [0, 1, 2, 3, 4, 5, 6, 7, 8, 9]
 
     firstNE = np.array([2,2])
@@ -236,8 +231,42 @@ def test_custom_game():
     plt.show(block = False)
     plt.pause(20)
     plt.close()
+    
+def generate_exp_payoff_matrix(delta = 0.1):
+    
+    no_actions = 10
+    
+    firstNE = np.array([2,2])
+    secondNE = np.array([7,7])
+
+    b = 1 - delta 
+       
+    payoff = rng.random(size=np.array([10, 10])) * 0.1 * (1-delta)
+
+    payoff_firstNE = (rng.random(size=np.array([5, 5]))*0.6 + 0.4) * 0.7 * b
+    payoff_firstNE[1:4,1:4] = (rng.random(size=np.array([3, 3]))*0.2 + 0.8) * 0.9 * b
+    
+    payoff_secondNE = (rng.random(size=np.array([5, 5]))*0.65 + 0.35) * 0.6 * (1 - delta)
+    payoff_secondNE[1:4,1:4] = (rng.random(size=np.array([3, 3]))*0.15 + 0.85) * 0.8 * (1-delta)
+
+    payoff[0:5,0:5] = payoff_firstNE
+    payoff[-5::,-5::] = payoff_secondNE
+    
+    payoff[firstNE[0], firstNE[1]] = 1
+    payoff[secondNE[0], secondNE[1]] = 1 - delta
+    
+    return payoff
+
+    
 
 if __name__ == '__main__':
     
-    test_custom_game()
+    # test_custom_game()
+    
+    payoff = generate_exp_payoff_matrix()
+    plot_payoff(payoff)
+    plt.show(block = False)
+    plt.pause(20)
+    plt.close()
+
     # cProfile.run('main()')
