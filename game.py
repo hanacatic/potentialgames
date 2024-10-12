@@ -80,8 +80,6 @@ class Game:
         self.gameSetup.formulate_potential_vec()
         mu0 = self.mu_matrix.copy()
         
-        
-        
         self.expected_value = np.zeros((int(self.max_iter), 1))
         
         for i in range(self.max_iter):
@@ -199,10 +197,11 @@ class IdenticalInterestGame:
         self.delta = delta
         self.type = type
         
-        if payoff_matrix:
-            self.set_payoff_matrix(payoff_matrix)
-        else:
+        if payoff_matrix.all() == None:
             self.generate_payoff_matrix()
+        else:
+            self.set_payoff_matrix(payoff_matrix)
+
         self.utility_functions = [self.utility_function_player_1, self.utility_function_player_2]
         
     def formulate_transition_matrix(self, beta):
