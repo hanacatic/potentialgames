@@ -1,6 +1,6 @@
 import numpy as np
 from player import Player
-from helpers import rejection_sampling
+from potentialgames.aux_functions.helpers import rejection_sampling
 
 rng = np.random.default_rng()
 
