@@ -51,6 +51,8 @@ class Game:
                 self.log_linear_fast(beta)
             case "best_response":
                 self.best_response()
+            case "alpha_best_response":
+                self.alpha_best_response()
             case "multiplicative_weight":
                 self.multiplicative_weight()
             case _:
@@ -89,7 +91,6 @@ class Game:
             mu0 = mu
             
             self.expected_value[i] = mu @ self.gameSetup.potential
-
         
         self.stationary = mu
                            
@@ -118,6 +119,56 @@ class Game:
             opponents_actions = self.action_profile[mask] # extract the opponents actions from the action profile
         
             self.action_profile[player_id] = player.best_response(opponents_actions) # update the players action
+
+            self.potentials_history[i] = self.gameSetup.potential_function(self.action_profile) # compute the value of the potential function
+
+    def alpha_best_response(self):
+        
+        improvement = True
+        for i in range(self.max_iter):
+            
+            chosen_player = 0
+            chosen_player_action = self.action_profile[chosen_player]
+            best_improvement = 0
+            
+            # if improvement == False:
+            #     self.potentials_history[i] = self.gameSetup.potential_function(self.action_profile)
+            #     continue
+            # else:
+            #     improvement = False
+                
+            for player_id in range(0, self.gameSetup.no_players):
+                # print("----------------------------") 
+                # print("player_id")
+                # print(player_id)           
+                player = self.players[player_id]
+            
+                mask = np.arange(len(self.action_profile)) != player_id
+                opponents_actions = self.action_profile[mask] # extract the opponents actions from the action profile
+                
+                current_payoff = player.utility(self.action_profile[player_id], opponents_actions)
+                best_action = player.best_response(opponents_actions) # update the players action
+                
+                best_payoff  = player.utility(best_action, opponents_actions)
+                # print("best_payoff")
+                # print(best_payoff)
+                # print("current_payoff")
+                # print(current_payoff)
+                # print("best_action")
+                # print(best_action)
+                if best_payoff - current_payoff > best_improvement:
+                    
+                    chosen_player = player_id
+                    chosen_player_action = best_action
+                    best_improvement = best_payoff - current_payoff
+                    
+                    improvement = True
+            # print("chosen_player")
+            # print(chosen_player)
+            # print("best_improvement")
+            # print(best_improvement)  
+                         
+            self.action_profile[chosen_player] = chosen_player_action 
 
             self.potentials_history[i] = self.gameSetup.potential_function(self.action_profile) # compute the value of the potential function
     
@@ -197,7 +248,7 @@ class IdenticalInterestGame:
         self.delta = delta
         self.type = type
         
-        if payoff_matrix.all() == None:
+        if payoff_matrix is None:
             self.generate_payoff_matrix()
         else:
             self.set_payoff_matrix(payoff_matrix)
@@ -208,26 +259,26 @@ class IdenticalInterestGame:
     
         self.P = np.zeros([self.no_action_profiles, self.no_action_profiles])
         
-        for k in range(self.no_actions):
-            for j in range(self.no_actions):
-                
-                utilities = np.array([self.utility_functions[0](i, j) for i in range(self.no_actions)])
-                exp_values = np.exp(beta * utilities)
-        
-                p = exp_values/np.sum(exp_values)
-                
-                self.P[k*self.no_actions+j, j*self.no_actions:(j+1)*self.no_actions] += 1/self.no_players*p
-        
         for j in range(self.no_actions):
             for k in range(self.no_actions):
                 
-                utilities = np.array([self.utility_functions[1](i, k) for i in range(self.no_actions)])
+                utilities = np.array([self.utility_functions[0](i, k) for i in range(self.no_actions)])
                 exp_values = np.exp(beta * utilities)
         
                 p = exp_values/np.sum(exp_values)
                 
-                self.P[k*self.no_actions+j, k::self.no_actions] += 1/self.no_players*p
+                self.P[j*self.no_actions+k, k::self.no_actions] += 1/self.no_players*p
+
+        for j in range(self.no_actions):
+            for k in range(self.no_actions):
+                
+                utilities = np.array([self.utility_functions[1](i, j) for i in range(self.no_actions)])
+                exp_values = np.exp(beta * utilities)
         
+                p = exp_values/np.sum(exp_values)
+                
+                self.P[j*self.no_actions+k, j*self.no_actions:(j+1)*self.no_actions] += 1/self.no_players*p
+
         return self.P
            
     def generate_payoff_matrix(self):
@@ -279,3 +330,5 @@ class IdenticalInterestGame:
         for i in range(self.no_actions):
             for j in range(self.no_actions):
                 self.potential[i * self.no_actions + j, 0] = self.potential_function(np.array([i, j]))
+
+        # print(self.potential)

@@ -1,7 +1,7 @@
 import matplotlib.pyplot as plt
 import matplotlib.cm as cm
 
-def plot_payoff(payoff, title = "Payoff matrix", folder = None, save = False):
+def plot_payoff(payoff, title = "Payoff matrix", folder = None, save = False, file_name = "Payoff matrix"):
     
     f = plt.figure()
     plt.title(title)
@@ -12,7 +12,7 @@ def plot_payoff(payoff, title = "Payoff matrix", folder = None, save = False):
     plt.colorbar()
     
     if save:
-        plt.savefig('../' + folder + '/' + title + '.png')
+        plt.savefig('../' + folder + '/' + file_name + '.png')
     else:
         f.show()
 
