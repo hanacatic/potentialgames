@@ -421,6 +421,68 @@ def custom_game_experiments(delta):
     plt.close()
     # plt.show()
     
+def test_log_linear_t(delta = 0.25):
+    action_space = [0, 1, 2, 3]
+
+    firstNE = np.array([1,1])
+    secondNE = np.array([3,3])
+            
+    gameSetup = IdenticalInterestGame(action_space, firstNE, secondNE, delta)
+    
+    game = Game(gameSetup, algorithm = "log_linear_t",  max_iter = 5000, mu=mu)
+    game.set_initial_action_profile(secondNE)
+
+    game.set_initial_action_profile(np.array([1,3]))
+
+    potentials_history = np.zeros((10, game.max_iter))
+    
+    for i in range(10):
+        game.play()
+        potentials_history[i] = np.transpose(game.potentials_history).copy()
+
+            
+    mean_potential_history = np.mean(potentials_history, 0)
+    
+    std = np.std(potentials_history, 0)
+    plot_payoff(game.gameSetup.payoff_player_1)
+    plot_potential(mean_potential_history)
+    plot_potential_with_std(mean_potential_history, std)
+
+    plt.show(block = False)
+    plt.pause(60)
+    plt.close()
+
+def test_best_response(delta = 0.25):
+    
+    action_space = [0, 1, 2, 3]
+
+    firstNE = np.array([1,1])
+    secondNE = np.array([3,3])
+            
+    gameSetup = IdenticalInterestGame(action_space, firstNE, secondNE, delta)
+    
+    game = Game(gameSetup, algorithm = "best_response", max_iter = 5000, mu=mu)
+    game.set_initial_action_profile(secondNE)
+    game.set_initial_action_profile(np.array([1,3]))
+
+    potentials_history = np.zeros((10, game.max_iter))
+    
+    for i in range(10):
+        game.play()
+        potentials_history[i] = np.transpose(game.potentials_history).copy()
+
+    mean_potential_history = np.mean(potentials_history, 0)
+    std = np.std(potentials_history, 0)
+
+    plot_payoff(game.gameSetup.payoff_player_1)
+    plot_potential(mean_potential_history)
+    plot_potential_with_std(mean_potential_history, std)
+    
+    print(game.action_profile)
+    plt.show(block = False)
+    plt.pause(20)
+    plt.close()
+    
 def test_transition_matrix():
     
     action_space = [0, 1, 2, 3, 4, 5]
