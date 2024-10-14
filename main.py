@@ -127,9 +127,6 @@ def main():
     # plt.close()
 
 
-def custom_game_alg_experiments():
-    print("YES")
-    
 
 if __name__ == '__main__':
     
