@@ -160,40 +160,6 @@ def test():
     plt.pause(20)
     plt.close()
 
-def test_transition_matrix():
-    
-    action_space = [0, 1, 2, 3, 4, 5, 6, 7, 8, 9]
-
-    firstNE = np.array([1,1])
-    secondNE = np.array([3,3])
-    
-    # mean_potential_history = np.zeros((1, game.max_iter))
-        
-    gameSetup = IdenticalInterestGame(action_space, firstNE, secondNE, 0.25)
-    # game = Game(gameSetup, algorithm = "log_linear_t", mu=mu)
-    # game.set_initial_action_profile(secondNE)
-    
-    mu_matrix = np.zeros([1, len(action_space)**2])
-    mu_matrix[0, 15] = 1
-    # mu_matrix = np.ones([1, len(action_space)**2])
-    # mu_matrix /= np.sum(mu_matrix)
-    game = Game(gameSetup, algorithm = "log_linear_fast", max_iter = 1e4, mu=mu)
-    beta_t = game.compute_beta(0.01)
-    
-    game.set_mu_matrix(mu_matrix)
-    game.play(beta = beta_t)
-    print(game.stationary)
-    
-    stationary = np.reshape(game.stationary,(-1, game.gameSetup.no_actions))
-    plot_payoff(stationary)
-    plot_potential(game.expected_value)
-    
-    print(game.action_profile)
-    plt.show(block = False)
-    plt.pause(20)
-    plt.close()
-
-
         
 def custom_game_alg_experiments():
     print("YES")
@@ -204,6 +170,7 @@ if __name__ == '__main__':
     np.set_printoptions(threshold=sys.maxsize)
 
     # test_custom_game()
-    test_alpha_best_response(np.array([2,2]))
+    test_transition_matrix()
+    # test_alpha_best_response(np.array([2,2]))
     # custom_game_experiments(0.25)
     # cProfile.run('main()')

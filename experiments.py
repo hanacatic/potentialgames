@@ -421,6 +421,43 @@ def custom_game_experiments(delta):
     plt.close()
     # plt.show()
     
+def test_transition_matrix():
+    
+    action_space = [0, 1, 2, 3, 4, 5]
+
+    firstNE = np.array([1,1])
+    secondNE = np.array([3,3])
+    
+    delta = 0.25
+    payoff_matrix = generate_exp_payoff_matrix(delta)
+        
+    gameSetup = IdenticalInterestGame(action_space, firstNE, secondNE, delta = delta, payoff_matrix = payoff_matrix)
+
+    mu_matrix = np.zeros([1, len(action_space)**2])
+    mu_matrix[0, 15] = 1
+    
+    # mu_matrix = np.ones([1, len(action_space)**2])
+    # mu_matrix /= np.sum(mu_matrix)
+    
+    game = Game(gameSetup, algorithm = "log_linear_fast", max_iter = 1e6, mu=mu)
+    beta_t = game.compute_beta(0.1)
+    
+    game.set_mu_matrix(mu_matrix)
+    game.play(beta = beta_t)
+    
+    print("Stationary distribution: ")
+    print(game.stationary)
+    
+    stationary = np.reshape(game.stationary,(-1, game.gameSetup.no_actions))
+    
+    plot_payoff(game.gameSetup.P, title = "Transition matrix")
+    plot_payoff(stationary, title = "Stationary distribution")
+    plot_potential(game.expected_value)
+    
+    plt.show(block = False)
+    plt.pause(60)
+    plt.close()
+        
 def test_alpha_best_response(initial_action_profile):
     action_space = [0, 1, 2, 3, 4, 5]
 
