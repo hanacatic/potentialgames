@@ -1,7 +1,7 @@
 import numpy as np
 from game import Game, IdenticalInterestGame, rng 
-from potentialgames.aux_functions.plot import *
-from potentialgames.aux_functions.experiments import *
+from aux_functions.plot import *
+from aux_functions.experiments import *
 import cProfile
 import sys
 

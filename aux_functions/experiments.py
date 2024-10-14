@@ -1,6 +1,6 @@
 import numpy as np
 from game import Game,IdenticalInterestGame, rng
-from potentialgames.aux_functions.plot import *
+from aux_functions.plot import *
 
 RATIONALITY = 100
 EPS = 0.5e-1
