@@ -420,3 +420,26 @@ def custom_game_experiments(delta):
     plt.pause(20)
     plt.close()
     # plt.show()
+    
+def test_alpha_best_response(initial_action_profile):
+    action_space = [0, 1, 2, 3, 4, 5]
+
+    firstNE = np.array([1,1])
+    secondNE = np.array([4,4])
+    
+    delta = 0.25
+    payoff_matrix = generate_exp_payoff_matrix(delta)
+    
+    gameSetup = IdenticalInterestGame(action_space, firstNE, secondNE, delta = delta, payoff_matrix = payoff_matrix)
+    
+    game = Game(gameSetup, algorithm = "alpha_best_response", max_iter = 1e4, mu=mu)
+    game.set_initial_action_profile(initial_action_profile)
+
+    game.play()
+    
+    plot_payoff(game.gameSetup.payoff_player_1)
+    plot_potential(game.potentials_history)
+    
+    plt.show(block = False)
+    plt.pause(60)
+    plt.close()

@@ -1,7 +1,7 @@
 import numpy as np
 from game import Game, IdenticalInterestGame, rng 
 from plot import *
-from experiments import mu, beta_experiments, delta_experiments, epsilon_experiments, test_custom_game, custom_game_experiments, generate_exp_payoff_matrix
+from experiments import *
 import cProfile
 import sys
 
@@ -193,50 +193,7 @@ def test_transition_matrix():
     plt.pause(20)
     plt.close()
 
-def test_alpha_best_response():
-    action_space = [0, 1, 2, 3, 4, 5]
 
-    firstNE = np.array([1,1])
-    secondNE = np.array([4,4])
-    
-    # mean_potential_history = np.zeros((1, game.max_iter))
-    delta = 0.25
-    payoff_matrix = generate_exp_payoff_matrix(delta)
-    # payoff_matrix = np.zeros([6,6])
-    # payoff_matrix[0,0] = 1
-    # payoff_matrix[1,1] = 1
-    
-    gameSetup = IdenticalInterestGame(action_space, firstNE, secondNE, delta = delta, payoff_matrix = payoff_matrix)
-        # game = Game(gameSetup, algorithm = "log_linear_t", mu=mu)
-    
-    mu_matrix = np.zeros([1, len(action_space)**2])
-    mu_matrix[0, 15] = 1
-    # mu_matrix = np.ones([1, len(action_space)**2])
-    # mu_matrix /= np.sum(mu_matrix)
-    
-    game = Game(gameSetup, algorithm = "alpha_best_response", max_iter = 1e4, mu=mu)
-    game.set_initial_action_profile(np.array([3,3]))
-
-    n_exp = 10
-    for _ in range(n_exp):
-                
-        potentials_history = np.zeros((n_exp, game.max_iter))
-        for i in range(0, n_exp):
-            game.play()
-            potentials_history[i] = np.transpose(game.potentials_history).copy()
-
-            
-    mean_potential_history = np.mean(potentials_history, 0)
-
-    game.play()
-    
-    plot_payoff(game.gameSetup.payoff_player_1)
-    plot_potential(mean_potential_history)
-    
-    print(game.action_profile)
-    plt.show(block = False)
-    plt.pause(20)
-    plt.close()
         
 def custom_game_alg_experiments():
     print("YES")
@@ -247,6 +204,6 @@ if __name__ == '__main__':
     np.set_printoptions(threshold=sys.maxsize)
 
     # test_custom_game()
-    test_alpha_best_response()
+    test_alpha_best_response(np.array([2,2]))
     # custom_game_experiments(0.25)
     # cProfile.run('main()')
