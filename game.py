@@ -131,16 +131,14 @@ class Game:
             chosen_player_action = self.action_profile[chosen_player]
             best_improvement = 0
             
-            # if improvement == False:
-            #     self.potentials_history[i] = self.gameSetup.potential_function(self.action_profile)
-            #     continue
-            # else:
-            #     improvement = False
+            if improvement == False:
+                self.potentials_history[i] = self.gameSetup.potential_function(self.action_profile)
+                continue
+            else:
+                improvement = False
                 
             for player_id in range(0, self.gameSetup.no_players):
-                # print("----------------------------") 
-                # print("player_id")
-                # print(player_id)           
+                          
                 player = self.players[player_id]
             
                 mask = np.arange(len(self.action_profile)) != player_id
@@ -150,12 +148,7 @@ class Game:
                 best_action = player.best_response(opponents_actions) # update the players action
                 
                 best_payoff  = player.utility(best_action, opponents_actions)
-                # print("best_payoff")
-                # print(best_payoff)
-                # print("current_payoff")
-                # print(current_payoff)
-                # print("best_action")
-                # print(best_action)
+
                 if best_payoff - current_payoff > best_improvement:
                     
                     chosen_player = player_id
@@ -163,10 +156,6 @@ class Game:
                     best_improvement = best_payoff - current_payoff
                     
                     improvement = True
-            # print("chosen_player")
-            # print(chosen_player)
-            # print("best_improvement")
-            # print(best_improvement)  
                          
             self.action_profile[chosen_player] = chosen_player_action 
 
@@ -330,5 +319,3 @@ class IdenticalInterestGame:
         for i in range(self.no_actions):
             for j in range(self.no_actions):
                 self.potential[i * self.no_actions + j, 0] = self.potential_function(np.array([i, j]))
-
-        # print(self.potential)
