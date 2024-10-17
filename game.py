@@ -34,7 +34,7 @@ class Game:
         
         self.mu_matrix = mu_matrix
 
-    def play(self, initial_action_profile = None, beta = None):
+    def play(self, initial_action_profile = None, beta = None, scale_factor = 1):
         
         if initial_action_profile == None:
             self.action_profile = self.initial_action_profile.copy()
@@ -48,7 +48,7 @@ class Game:
                 self.log_linear_t()
             case "log_linear_fast":
                 # self.set_mu_matrix(mu_matrix)
-                self.log_linear_fast(beta)
+                self.log_linear_fast(beta, scale_factor)
             case "best_response":
                 self.best_response()
             case "alpha_best_response":
@@ -76,13 +76,16 @@ class Game:
             
             self.log_linear_iteration(i, beta)
     
-    def log_linear_fast(self, beta):
+    def log_linear_fast(self, beta, scale_factor):
         
         P = self.gameSetup.formulate_transition_matrix(beta)
         self.gameSetup.formulate_potential_vec()
         mu0 = self.mu_matrix.copy()
         
         self.expected_value = np.zeros((int(self.max_iter), 1))
+        
+        P = np.linalg.matrix_power(P, scale_factor)
+        # P = np.linalg.matrix_power(P, 10)
         
         for i in range(self.max_iter):
             

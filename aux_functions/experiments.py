@@ -161,7 +161,7 @@ def beta_experiments_fast(game, eps = 0.1, save = False, folder = None, file_nam
         plt.pause(20)
         plt.close()
  
-def epsilon_experiments_fast(game, epsilons = [0.2, 0.1, 0.05, 0.01, 0.001], save = False, folder = None, file_name = None, title = 'Expected potential value'):
+def epsilon_experiments_fast(game, epsilons = [0.2, 0.1, 0.05, 0.01, 0.001], scale_factor = 1, save = False, folder = None, file_name = None, title = 'Expected potential value'):
     
     potentials_history = np.zeros((10, game.max_iter))
     
@@ -171,8 +171,8 @@ def epsilon_experiments_fast(game, epsilons = [0.2, 0.1, 0.05, 0.01, 0.001], sav
         
         beta = game.compute_beta(eps)
         print(beta)
-        
-        game.play(beta=beta)
+        print(game.compute_t(eps))
+        game.play(beta = beta, scale_factor = scale_factor)
             
         potentials_history[idx] = np.transpose(game.expected_value)
                         
@@ -585,7 +585,7 @@ def custom_game_experiments(delta):
     # payoff_matrix[0,0] = 1
     # payoff_matrix[1,1] = 1
     
-    gameSetup = IdenticalInterestGame(action_space, firstNE, secondNE, type = "Symmetrical", delta = delta, payoff_matrix = payoff_matrix)
+    gameSetup = IdenticalInterestGame(action_space, firstNE, secondNE, delta = delta, payoff_matrix = payoff_matrix)
     
     mu_matrix = np.ones([1, len(action_space)**2])
     mu_matrix /= np.sum(mu_matrix)
@@ -594,13 +594,13 @@ def custom_game_experiments(delta):
     # mu_matrix[0, 66] = 1
     mu_matrix[0, 28] = 1
     
-    game = Game(gameSetup, algorithm = "log_linear_fast", max_iter = 2*1e7, mu=mu)
+    game = Game(gameSetup, algorithm = "log_linear_fast", max_iter = 1e6, mu=mu)
     game.set_mu_matrix(mu_matrix)
 
     # beta_t = game.compute_beta(0.1)
     # game.play(beta = beta_t)
     
-    beta_experiments_fast(game, save = True, folder = "WEEK 5", file_name = "betas_experiment_fast_secondNE_real_symmetrical_2")
+    # beta_experiments_fast(game, save = True, folder = "WEEK 5", file_name = "betas_experiment_fast_secondNE_real_symmetrical_2")
     
     
     # mu_matrix = np.zeros([1, len(action_space)**2])
@@ -625,8 +625,7 @@ def custom_game_experiments(delta):
     # # # mu_matrix[0, 66] = 1
     # # mu_matrix[0, 5] = 1
     # # game.set_mu_matrix(mu_matrix)
-    
-    # # epsilon_experiments_fast(game, save = True, folder = "WEEK 5", file_name = "eps_experiment_fast_valley_real_4")
+    epsilon_experiments_fast(game, save = True, folder = "WEEK 6", file_name = "eps_experiment_fast_faster_unifrom_real_less_zoom")
     
     # # mu_matrix = np.zeros([1, len(action_space)**2])
     # # # mu_matrix[0, 66] = 1
@@ -642,7 +641,7 @@ def custom_game_experiments(delta):
     # epsilon_experiments_fast(game, save = True, folder = "WEEK 5", file_name = "eps_experiment_fast_uniform_real_symmetrical")
 
     
-    # # delta_experiments_fast(game, save = True, folder = "WEEK 5", file_name = "delta_experiment_fast_secondNE_real_2")
+    # delta_experiments_fast(game, save = True, folder = "WEEK 6", file_name = "delta_experiment_fast_faster_unifrom_real_4")
     
     
     # # mu_matrix = np.zeros([1, len(action_space)**2])
@@ -677,3 +676,75 @@ def custom_game_experiments(delta):
     plt.pause(20)
     plt.close()
     # plt.show()
+
+def epsilon_experiments(delta):
+     
+    # action_space = [0, 1, 2, 3, 4, 5, 6, 7, 8, 9]
+
+    # firstNE = np.array([2,2])
+    # secondNE = np.array([7,7])
+    
+    action_space = [0, 1, 2, 3, 4, 5]
+
+    firstNE = np.array([1,1])
+    secondNE = np.array([4,4])
+    
+    payoff_matrix = generate_exp_payoff_matrix(0.25)
+    # payoff_matrix = np.zeros([6,6])
+    # payoff_matrix[0,0] = 1
+    # payoff_matrix[1,1] = 1
+    
+    gameSetup = IdenticalInterestGame(action_space, firstNE, secondNE, delta = delta, payoff_matrix = payoff_matrix)
+    
+    mu_matrix = np.ones([1, len(action_space)**2])
+    mu_matrix /= np.sum(mu_matrix)
+    
+    mu_matrix = np.zeros([1, len(action_space)**2])
+    # mu_matrix[0, 66] = 1
+    mu_matrix[0, 28] = 1
+    
+    game = Game(gameSetup, algorithm = "log_linear_fast", max_iter = 1e6, mu=mu)
+    game.set_mu_matrix(mu_matrix)
+
+    epsilon_experiments_fast(game, save = True, folder = "WEEK 6", file_name = "eps_experiment_fast_faster_unifrom_real_scale_1")
+    epsilon_experiments_fast(game, save = True, folder = "WEEK 6", scale_factor = 50, file_name = "eps_experiment_fast_faster_unifrom_real_scale_50")
+    epsilon_experiments_fast(game, save = True, folder = "WEEK 6", scale_factor = 5000, file_name = "eps_experiment_fast_faster_unifrom_real_scale_5000")
+    epsilon_experiments_fast(game, save = True, folder = "WEEK 6", scale_factor = 1000000, file_name = "eps_experiment_fast_faster_unifrom_real_scale_mil")
+
+def test_epsilon(initial_action_profile):
+    
+    action_space = [0, 1, 2, 3, 4, 5]
+
+    firstNE = np.array([1,1])
+    secondNE = np.array([3,3])
+    
+    delta = 0.05
+    payoff_matrix = generate_exp_payoff_matrix(delta)
+    plot_payoff(payoff_matrix)
+    gameSetup = IdenticalInterestGame(action_space, firstNE, secondNE, delta = delta, payoff_matrix = payoff_matrix)
+
+    # mu_matrix = np.zeros([1, len(action_space)**2])
+    # mu_matrix[0, 15] = 1
+    
+    mu_matrix = np.ones([1, len(action_space)**2])
+    mu_matrix /= np.sum(mu_matrix)
+    
+    game = Game(gameSetup, algorithm = "log_linear_fast", max_iter = 1e7, mu=mu)
+    beta_t = game.compute_beta(0.1)
+    
+    game.set_mu_matrix(mu_matrix)
+    game.play(beta = beta_t)
+    print(beta_t)
+
+    print("Stationary distribution: ")
+    print(game.stationary)
+    
+    stationary = np.reshape(game.stationary,(-1, game.gameSetup.no_actions))
+    
+    plot_payoff(game.gameSetup.P, title = "Transition matrix")
+    plot_payoff(stationary, title = "Stationary distribution")
+    plot_potential(game.expected_value)
+    
+    plt.show(block = False)
+    plt.pause(60)
+    plt.close()

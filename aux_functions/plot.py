@@ -10,7 +10,6 @@ def plot_payoff(payoff, title = "Payoff matrix", folder = None, save = False, fi
     plt.title(title, fontsize=15)
     plt.imshow(payoff)
     plt.colorbar()
-    
     if save:
         plt.savefig('../' + folder + '/' + file_name + '.png')
     else:
@@ -24,6 +23,8 @@ def plot_potential(mean_potential, title = 'Average potential', file_name = None
     plt.xlabel('time', fontsize=10)
     plt.title(title, fontsize=15)
     plt.ylim(0, 1.1)
+    
+    plt.grid()
     
     if save:
         plt.savefig('../' + folder + '/' + file_name + '.png')
