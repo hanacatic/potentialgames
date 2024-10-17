@@ -220,27 +220,6 @@ def delta_experiments_fast(game, deltas = [0.9, 0.75, 0.5, 0.25, 0.1], eps = 0.1
         plt.close()
 
 def generate_two_plateau_payoff_matrix(delta = 0.1, no_actions = 6):
-    
-    # no_actions = 10
-    
-    # firstNE = np.array([2,2])
-    # secondNE = np.array([7,7])
-
-    # b = 1 - delta 
-       
-    # payoff = rng.random(size=np.array([10, 10])) * 0.2 * (1-delta)
-
-    # payoff_firstNE = (rng.random(size=np.array([5, 5]))*0.6 + 0.4) * 0.75 * b
-    # payoff_firstNE[1:4,1:4] = (rng.random(size=np.array([3, 3]))*0.2 + 0.8) * 0.9 * b
-    
-    # payoff_secondNE = (rng.random(size=np.array([5, 5]))*0.65 + 0.35) * 0.5 * (1 - delta)
-    # payoff_secondNE[1:4,1:4] = (rng.random(size=np.array([3, 3]))*0.15 + 0.85) * 0.9 * (1-delta)
-
-    # payoff[0:5,0:5] = payoff_firstNE
-    # payoff[-5::,-5::] = payoff_secondNE
-    
-    # payoff[firstNE[0], firstNE[1]] = 1
-    # payoff[secondNE[0], secondNE[1]] = 1 - delta
         
     firstNE = np.array([1,1])
     secondNE = np.array([no_actions-2, no_actions-2])
@@ -260,6 +239,26 @@ def generate_two_plateau_payoff_matrix(delta = 0.1, no_actions = 6):
     
     payoff[firstNE[0], firstNE[1]] = 1
     payoff[secondNE[0], secondNE[1]] = 1 - delta
+    
+    return payoff
+
+def generate_one_plateau_payoff_matrix(delta = 0.1, no_actions = 6, trench = None):
+        
+    firstNE = np.array([1,1])
+    secondNE = np.array([no_actions-2, no_actions-2])
+
+    b = 1 - delta 
+    if trench is None:
+        trench = 0.5 * (1-delta)
+        
+    payoff = (rng.random(size=np.array([no_actions, no_actions])) *0.25 + 0.75) * trench
+
+    payoff_firstNE= (rng.random(size=np.array([3, 3]))*0.25 + 0.75) * b
+    
+    payoff[0:3,0:3] = payoff_firstNE
+    
+    payoff[firstNE[0], firstNE[1]] = 1
+    payoff[firstNE[0]+1, firstNE[1]+1] = 1 - delta
     
     return payoff
 
