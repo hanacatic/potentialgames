@@ -196,7 +196,7 @@ def delta_experiments_fast(game, deltas = [0.9, 0.75, 0.5, 0.25, 0.1], eps = 0.1
     for idx, delta in enumerate(deltas):
         
         print(delta)
-        payoff_matrix = generate_exp_payoff_matrix(delta)
+        payoff_matrix = generate_two_plateau_payoff_matrix(delta)
         game.gameSetup.set_payoff_matrix(payoff_matrix)
         game.reset_game()
         plot_payoff(game.gameSetup.payoff_player_1, save = save, folder = folder, file_name = "Payoff matrix " + file_name + str(delta) )
@@ -219,7 +219,7 @@ def delta_experiments_fast(game, deltas = [0.9, 0.75, 0.5, 0.25, 0.1], eps = 0.1
         plt.pause(20)
         plt.close()
 
-def generate_exp_payoff_matrix(delta = 0.1):
+def generate_two_plateau_payoff_matrix(delta = 0.1, no_actions = 6):
     
     # no_actions = 10
     
@@ -241,16 +241,13 @@ def generate_exp_payoff_matrix(delta = 0.1):
     
     # payoff[firstNE[0], firstNE[1]] = 1
     # payoff[secondNE[0], secondNE[1]] = 1 - delta
-    
-    
-    no_actions = 6
-    
+        
     firstNE = np.array([1,1])
-    secondNE = np.array([4,4])
+    secondNE = np.array([no_actions-2, no_actions-2])
 
     b = 1 - delta 
        
-    payoff = rng.random(size=np.array([6, 6])) * 0.25 * (1-delta)
+    payoff = rng.random(size=np.array([no_actions, no_actions])) * 0.25 * (1-delta)
 
     # payoff_firstNE = (rng.random(size=np.array([5, 5]))*0.6 + 0.4) * 0.75 * b
     payoff_firstNE= (rng.random(size=np.array([3, 3]))*0.3 + 0.7) * b
@@ -392,7 +389,7 @@ def test_transition_matrix():
     secondNE = np.array([3,3])
     
     delta = 0.25
-    payoff_matrix = generate_exp_payoff_matrix(delta)
+    payoff_matrix = generate_two_plateau_payoff_matrix(delta)
         
     gameSetup = IdenticalInterestGame(action_space, firstNE, secondNE, delta = delta, payoff_matrix = payoff_matrix)
 
@@ -428,7 +425,7 @@ def test_alpha_best_response(initial_action_profile):
     secondNE = np.array([4,4])
     
     delta = 0.25
-    payoff_matrix = generate_exp_payoff_matrix(delta)
+    payoff_matrix = generate_two_plateau_payoff_matrix(delta)
     
     gameSetup = IdenticalInterestGame(action_space, firstNE, secondNE, delta = delta, payoff_matrix = payoff_matrix)
     
@@ -580,7 +577,7 @@ def custom_game_experiments(delta):
     firstNE = np.array([1,1])
     secondNE = np.array([4,4])
     
-    payoff_matrix = generate_exp_payoff_matrix(0.25)
+    payoff_matrix = generate_two_plateau_payoff_matrix(0.25)
     # payoff_matrix = np.zeros([6,6])
     # payoff_matrix[0,0] = 1
     # payoff_matrix[1,1] = 1
@@ -689,7 +686,7 @@ def epsilon_experiments(delta):
     firstNE = np.array([1,1])
     secondNE = np.array([4,4])
     
-    payoff_matrix = generate_exp_payoff_matrix(0.25)
+    payoff_matrix = generate_two_plateau_payoff_matrix(0.25)
     # payoff_matrix = np.zeros([6,6])
     # payoff_matrix[0,0] = 1
     # payoff_matrix[1,1] = 1
@@ -719,7 +716,7 @@ def test_epsilon(initial_action_profile):
     secondNE = np.array([3,3])
     
     delta = 0.05
-    payoff_matrix = generate_exp_payoff_matrix(delta)
+    payoff_matrix = generate_two_plateau_payoff_matrix(delta)
     plot_payoff(payoff_matrix)
     gameSetup = IdenticalInterestGame(action_space, firstNE, secondNE, delta = delta, payoff_matrix = payoff_matrix)
 
