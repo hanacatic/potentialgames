@@ -94,7 +94,7 @@ def plot_lines(lines_to_plot, list_labels, plot_e_efficient = False, title = 'Av
     plt.title(title, fontsize=15)
     plt.ylim(0, 1.1)
     plt.legend(loc="lower right")
-    
+    plt.grid()
     if save:
         plt.savefig('../' + folder + '/' + file_name + '.png')
     else:

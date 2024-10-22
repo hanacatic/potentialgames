@@ -447,6 +447,44 @@ def test_alpha_best_response(initial_action_profile):
     plt.pause(60)
     plt.close()
 
+def test_epsilon(initial_action_profile):
+    
+    action_space = [0, 1, 2, 3, 4, 5]
+
+    firstNE = np.array([1,1])
+    secondNE = np.array([3,3])
+    
+    delta = 0.05
+    payoff_matrix = generate_two_plateau_payoff_matrix(delta)
+    plot_payoff(payoff_matrix)
+    gameSetup = IdenticalInterestGame(action_space, firstNE, secondNE, delta = delta, payoff_matrix = payoff_matrix)
+
+    # mu_matrix = np.zeros([1, len(action_space)**2])
+    # mu_matrix[0, 15] = 1
+    
+    mu_matrix = np.ones([1, len(action_space)**2])
+    mu_matrix /= np.sum(mu_matrix)
+    
+    game = Game(gameSetup, algorithm = "log_linear_fast", max_iter = 1e7, mu=mu)
+    beta_t = game.compute_beta(0.1)
+    
+    game.set_mu_matrix(mu_matrix)
+    game.play(beta = beta_t)
+    print(beta_t)
+
+    print("Stationary distribution: ")
+    print(game.stationary)
+    
+    stationary = np.reshape(game.stationary,(-1, game.gameSetup.no_actions))
+    
+    plot_payoff(game.gameSetup.P, title = "Transition matrix")
+    plot_payoff(stationary, title = "Stationary distribution")
+    plot_potential(game.expected_value)
+    
+    plt.show(block = False)
+    plt.pause(60)
+    plt.close()
+    
 def custom_game_alg_experiments(delta = 0.25, eps = 0.1, n_exp = 10, max_iter = 100000):
     
     action_space = [0, 1, 2, 3, 4, 5]
@@ -585,7 +623,7 @@ def custom_game_alg_experiments(delta = 0.25, eps = 0.1, n_exp = 10, max_iter = 
         plt.pause(60)
         plt.close()
 
-def compare_log_linear_t(delta = 0.25, max_iter = 100000):
+def compare_log_linear_t(delta = 0.25, max_iter = 200000):
     action_space = [0, 1, 2, 3, 4, 5]
 
     firstNE = np.array([1,1])
@@ -658,9 +696,7 @@ def compare_log_linear_t(delta = 0.25, max_iter = 100000):
         plt.show(block = False)
         plt.pause(60)
         plt.close()
-
-
-    
+  
 def main_simulation_experiment():
     # action_space = [0, 1, 2, 3]
     
@@ -876,6 +912,85 @@ def custom_game_experiments(delta):
     plt.close()
     # plt.show()
 
+def custom_game_no_actions_experiments(k = [6, 8, 12, 18], delta = 0.25, eps = 1e-1, max_iter = 1000000):
+    
+    action_spaces = []
+    payoff_matrices = []
+    gameSetups = []
+    games = []
+    scale_factor = 50
+    expected_values = np.zeros((len(k)+1, max_iter))
+    # UNIFORM
+    save = True
+    folder = 'WEEK 6'
+    
+    for idx, no_actions in enumerate(k):
+        action_spaces.append(np.arange(0, no_actions, 1))
+        payoff_matrices.append(generate_two_plateau_payoff_matrix(delta = delta, no_actions = len(action_spaces[idx])))
+        gameSetups.append(IdenticalInterestGame(action_spaces[idx],  np.array([1,1]), np.array([no_actions-2, no_actions-2]), delta = delta, payoff_matrix = payoff_matrices[idx]))        
+        plot_payoff(payoff_matrices[idx], save = save, folder = folder, file_name = "Payoff matrix no_actions_" + str(no_actions) + "_experiments")
+        
+        mu_matrix = np.ones([1, no_actions**2])
+        mu_matrix /= np.sum(mu_matrix)
+        games.append(Game(gameSetups[idx], algorithm = "log_linear_fast", max_iter = max_iter, mu=mu))
+        games[idx].set_mu_matrix(mu_matrix)
+        
+        beta = games[idx].compute_beta(eps)
+        print(beta)
+        print(games[idx].compute_t(eps))
+        games[idx].play(beta = beta, scale_factor = scale_factor)
+            
+        expected_values[idx] = np.transpose(games[idx].expected_value)
+        
+        # plot_potential(expected_values[idx])
+                        
+    
+    expected_values[len(k)] = (1 - eps) * np.ones((1, max_iter))
+    labels = [r'k = 6', r'k = 8', r'k = 12', r'k = 18',  r'$\epsilon = 0.1$']
+
+    plot_lines(expected_values, labels, plot_e_efficient = True, title = 'Expected potential value', save = save, folder = folder, file_name = 'comparison_no_actions_uniform')
+    
+    # SECOND NE
+    for idx, no_actions in enumerate(k):
+       
+        mu_matrix = np.zeros([1, no_actions**2])
+        mu_matrix[0, (no_actions - 2)*no_actions + no_actions - 2] = 1
+        # mu_matrix /= np.sum(mu_matrix)
+        games[idx].set_mu_matrix(mu_matrix)
+        
+        beta = games[idx].compute_beta(eps)
+        print(beta)
+        print(games[idx].compute_t(eps))
+        games[idx].play(beta = beta, scale_factor = scale_factor)
+            
+        expected_values[idx] = np.transpose(games[idx].expected_value)
+        
+    plot_lines(expected_values, labels, plot_e_efficient = True, title = 'Expected potential value', save = save, folder = folder, file_name = 'comprison_no_actions_secondNE')
+    
+    # trench
+    for idx, no_actions in enumerate(k):
+       
+        mu_matrix = np.zeros([1, no_actions**2])
+        if no_actions == 6:
+            mu_matrix[0, 6*2 + 3] = 1
+        else:
+            mu_matrix[0, no_actions*(int(no_actions/2) - 1) + (int(no_actions/2) - 1) ] = 1
+            print("correct element? ")
+            print(payoff_matrices[idx][4,4])
+        # mu_matrix /= np.sum(mu_matrix)
+        games[idx].set_mu_matrix(mu_matrix)
+        
+        beta = games[idx].compute_beta(eps)
+        print(beta)
+        print(games[idx].compute_t(eps))
+        games[idx].play(beta = beta, scale_factor = scale_factor)
+            
+        expected_values[idx] = np.transpose(games[idx].expected_value)
+        
+    plot_lines(expected_values, labels, plot_e_efficient = True, title = 'Expected potential value', save = save, folder = folder, file_name = 'comprison_no_actions_trench')
+    
+    plt.show()
+    
 def epsilon_experiments(delta):
      
     action_space = [0, 1, 2, 3, 4, 5, 6, 7, 8, 9]
@@ -909,41 +1024,3 @@ def epsilon_experiments(delta):
     epsilon_experiments_fast(game, save = save, folder = "WEEK 6", scale_factor = 50, file_name = "eps_experiment_fast_faster_unifrom_real_scale_50")
     epsilon_experiments_fast(game, save = save, folder = "WEEK 6", scale_factor = 5000, file_name = "eps_experiment_fast_faster_unifrom_real_scale_5000")
     epsilon_experiments_fast(game, save = save, folder = "WEEK 6", scale_factor = 1000000, file_name = "eps_experiment_fast_faster_unifrom_real_scale_mil")
-
-def test_epsilon(initial_action_profile):
-    
-    action_space = [0, 1, 2, 3, 4, 5]
-
-    firstNE = np.array([1,1])
-    secondNE = np.array([3,3])
-    
-    delta = 0.05
-    payoff_matrix = generate_two_plateau_payoff_matrix(delta)
-    plot_payoff(payoff_matrix)
-    gameSetup = IdenticalInterestGame(action_space, firstNE, secondNE, delta = delta, payoff_matrix = payoff_matrix)
-
-    # mu_matrix = np.zeros([1, len(action_space)**2])
-    # mu_matrix[0, 15] = 1
-    
-    mu_matrix = np.ones([1, len(action_space)**2])
-    mu_matrix /= np.sum(mu_matrix)
-    
-    game = Game(gameSetup, algorithm = "log_linear_fast", max_iter = 1e7, mu=mu)
-    beta_t = game.compute_beta(0.1)
-    
-    game.set_mu_matrix(mu_matrix)
-    game.play(beta = beta_t)
-    print(beta_t)
-
-    print("Stationary distribution: ")
-    print(game.stationary)
-    
-    stationary = np.reshape(game.stationary,(-1, game.gameSetup.no_actions))
-    
-    plot_payoff(game.gameSetup.P, title = "Transition matrix")
-    plot_payoff(stationary, title = "Stationary distribution")
-    plot_potential(game.expected_value)
-    
-    plt.show(block = False)
-    plt.pause(60)
-    plt.close()

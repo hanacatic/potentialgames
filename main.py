@@ -12,8 +12,9 @@ if __name__ == '__main__':
     # custom_game_experiments(0.1)
     # custom_game_alg_experiments()
     # test_log_linear_t()
-    compare_log_linear_t()
+    # compare_log_linear_t()
     # epsilon_experiments_fast
     # test_custom_game()
     # epsilon_experiments(0.25)
+    custom_game_no_actions_experiments()
     # cProfile.run('main_simulation_experiment()')
