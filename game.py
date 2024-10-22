@@ -43,9 +43,12 @@ class Game:
         
         match self.algorithm:
             case "log_linear":
+                print(beta)
                 self.log_linear(beta)
             case "log_linear_t":
-                self.log_linear_t()
+                self.log_linear_t(beta)
+            case "log_linear_tatarenko":
+                self.log_linear_tatarenko()
             case "log_linear_fast":
                 # self.set_mu_matrix(mu_matrix)
                 self.log_linear_fast(beta, scale_factor)
@@ -64,18 +67,29 @@ class Game:
             
             self.log_linear_iteration(i, beta)
     
-    def log_linear_t(self):
-        
+    def log_linear_t(self, beta_t):
+        print(beta_t)
+        for i in range(self.max_iter): 
+            
+            beta = beta_t*(1/self.gameSetup.no_players *np.log(1+i)/(1+ 1/self.gameSetup.no_players * np.log(i+1)))
+            # beta = beta_t*(np.log(1+i)/(1 + np.log(i+1)))
+
+            
+            self.log_linear_iteration(i, beta)
+            
+    def log_linear_tatarenko(self):
+
         for i in range(self.max_iter): 
 
             # beta = np.log(i+1)*(self.gameSetup.no_players**2+1)/self.gameSetup.no_players
             
             # beta = np.log(i+1)
             
-            beta = min((i+1), 500)
-            
+            beta = min((i+1), 500) # Tatarenko
+
+  
             self.log_linear_iteration(i, beta)
-    
+            
     def log_linear_fast(self, beta, scale_factor):
         
         P = self.gameSetup.formulate_transition_matrix(beta)
@@ -85,6 +99,7 @@ class Game:
         self.expected_value = np.zeros((int(self.max_iter), 1))
         
         P = np.linalg.matrix_power(P, scale_factor)
+        
         # P = np.linalg.matrix_power(P, 10)
         
         for i in range(self.max_iter):
@@ -222,6 +237,9 @@ class Game:
         self.potentials_history = np.zeros((self.max_iter, 1))
         self.player_converged_history = np.zeros((self.max_iter, 1))
     
+    def set_algorithm(self, algorithm):
+        self.algorithm = algorithm
+        
     def reset_game(self):
         
         # self.gameSetup = gameSetup

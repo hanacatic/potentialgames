@@ -42,12 +42,40 @@ def plot_potential_with_std(mean_potential, std, title = 'Average potential', fi
     plt.xlabel('time', fontsize=10)
     plt.title(title)
     plt.ylim(0, 1.1)
+    plt.grid()
 
     if save:
         plt.savefig('../' + folder + '/' + file_name + '.png')
     else:
         f.show()
-
+        
+def plot_lines_with_std(lines_to_plot, std, list_labels, plot_e_efficient = False, title = 'Average potential', file_name = None, folder = None, save = False):
+    
+    f = plt.figure()
+    f.clf()
+    
+    for idx, element in enumerate(lines_to_plot):
+        if plot_e_efficient == False or (idx < len(lines_to_plot) - 1 and plot_e_efficient):
+            line, = plt.plot(element, label = list_labels[idx])
+            line_colour = line.get_color()
+            plt.fill_between(range(0, len(element)), element - std[idx], element + std[idx],
+    alpha=0.2, edgecolor=line_colour, facecolor=line_colour, linewidth=4, antialiased=True)
+        elif plot_e_efficient:
+            plt.plot(element, 'k--', label =  list_labels[idx])
+        
+        
+    # plt.xlabel('Potential', fontsize=15)
+    plt.xlabel('time', fontsize=10)
+    plt.legend(fontsize=15)
+    plt.title(title, fontsize=15)
+    plt.ylim(0, 1.1)
+    plt.legend(loc="lower right")
+    
+    if save:
+        plt.savefig('../' + folder + '/' + file_name + '.png')
+    else:
+        f.show()
+        
 def plot_lines(lines_to_plot, list_labels, plot_e_efficient = False, title = 'Average potential', file_name = None, folder = None, save = False):
     
     f = plt.figure()
