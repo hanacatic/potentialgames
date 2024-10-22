@@ -918,7 +918,7 @@ def custom_game_no_actions_experiments(k = [6, 8, 12, 18], delta = 0.25, eps = 1
     payoff_matrices = []
     gameSetups = []
     games = []
-    scale_factor = 50
+    scale_factor =  5000 #100
     expected_values = np.zeros((len(k)+1, max_iter))
     # UNIFORM
     save = True
@@ -928,7 +928,7 @@ def custom_game_no_actions_experiments(k = [6, 8, 12, 18], delta = 0.25, eps = 1
         action_spaces.append(np.arange(0, no_actions, 1))
         payoff_matrices.append(generate_two_plateau_payoff_matrix(delta = delta, no_actions = len(action_spaces[idx])))
         gameSetups.append(IdenticalInterestGame(action_spaces[idx],  np.array([1,1]), np.array([no_actions-2, no_actions-2]), delta = delta, payoff_matrix = payoff_matrices[idx]))        
-        plot_payoff(payoff_matrices[idx], save = save, folder = folder, file_name = "Payoff matrix no_actions_" + str(no_actions) + "_experiments")
+        plot_payoff(payoff_matrices[idx], save = save, folder = folder, file_name = "Payoff matrix no_actions_" + str(no_actions) + "_experiments_two_plateau")
         
         mu_matrix = np.ones([1, no_actions**2])
         mu_matrix /= np.sum(mu_matrix)
@@ -938,58 +938,61 @@ def custom_game_no_actions_experiments(k = [6, 8, 12, 18], delta = 0.25, eps = 1
         beta = games[idx].compute_beta(eps)
         print(beta)
         print(games[idx].compute_t(eps))
-        games[idx].play(beta = beta, scale_factor = scale_factor)
+        
+        epsilon_experiments_fast(games[idx], save = save, folder = folder, scale_factor = scale_factor, file_name = "comparison_no_actions_" +  str(no_actions) + "_eps_experiment_fast_faster_unifrom_real_scale_50_two_plateau")
+
+        # games[idx].play(beta = beta, scale_factor = scale_factor)
             
-        expected_values[idx] = np.transpose(games[idx].expected_value)
+        # expected_values[idx] = np.transpose(games[idx].expected_value)
         
         # plot_potential(expected_values[idx])
                         
     
-    expected_values[len(k)] = (1 - eps) * np.ones((1, max_iter))
-    labels = [r'k = 6', r'k = 8', r'k = 12', r'k = 18',  r'$\epsilon = 0.1$']
+    # expected_values[len(k)] = (1 - eps) * np.ones((1, max_iter))
+    # labels = [r'k = 6', r'k = 8', r'k = 12', r'k = 18',  r'$\Phi(a^*) - \epsilon$']
 
-    plot_lines(expected_values, labels, plot_e_efficient = True, title = 'Expected potential value', save = save, folder = folder, file_name = 'comparison_no_actions_uniform')
+    # plot_lines(expected_values, labels, plot_e_efficient = True, title = 'Expected potential value', save = save, folder = folder, file_name = 'comparison_no_actions_one_plateau_uniform')
     
-    # SECOND NE
-    for idx, no_actions in enumerate(k):
+    # # SECOND NE
+    # for idx, no_actions in enumerate(k):
        
-        mu_matrix = np.zeros([1, no_actions**2])
-        mu_matrix[0, (no_actions - 2)*no_actions + no_actions - 2] = 1
-        # mu_matrix /= np.sum(mu_matrix)
-        games[idx].set_mu_matrix(mu_matrix)
+    #     mu_matrix = np.zeros([1, no_actions**2])
+    #     mu_matrix[0, (no_actions - 2)*no_actions + no_actions - 2] = 1
+    #     # mu_matrix /= np.sum(mu_matrix)
+    #     games[idx].set_mu_matrix(mu_matrix)
         
-        beta = games[idx].compute_beta(eps)
-        print(beta)
-        print(games[idx].compute_t(eps))
-        games[idx].play(beta = beta, scale_factor = scale_factor)
+    #     beta = games[idx].compute_beta(eps)
+    #     print(beta)
+    #     print(games[idx].compute_t(eps))
+    #     games[idx].play(beta = beta, scale_factor = scale_factor)
             
-        expected_values[idx] = np.transpose(games[idx].expected_value)
+    #     expected_values[idx] = np.transpose(games[idx].expected_value)
         
-    plot_lines(expected_values, labels, plot_e_efficient = True, title = 'Expected potential value', save = save, folder = folder, file_name = 'comprison_no_actions_secondNE')
+    # plot_lines(expected_values, labels, plot_e_efficient = True, title = 'Expected potential value', save = save, folder = folder, file_name = 'comprison_no_actions_one_plateau_secondNE')
     
-    # trench
-    for idx, no_actions in enumerate(k):
+    # # trench
+    # for idx, no_actions in enumerate(k):
        
-        mu_matrix = np.zeros([1, no_actions**2])
-        if no_actions == 6:
-            mu_matrix[0, 6*2 + 3] = 1
-        else:
-            mu_matrix[0, no_actions*(int(no_actions/2) - 1) + (int(no_actions/2) - 1) ] = 1
-            print("correct element? ")
-            print(payoff_matrices[idx][4,4])
-        # mu_matrix /= np.sum(mu_matrix)
-        games[idx].set_mu_matrix(mu_matrix)
+    #     mu_matrix = np.zeros([1, no_actions**2])
+    #     if no_actions == 6:
+    #         mu_matrix[0, 6*2 + 3] = 1
+    #     else:
+    #         mu_matrix[0, no_actions*(int(no_actions/2) - 1) + (int(no_actions/2) - 1) ] = 1
+    #         print("correct element? ")
+    #         print(payoff_matrices[idx][4,4])
+    #     # mu_matrix /= np.sum(mu_matrix)
+    #     games[idx].set_mu_matrix(mu_matrix)
         
-        beta = games[idx].compute_beta(eps)
-        print(beta)
-        print(games[idx].compute_t(eps))
-        games[idx].play(beta = beta, scale_factor = scale_factor)
+    #     beta = games[idx].compute_beta(eps)
+    #     print(beta)
+    #     print(games[idx].compute_t(eps))
+    #     games[idx].play(beta = beta, scale_factor = scale_factor)
             
-        expected_values[idx] = np.transpose(games[idx].expected_value)
+    #     expected_values[idx] = np.transpose(games[idx].expected_value)
         
-    plot_lines(expected_values, labels, plot_e_efficient = True, title = 'Expected potential value', save = save, folder = folder, file_name = 'comprison_no_actions_trench')
+    # plot_lines(expected_values, labels, plot_e_efficient = True, title = 'Expected potential value', save = save, folder = folder, file_name = 'comprison_no_actions_one_plateau_trench')
     
-    plt.show()
+    # plt.show()
     
 def epsilon_experiments(delta):
      
