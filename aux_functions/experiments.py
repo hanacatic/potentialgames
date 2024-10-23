@@ -269,7 +269,8 @@ def generate_one_plateau_payoff_matrix(delta = 0.25, no_actions = 6, trench = No
 def test_custom_game():
     
     action_space = [0, 1, 2, 3, 4, 5, 6, 7, 8, 9]
-
+    no_players = 2
+    
     firstNE = np.array([2,2])
     secondNE = np.array([7,7])
     
@@ -284,7 +285,7 @@ def test_custom_game():
     payoff[0:5,0:5] = payoff_firstNE
     payoff[-5::,-5::] = payoff_secondNE
     
-    gameSetup = IdenticalInterestGame(action_space, firstNE, secondNE, delta = delta, payoff_matrix = payoff)
+    gameSetup = IdenticalInterestGame(action_space, no_players, firstNE, secondNE, delta = delta, payoff_matrix = payoff)
 
     mu_matrix = np.zeros([1, len(action_space)**2])
     mu_matrix[0, 66] = 1
@@ -324,13 +325,14 @@ def test_custom_game():
         
 def test_log_linear_t(delta = 0.25):
     action_space = [0, 1, 2, 3, 4, 5]
-
+    no_players = 2
+    
     firstNE = np.array([1,1])
     secondNE = np.array([4,4])
     
     payoff_matrix = generate_two_plateau_payoff_matrix(delta = delta, no_actions = len(action_space))
             
-    gameSetup = IdenticalInterestGame(action_space, firstNE, secondNE, delta, payoff_matrix = payoff_matrix)
+    gameSetup = IdenticalInterestGame(action_space, no_players, firstNE, secondNE, delta, payoff_matrix = payoff_matrix)
     
     game = Game(gameSetup, algorithm = "log_linear_t",  max_iter = 50000, mu=mu)
     game.set_initial_action_profile(secondNE)
@@ -359,11 +361,12 @@ def test_log_linear_t(delta = 0.25):
 def test_best_response(delta = 0.25):
     
     action_space = [0, 1, 2, 3]
-
+    no_players = 2
+    
     firstNE = np.array([1,1])
     secondNE = np.array([3,3])
             
-    gameSetup = IdenticalInterestGame(action_space, firstNE, secondNE, delta)
+    gameSetup = IdenticalInterestGame(action_space, no_players, firstNE, secondNE, delta)
     
     game = Game(gameSetup, algorithm = "best_response", max_iter = 5000, mu=mu)
     game.set_initial_action_profile(secondNE)
@@ -390,14 +393,15 @@ def test_best_response(delta = 0.25):
 def test_transition_matrix():
     
     action_space = [0, 1, 2, 3, 4, 5]
-
+    no_players = 2
+    
     firstNE = np.array([1,1])
     secondNE = np.array([3,3])
     
     delta = 0.25
     payoff_matrix = generate_two_plateau_payoff_matrix(delta)
         
-    gameSetup = IdenticalInterestGame(action_space, firstNE, secondNE, delta = delta, payoff_matrix = payoff_matrix)
+    gameSetup = IdenticalInterestGame(action_space, no_players, firstNE, secondNE, delta = delta, payoff_matrix = payoff_matrix)
 
     mu_matrix = np.zeros([1, len(action_space)**2])
     mu_matrix[0, 15] = 1
@@ -426,14 +430,14 @@ def test_transition_matrix():
         
 def test_alpha_best_response(initial_action_profile):
     action_space = [0, 1, 2, 3, 4, 5]
-
+    no_players = 2
     firstNE = np.array([1,1])
     secondNE = np.array([4,4])
     
     delta = 0.25
     payoff_matrix = generate_two_plateau_payoff_matrix(delta)
     
-    gameSetup = IdenticalInterestGame(action_space, firstNE, secondNE, delta = delta, payoff_matrix = payoff_matrix)
+    gameSetup = IdenticalInterestGame(action_space, no_players, firstNE, secondNE, delta = delta, payoff_matrix = payoff_matrix)
     
     game = Game(gameSetup, algorithm = "alpha_best_response", max_iter = 1e4, mu=mu)
     game.set_initial_action_profile(initial_action_profile)
@@ -450,14 +454,15 @@ def test_alpha_best_response(initial_action_profile):
 def test_epsilon(initial_action_profile):
     
     action_space = [0, 1, 2, 3, 4, 5]
-
+    no_players = 2
+    
     firstNE = np.array([1,1])
     secondNE = np.array([3,3])
     
     delta = 0.05
     payoff_matrix = generate_two_plateau_payoff_matrix(delta)
     plot_payoff(payoff_matrix)
-    gameSetup = IdenticalInterestGame(action_space, firstNE, secondNE, delta = delta, payoff_matrix = payoff_matrix)
+    gameSetup = IdenticalInterestGame(action_space, no_players, firstNE, secondNE, delta = delta, payoff_matrix = payoff_matrix)
 
     # mu_matrix = np.zeros([1, len(action_space)**2])
     # mu_matrix[0, 15] = 1
@@ -489,6 +494,8 @@ def custom_game_alg_experiments(delta = 0.25, eps = 0.1, n_exp = 10, max_iter = 
     
     action_space = [0, 1, 2, 3, 4, 5]
     no_actions = len(action_space)
+    no_players = 2
+    
     firstNE = np.array([1,1])
     secondNE = np.array([2,2])
     
@@ -500,7 +507,7 @@ def custom_game_alg_experiments(delta = 0.25, eps = 0.1, n_exp = 10, max_iter = 
     # payoff_matrix = generate_two_plateau_payoff_matrix(delta, no_actions = no_actions)
 
     
-    gameSetup = IdenticalInterestGame(action_space, firstNE, secondNE, delta = delta, payoff_matrix = payoff_matrix)
+    gameSetup = IdenticalInterestGame(action_space, no_players, firstNE, secondNE, delta = delta, payoff_matrix = payoff_matrix)
 
     game_log_linear = Game(gameSetup, algorithm = "log_linear", max_iter = max_iter, mu=mu)
     game_log_linear.set_initial_action_profile(initial_action_profile)
@@ -625,13 +632,14 @@ def custom_game_alg_experiments(delta = 0.25, eps = 0.1, n_exp = 10, max_iter = 
 
 def compare_log_linear_t(delta = 0.25, max_iter = 200000):
     action_space = [0, 1, 2, 3, 4, 5]
-
+    no_players = 2 
+    
     firstNE = np.array([1,1])
     secondNE = np.array([4,4])
     
     payoff_matrix = generate_two_plateau_payoff_matrix(delta = delta, no_actions = len(action_space))
             
-    gameSetup = IdenticalInterestGame(action_space, firstNE, secondNE, delta, payoff_matrix = payoff_matrix)
+    gameSetup = IdenticalInterestGame(action_space, no_players, firstNE, secondNE, delta, payoff_matrix = payoff_matrix)
     
     game_t = Game(gameSetup, algorithm = "log_linear_t",  max_iter = max_iter, mu=mu)
     game_t.set_initial_action_profile(secondNE)
@@ -699,14 +707,14 @@ def compare_log_linear_t(delta = 0.25, max_iter = 200000):
   
 def main_simulation_experiment():
     # action_space = [0, 1, 2, 3]
-    
+    # no_players = 2
     # firstNE = np.array([1,1])
     # secondNE = np.array([3,3])
     # initial_action_profile = secondNE
     
     # delta = 0.25
     
-    # gameSetup = IdenticalInterestGame(action_space, firstNE, secondNE, delta)
+    # gameSetup = IdenticalInterestGame(action_space, no_players, firstNE, secondNE, delta)
     # game = Game(gameSetup, mu=mu)
     # game.set_initial_action_profile(initial_action_profile)
 
@@ -723,6 +731,7 @@ def main_simulation_experiment():
     # beta_experiments(game, save = True, folder = 'WEEK 4', file_name = 'Average potential beta (0,2) random _')
     
     action_space = [0, 1, 2, 3]
+    no_players = 2
     
     firstNE = np.array([1,1])
     secondNE = np.array([3,3])
@@ -733,7 +742,7 @@ def main_simulation_experiment():
     save = False
     folder = 'WEEK 5'
     
-    gameSetup = IdenticalInterestGame(action_space, firstNE, secondNE, delta)
+    gameSetup = IdenticalInterestGame(action_space, no_players, firstNE, secondNE, delta)
     mu_matrix = np.zeros([1, 16])
     mu_matrix[0, 15] = 1
     game = Game(gameSetup, algorithm = "log_linear", max_iter = 1e6, mu=mu)
@@ -754,14 +763,14 @@ def main_simulation_experiment():
     # delta_experiments(game, save = save, folder = folder, file_name = 'Average potential delta (0,2) random _')
 
     # action_space = [0, 1, 2, 3]
-    
+    # no_players = 2
     # firstNE = np.array([1,1])
     # secondNE = np.array([3,3])
     # initial_action_profile = secondNE
     
     # delta = 0.25
     
-    # gameSetup = IdenticalInterestGame(action_space, firstNE, secondNE, delta)
+    # gameSetup = IdenticalInterestGame(action_space, no_players, firstNE, secondNE, delta)
     # game = Game(gameSetup, mu=mu)
     # game.set_initial_action_profile(initial_action_profile)
 
@@ -782,7 +791,7 @@ def main_simulation_experiment():
     # epsilon_experiments()
     
     # action_space = [0, 1, 2, 3]
-    
+    # no_players = 2
     # firstNE = np.array([1,1])
     # secondNE = np.array([3,3])
     
@@ -793,7 +802,7 @@ def main_simulation_experiment():
     
     # # mean_potential_history = np.zeros((1, game.max_iter))
         
-    # gameSetup = RandomIdenticalInterestGame(action_space, firstNE, secondNE, 0.25)
+    # gameSetup = RandomIdenticalInterestGame(action_space, no_players, firstNE, secondNE, 0.25)
     # # game = Game(gameSetup, algorithm = "log_linear_t", mu=mu)
     # # game.set_initial_action_profile(secondNE)
     
@@ -827,6 +836,8 @@ def custom_game_experiments(delta):
     
     action_space = [0, 1, 2, 3, 4, 5]
     no_actions = len(action_space)
+    no_players = 2
+    
     firstNE = np.array([1,1])
     secondNE = np.array([4,4])
     trench = 0.25
@@ -838,7 +849,7 @@ def custom_game_experiments(delta):
     # payoff_matrix[0,0] = 1
     # payoff_matrix[1,1] = 1
     
-    gameSetup = IdenticalInterestGame(action_space, firstNE, secondNE, delta = delta, payoff_matrix = payoff_matrix)
+    gameSetup = IdenticalInterestGame(action_space, no_players, firstNE, secondNE, delta = delta, payoff_matrix = payoff_matrix)
     
     mu_matrix = np.ones([1, no_actions**2])
     mu_matrix /= np.sum(mu_matrix)
@@ -914,6 +925,7 @@ def custom_game_experiments(delta):
 
 def custom_game_no_actions_experiments(k = [6, 8, 12, 18], delta = 0.25, eps = 1e-1, max_iter = 1000000):
     
+    no_players = 2
     action_spaces = []
     payoff_matrices = []
     gameSetups = []
@@ -927,7 +939,7 @@ def custom_game_no_actions_experiments(k = [6, 8, 12, 18], delta = 0.25, eps = 1
     for idx, no_actions in enumerate(k):
         action_spaces.append(np.arange(0, no_actions, 1))
         payoff_matrices.append(generate_two_plateau_payoff_matrix(delta = delta, no_actions = len(action_spaces[idx])))
-        gameSetups.append(IdenticalInterestGame(action_spaces[idx],  np.array([1,1]), np.array([no_actions-2, no_actions-2]), delta = delta, payoff_matrix = payoff_matrices[idx]))        
+        gameSetups.append(IdenticalInterestGame(action_spaces[idx], no_players, np.array([1,1]), np.array([no_actions-2, no_actions-2]), delta = delta, payoff_matrix = payoff_matrices[idx]))        
         plot_payoff(payoff_matrices[idx], save = save, folder = folder, file_name = "Payoff matrix no_actions_" + str(no_actions) + "_experiments_two_plateau")
         
         mu_matrix = np.ones([1, no_actions**2])

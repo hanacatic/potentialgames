@@ -247,9 +247,9 @@ class Game:
 
 class IdenticalInterestGame:
     
-    def __init__(self, action_space, firstNE, secondNE, delta, type = "Asymmetrical", payoff_matrix = None): 
+    def __init__(self, action_space, no_players, firstNE, secondNE, delta, type = "Asymmetrical", payoff_matrix = None): 
         
-        self.no_players = 2
+        self.no_players = no_players
         self.no_actions = len(action_space)
         self.no_action_profiles = self.no_actions**self.no_players
         self.action_space = action_space
