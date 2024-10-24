@@ -1,4 +1,5 @@
 import numpy as np
+from itertools import product
 from player import Player
 from aux_functions.helpers import rejection_sampling
 
@@ -263,46 +264,70 @@ class IdenticalInterestGame:
         else:
             self.set_payoff_matrix(payoff_matrix)
 
-        self.utility_functions = [self.utility_function_player_1, self.utility_function_player_2]
+        self.utility_functions = []
+        
+        for i in range(0, self.no_players):
+            self.utility_functions.append(lambda player_action, opponents_action: self.utility_function(i, player_action, opponents_action))
         
     def formulate_transition_matrix(self, beta):
     
-        self.P = np.zeros([self.no_action_profiles, self.no_action_profiles])
+        self.P = np.zeros([self.no_action_profiles, self.no_action_profiles])     
         
-        for j in range(self.no_actions):
-            for k in range(self.no_actions):
+        # # for j in range(self.no_actions):
+        # #     for k in range(self.no_actions):
                 
-                utilities = np.array([self.utility_functions[0](i, k) for i in range(self.no_actions)])
-                exp_values = np.exp(beta * utilities)
+        # #         utilities = np.array([self.utility_functions[0](i, k) for i in range(self.no_actions)])
+        # #         exp_values = np.exp(beta * utilities)
         
-                p = exp_values/np.sum(exp_values)
+        # #         p = exp_values/np.sum(exp_values)
                 
-                self.P[j*self.no_actions+k, k::self.no_actions] += 1/self.no_players*p
+        # #         self.P[j*self.no_actions+k, k::self.no_actions] += 1/self.no_players*p
 
-        for j in range(self.no_actions):
-            for k in range(self.no_actions):
+        # for j in range(self.no_actions):
+        #     for k in range(self.no_actions):
                 
-                utilities = np.array([self.utility_functions[1](i, j) for i in range(self.no_actions)])
-                exp_values = np.exp(beta * utilities)
+        #         utilities = np.array([self.utility_functions[1](i, j) for i in range(self.no_actions)])
+        #         exp_values = np.exp(beta * utilities)
         
-                p = exp_values/np.sum(exp_values)
+        #         p = exp_values/np.sum(exp_values)
                 
-                self.P[j*self.no_actions+k, j*self.no_actions:(j+1)*self.no_actions] += 1/self.no_players*p
+        #         self.P[j*self.no_actions+k, j*self.no_actions:(j+1)*self.no_actions] += 1/self.no_players*p
+        
+        P = np.zeros([self.no_action_profiles, self.no_action_profiles])     
 
+        for player_id in range(self.no_players):
+            for action_id in range(self.no_actions):
+                for idx, opponents_actions in enumerate(list(product(np.arange(self.no_actions), repeat = self.no_players - 1))):
+                    utilities = np.array([self.utility_functions[player_id](i, opponents_actions) for i in range(self.no_actions)])
+                    exp_values = np.exp(beta * utilities)
+        
+                    p = exp_values/np.sum(exp_values)
+                    # print("start: ")
+                    # print(idx)
+                    # print("stop: ")
+                    # print((idx + self.no_actions**(self.no_players - 1 - player_id)*(self.no_actions)))
+                    # print("step: ")
+                    # print(self.no_actions**(self.no_players - 1 - player_id))
+                    # print(np.arange(idx,(idx + self.no_actions**(self.no_players - 1 - player_id)*(self.no_actions)),self.no_actions**(self.no_players - 1 - player_id)))
+                    # print("row: ")
+                    # print(action_id*self.no_actions**(self.no_players - player_id) + idx)
+                    # P[action_id*self.no_actions**(self.no_players - player_id) + idx, idx*(self.no_actions**player_id):((idx + self.no_actions**(self.no_players - 1 - player_id))*(self.no_actions**player_id)):self.no_actions**(self.no_players - 1 - player_id)] += 1/self.no_players*p
+                    # P[action_id*self.no_actions**(self.no_players - 1) + idx, idx*self.no_actions**player_id:(idx*self.no_actions**player_id + self.no_actions**(self.no_players - 1 - player_id)*(self.no_actions)):self.no_actions**(self.no_players - 1 - player_id)] += 1/self.no_players*p
+                    P[idx*self.no_actions**player_id + action_id*self.no_actions**(self.no_players - 1 - player_id), idx*self.no_actions**player_id:(idx*self.no_actions**player_id + self.no_actions**(self.no_players - 1 - player_id)*(self.no_actions)):self.no_actions**(self.no_players - 1 - player_id)] += 1/self.no_players*p
+            
+        self.P = P
         return self.P
            
     def generate_payoff_matrix(self):
         
-        self.payoff_player_1 = np.random.uniform(0.0, 1 - self.delta, size = (self.no_actions, self.no_actions))
+        self.payoff_player_1 = np.random.uniform(0.0, 1 - self.delta, size = [self.no_actions] * self.no_players)
+        
         
         self.payoff_player_1[self.firstNE[0], self.firstNE[1]] = 1
         self.payoff_player_1[self.secondNE[0], self.secondNE[1]] = 1 - self.delta
         
-        if self.type == "Asymmetrical": 
-            self.payoff_player_2 = np.transpose(self.payoff_player_1)
-        else: 
+        if self.type == "Symmetrical": 
             self.payoff_player_1 = (self.payoff_player_1 + np.transpose(self.payoff_player_1)) / 2
-            self.payoff_player_2 = self.payoff_player_1
     
     def reset_payoff_matrix(self, delta = None):
         
@@ -315,28 +340,22 @@ class IdenticalInterestGame:
         
         self.payoff_player_1 = payoff
         
-        if self.type == "Asymmetrical":
-            self.payoff_player_2 = np.transpose(payoff)  
-        else:
+        if self.type == "Symmetrical":
             self.payoff_player_1 = (self.payoff_player_1 + np.transpose(self.payoff_player_1)) / 2
-            self.payoff_player_2 = self.payoff_player_1 
-        
-    def utility_function_player_1(self, player_action, opponents_action):
-
-        return self.payoff_player_1[player_action, opponents_action]
-
-    def utility_function_player_2(self, player_action, opponents_action):
-        
-        return self.payoff_player_2[player_action, opponents_action]
 
     def potential_function(self, action_profile):
         
-        return self.payoff_player_1[action_profile[0], action_profile[1]]
+        return self.payoff_player_1[tuple(action_profile)]
     
+    def utility_function(self, player_id, player_action, opponents_action):
+        
+        action_profile = np.insert(opponents_action, player_id, player_action)
+        
+        return self.potential_function(action_profile)
+        
     def formulate_potential_vec(self):
         
         self.potential = np.zeros([self.no_action_profiles, 1])
         
-        for i in range(self.no_actions):
-            for j in range(self.no_actions):
-                self.potential[i * self.no_actions + j, 0] = self.potential_function(np.array([i, j]))
+        for idx, element in enumerate(product(np.arange(self.no_actions), repeat = self.no_players)):
+            self.potential[idx] = self.potential_function(element)

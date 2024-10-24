@@ -9,7 +9,8 @@ if __name__ == '__main__':
     
     np.set_printoptions(threshold=sys.maxsize)
     
-    test_alpha_best_response( np.array([4,4]))
+    test()
+    # test_alpha_best_response( np.array([4,4]))
     # custom_game_experiments(0.1)
     # custom_game_alg_experiments()
     # test_log_linear_t()
