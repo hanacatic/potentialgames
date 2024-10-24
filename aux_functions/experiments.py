@@ -490,7 +490,7 @@ def test_epsilon(initial_action_profile):
     plt.pause(60)
     plt.close()
    
-def test():
+def test_generalisation():
     action_space = [0, 1, 2, 3, 4, 5]
     # action_space = [0, 1]
     no_actions = len(action_space)
@@ -510,7 +510,8 @@ def test():
     beta_t = game.compute_beta(0.1)
     
     game.set_mu_matrix(mu_matrix)
-    gameSetup.formulate_transition_matrix(beta_t)
+    P = gameSetup.formulate_transition_matrix(beta_t)
+    plot_payoff(P)
     plot_payoff(gameSetup.P)
     game.play(beta = beta_t)
     print(game.stationary)
@@ -519,12 +520,47 @@ def test():
     plot_payoff(stationary)
     plot_potential(game.expected_value)
     
-    plot_payoff(game.gameSetup.payoff_player_1)
+    # plot_payoff(game.gameSetup.payoff_player_1)
     # plt.show(block = False)
     # plt.pause(20)
     # plt.close()
     plt.show()
-        
+
+def test_multipleplayers():
+    action_space = [0, 1, 3, 4]
+    # action_space = [0, 1]
+    no_actions = len(action_space)
+    no_players = 2
+    
+    firstNE = np.array([0, 0])
+    secondNE = np.array([1, 1])
+
+    delta = 0.25
+    
+    gameSetup = IdenticalInterestGame(action_space, no_players, firstNE, secondNE, delta = delta)
+    
+    mu_matrix = np.ones([1, len(action_space)**no_players])
+    mu_matrix /= np.sum(mu_matrix)
+    
+    game = Game(gameSetup, algorithm = "log_linear_fast", max_iter = 1e6, mu=mu)
+    beta_t = game.compute_beta(0.1)
+    
+    game.set_mu_matrix(mu_matrix)
+    gameSetup.formulate_transition_matrix(beta_t)
+    plot_payoff(gameSetup.P)
+    # game.play(beta = beta_t)
+    # print(game.stationary)
+    
+    # stationary = np.reshape(game.stationary,(-1, game.gameSetup.no_actions))
+    # plot_payoff(stationary)
+    # plot_potential(game.expected_value)
+    
+    # plot_payoff(game.gameSetup.payoff_player_1)
+    # plt.show(block = False)
+    # plt.pause(20)
+    # plt.close()
+    plt.show()
+            
 def custom_game_alg_experiments(delta = 0.25, eps = 0.1, n_exp = 10, max_iter = 100000):
     
     action_space = [0, 1, 2, 3, 4, 5]

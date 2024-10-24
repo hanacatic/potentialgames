@@ -273,48 +273,71 @@ class IdenticalInterestGame:
     
         self.P = np.zeros([self.no_action_profiles, self.no_action_profiles])     
         
+        # # # for j in range(self.no_actions):
+        # # #     for k in range(self.no_actions):
+                
+        # # #         utilities = np.array([self.utility_functions[0](i, k) for i in range(self.no_actions)])
+        # # #         exp_values = np.exp(beta * utilities)
+        
+        # # #         p = exp_values/np.sum(exp_values)
+                
+        # # #         self.P[j*self.no_actions+k, k::self.no_actions] += 1/self.no_players*p
+
         # # for j in range(self.no_actions):
         # #     for k in range(self.no_actions):
                 
-        # #         utilities = np.array([self.utility_functions[0](i, k) for i in range(self.no_actions)])
+        # #         utilities = np.array([self.utility_functions[1](i, j) for i in range(self.no_actions)])
         # #         exp_values = np.exp(beta * utilities)
         
         # #         p = exp_values/np.sum(exp_values)
                 
-        # #         self.P[j*self.no_actions+k, k::self.no_actions] += 1/self.no_players*p
-
-        # for j in range(self.no_actions):
-        #     for k in range(self.no_actions):
-                
-        #         utilities = np.array([self.utility_functions[1](i, j) for i in range(self.no_actions)])
-        #         exp_values = np.exp(beta * utilities)
+        # #         self.P[j*self.no_actions+k, j*self.no_actions:(j+1)*self.no_actions] += 1/self.no_players*p
         
-        #         p = exp_values/np.sum(exp_values)
-                
-        #         self.P[j*self.no_actions+k, j*self.no_actions:(j+1)*self.no_actions] += 1/self.no_players*p
+        # P = np.zeros([self.no_action_profiles, self.no_action_profiles])     
+
+        # for player_id in range(self.no_players):
+        #     for action_id in range(self.no_actions):
+        #         for idx, opponents_actions in enumerate(list(product(np.arange(self.no_actions), repeat = self.no_players - 1))):
+        #             utilities = np.array([self.utility_functions[player_id](i, opponents_actions) for i in range(self.no_actions)])
+        #             exp_values = np.exp(beta * utilities)
+        
+        #             p = exp_values/np.sum(exp_values)
+        #             print("player_id: ")
+        #             print(player_id)
+        #             print("action_id:")
+        #             print(action_id)
+        #             print("action_profile_id: ")
+        #             print(idx)
+        #             print("start: ")
+        #             print(idx*self.no_actions**player_id)
+        #             print("stop: ")
+        #             print((idx*self.no_actions**player_id + self.no_actions**(self.no_players - 1 - player_id)*(self.no_actions)))
+        #             print("step: ")
+        #             print(self.no_actions**(self.no_players - 1 - player_id))
+        #             print(np.arange(idx*self.no_actions**player_id,(idx*self.no_actions**player_id + self.no_actions**(self.no_players - 1 - player_id)*(self.no_actions)),self.no_actions**(self.no_players - 1 - player_id)))
+        #             print("row: ")
+        #             print(idx*self.no_actions**player_id + action_id*self.no_actions**(self.no_players - 1 - player_id))
+        #             # P[action_id*self.no_actions**(self.no_players - player_id) + idx, idx*(self.no_actions**player_id):((idx + self.no_actions**(self.no_players - 1 - player_id))*(self.no_actions**player_id)):self.no_actions**(self.no_players - 1 - player_id)] += 1/self.no_players*p
+        #             # P[action_id*self.no_actions**(self.no_players - 1) + idx, idx*self.no_actions**player_id:(idx*self.no_actions**player_id + self.no_actions**(self.no_players - 1 - player_id)*(self.no_actions)):self.no_actions**(self.no_players - 1 - player_id)] += 1/self.no_players*p
+        #             P[idx*self.no_actions**player_id + action_id*self.no_actions**(self.no_players - 1 - player_id), idx*self.no_actions**player_id:(idx*self.no_actions**player_id + self.no_actions**(self.no_players - 1 - player_id)*(self.no_actions)):self.no_actions**(self.no_players - 1 - player_id)] += 1/self.no_players*p
+            
+        # self.P = P
         
         P = np.zeros([self.no_action_profiles, self.no_action_profiles])     
 
-        for player_id in range(self.no_players):
-            for action_id in range(self.no_actions):
-                for idx, opponents_actions in enumerate(list(product(np.arange(self.no_actions), repeat = self.no_players - 1))):
-                    utilities = np.array([self.utility_functions[player_id](i, opponents_actions) for i in range(self.no_actions)])
-                    exp_values = np.exp(beta * utilities)
+        for idx, profile in enumerate(np.array(list(product(np.arange(self.no_actions), repeat = self.no_players)))):
+            for player_id in range(self.no_players):
+                
+                mask = np.arange(len(profile)) != player_id
+                opponents_actions = profile[mask] # extract the opponents actions from the action profile
+                
+                utilities = np.array([self.utility_functions[player_id](i, opponents_actions) for i in range(self.no_actions)])
+                exp_values = np.exp(beta * utilities)
         
-                    p = exp_values/np.sum(exp_values)
-                    # print("start: ")
-                    # print(idx)
-                    # print("stop: ")
-                    # print((idx + self.no_actions**(self.no_players - 1 - player_id)*(self.no_actions)))
-                    # print("step: ")
-                    # print(self.no_actions**(self.no_players - 1 - player_id))
-                    # print(np.arange(idx,(idx + self.no_actions**(self.no_players - 1 - player_id)*(self.no_actions)),self.no_actions**(self.no_players - 1 - player_id)))
-                    # print("row: ")
-                    # print(action_id*self.no_actions**(self.no_players - player_id) + idx)
-                    # P[action_id*self.no_actions**(self.no_players - player_id) + idx, idx*(self.no_actions**player_id):((idx + self.no_actions**(self.no_players - 1 - player_id))*(self.no_actions**player_id)):self.no_actions**(self.no_players - 1 - player_id)] += 1/self.no_players*p
-                    # P[action_id*self.no_actions**(self.no_players - 1) + idx, idx*self.no_actions**player_id:(idx*self.no_actions**player_id + self.no_actions**(self.no_players - 1 - player_id)*(self.no_actions)):self.no_actions**(self.no_players - 1 - player_id)] += 1/self.no_players*p
-                    P[idx*self.no_actions**player_id + action_id*self.no_actions**(self.no_players - 1 - player_id), idx*self.no_actions**player_id:(idx*self.no_actions**player_id + self.no_actions**(self.no_players - 1 - player_id)*(self.no_actions)):self.no_actions**(self.no_players - 1 - player_id)] += 1/self.no_players*p
-            
+                p = exp_values/np.sum(exp_values)
+                
+                i = idx - profile[player_id]*self.no_actions**(self.no_players - 1 - player_id)
+                P[idx, i: i + self.no_actions**(self.no_players - player_id) :self.no_actions**(self.no_players - 1 - player_id)] += 1/self.no_players*p
         self.P = P
         return self.P
            
