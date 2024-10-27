@@ -527,33 +527,44 @@ def test_generalisation():
     plt.show()
 
 def test_multipleplayers():
-    action_space = [0, 1, 3, 4]
+    action_space = [0, 1, 2, 3, 4, 5]
     # action_space = [0, 1]
     no_actions = len(action_space)
-    no_players = 2
+    no_players = 6
     
-    firstNE = np.array([0, 0])
-    secondNE = np.array([1, 1])
+    # firstNE = np.array([0, 0, 0, 0, 0])
+    # secondNE = np.array([1, 1, 1, 1, 1])
+    
+    firstNE = np.array([0, 0, 0, 0, 0, 0])
+    secondNE = np.array([1, 1, 1, 1, 1, 1])
 
     delta = 0.25
     
-    gameSetup = IdenticalInterestGame(action_space, no_players, firstNE, secondNE, delta = delta)
+    payoff_matrix = (1-delta)*np.ones([no_actions] * no_players)
+    payoff_matrix[tuple(secondNE)] = 1
+    # payoff_matrix[1,1] = 1
+    gameSetup = IdenticalInterestGame(action_space, no_players, firstNE, secondNE, delta = delta, payoff_matrix = payoff_matrix)
     
     mu_matrix = np.ones([1, len(action_space)**no_players])
     mu_matrix /= np.sum(mu_matrix)
     
-    game = Game(gameSetup, algorithm = "log_linear_fast", max_iter = 1e6, mu=mu)
+    game = Game(gameSetup, algorithm = "log_linear_fast", max_iter = 1e4, mu=mu)
     beta_t = game.compute_beta(0.1)
-    
+    print(payoff_matrix)
     game.set_mu_matrix(mu_matrix)
-    gameSetup.formulate_transition_matrix(beta_t)
-    plot_payoff(gameSetup.P)
-    # game.play(beta = beta_t)
-    # print(game.stationary)
+    P = gameSetup.formulate_transition_matrix(beta_t)
+    # test = np.linalg.matrix_power(game.gameSetup.P, 1000)
     
-    # stationary = np.reshape(game.stationary,(-1, game.gameSetup.no_actions))
-    # plot_payoff(stationary)
-    # plot_potential(game.expected_value)
+    print(game.compute_t(0.1))
+    plot_payoff(P.todense())
+    # plot_payoff(game.gameSetup.P)
+    # plot_payoff(test)
+
+    game.play(beta = beta_t, scale_factor = 100)
+        
+    print(game.stationary.shape)
+    plot_payoff(game.stationary)
+    plot_potential(game.expected_value)
     
     # plot_payoff(game.gameSetup.payoff_player_1)
     # plt.show(block = False)
