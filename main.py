@@ -9,7 +9,7 @@ if __name__ == '__main__':
     
     np.set_printoptions(threshold=sys.maxsize)
     
-    test()
+    # test()
     # test_alpha_best_response( np.array([4,4]))
     # custom_game_experiments(0.1)
     # custom_game_alg_experiments()
@@ -19,4 +19,5 @@ if __name__ == '__main__':
     # test_custom_game()
     # epsilon_experiments(0.25)
     # custom_game_no_actions_experiments()
-    # cProfile.run('main_simulation_experiment()')
+    custom_game_no_players_experiments()
+    # cProfile.run('test_multipleplayers()')

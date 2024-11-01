@@ -1,7 +1,7 @@
 import numpy as np
 from game import Game,IdenticalInterestGame, rng
 from aux_functions.plot import *
-
+from scipy.sparse import csr_matrix
 RATIONALITY = 100
 EPS = 0.5e-1
     
@@ -223,20 +223,20 @@ def delta_experiments_fast(game, deltas = [0.9, 0.75, 0.5, 0.25, 0.1], trench = 
         plt.pause(20)
         plt.close()
 
-def generate_two_plateau_payoff_matrix(delta = 0.1, no_actions = 6):
+def generate_two_plateau_payoff_matrix(delta = 0.25, no_actions = 6):
         
     firstNE = np.array([1,1])
     secondNE = np.array([no_actions-2, no_actions-2])
 
     b = 1 - delta 
        
-    payoff = rng.random(size=np.array([no_actions, no_actions])) * 0.25 * (1-delta)
+    payoff = (rng.random(size=np.array([no_actions, no_actions])) * 0.25 + 0.75) * 0.7 * (1-delta) # 0.25
 
     # payoff_firstNE = (rng.random(size=np.array([5, 5]))*0.6 + 0.4) * 0.75 * b
-    payoff_firstNE= (rng.random(size=np.array([3, 3]))*0.2 + 0.8) * b
+    payoff_firstNE= (rng.random(size=np.array([3, 3]))*0.1 + 0.9) * b
     
     # payoff_secondNE = (rng.random(size=np.array([5, 5]))*0.65 + 0.35) * 0.5 * (1 - delta)
-    payoff_secondNE = (rng.random(size=np.array([3, 3]))*0.4 + 0.6) * (1-delta)
+    payoff_secondNE = (rng.random(size=np.array([3, 3]))*0.15 + 0.85) * (1-delta)
 
     payoff[0:3,0:3] = payoff_firstNE
     payoff[-3::,-3::] = payoff_secondNE
@@ -245,6 +245,33 @@ def generate_two_plateau_payoff_matrix(delta = 0.1, no_actions = 6):
     payoff[secondNE[0], secondNE[1]] = 1 - delta
     
     return payoff
+
+def generate_two_plateau_payoff_matrix_multi(delta = 0.25, no_actions = 4, no_players = 2):
+        
+    firstNE = tuple(np.zeros(no_players, dtype=int))     
+    secondNE = tuple((3 * np.ones(no_players)).astype(int))  
+
+    b = 1 - delta 
+       
+    payoff = (rng.random(size = [no_actions] * no_players) * 0.25 + 0.75) * 0.6 * (1-delta) # 0.25
+
+    # payoff_firstNE = (rng.random(size=np.array([5, 5]))*0.6 + 0.4) * 0.75 * b
+    payoff_firstNE= (rng.random(size=[2]*no_players)*0.1 + 0.9) * b
+    
+    # payoff_secondNE = (rng.random(size=np.array([5, 5]))*0.65 + 0.35) * 0.5 * (1 - delta)
+    payoff_secondNE = (rng.random(size=[2]*no_players)*0.15 + 0.85) * (1-delta)
+
+    slice_all_dims = tuple([slice(0, 2)] * no_players)
+    payoff[slice_all_dims] = payoff_firstNE
+
+    slice_last_two_dims = tuple([slice(-2, None)] * no_players)
+    payoff[slice_last_two_dims] = payoff_secondNE
+    
+    payoff[firstNE] = 1
+    payoff[secondNE] = 1 - delta
+    
+    return payoff
+
 
 def generate_one_plateau_payoff_matrix(delta = 0.25, no_actions = 6, trench = None):
         
@@ -527,22 +554,25 @@ def test_generalisation():
     plt.show()
 
 def test_multipleplayers():
-    action_space = [0, 1, 2, 3, 4, 5]
+    action_space = np.arange(0, 4)
     # action_space = [0, 1]
     no_actions = len(action_space)
-    no_players = 6
+    no_players = 8
     
     # firstNE = np.array([0, 0, 0, 0, 0])
     # secondNE = np.array([1, 1, 1, 1, 1])
     
-    firstNE = np.array([0, 0, 0, 0, 0, 0])
-    secondNE = np.array([1, 1, 1, 1, 1, 1])
+    # firstNE = np.array([0, 0, 0, 0, 0, 0])
+    # secondNE = np.array([1, 1, 1, 1, 1, 1])
+    
+    firstNE = np.array([1, 1])
+    secondNE = np.array([no_actions - 2, no_actions - 2, no_actions - 2])
 
     delta = 0.25
     
-    payoff_matrix = (1-delta)*np.ones([no_actions] * no_players)
-    payoff_matrix[tuple(secondNE)] = 1
-    # payoff_matrix[1,1] = 1
+    # payoff_matrix = (1-delta)*np.ones([no_actions] * no_players)
+    # payoff_matrix[tuple(secondNE)] = 1
+    payoff_matrix = generate_two_plateau_payoff_matrix_multi(delta, len(action_space), no_players)
     gameSetup = IdenticalInterestGame(action_space, no_players, firstNE, secondNE, delta = delta, payoff_matrix = payoff_matrix)
     
     mu_matrix = np.ones([1, len(action_space)**no_players])
@@ -551,19 +581,22 @@ def test_multipleplayers():
     game = Game(gameSetup, algorithm = "log_linear_fast", max_iter = 1e4, mu=mu)
     beta_t = game.compute_beta(0.1)
     print(payoff_matrix)
+    # mu_matrix = np.zeros([1, len(action_space)**no_players])
+    # mu_matrix[0, secondNE[0]*game.gameSetup.no_actions + secondNE[1]] = 1
+    
     game.set_mu_matrix(mu_matrix)
+    
     P = gameSetup.formulate_transition_matrix(beta_t)
-    # test = np.linalg.matrix_power(game.gameSetup.P, 1000)
+    # test = np.linalg.matrix_power(game.gameSetup.P.todense(), 10)
     
     print(game.compute_t(0.1))
-    plot_payoff(P.todense())
-    # plot_payoff(game.gameSetup.P)
+    # plot_payoff((P @ P).todense())
     # plot_payoff(test)
 
     game.play(beta = beta_t, scale_factor = 100)
         
     print(game.stationary.shape)
-    plot_payoff(game.stationary)
+    # plot_payoff(game.stationary)
     plot_potential(game.expected_value)
     
     # plot_payoff(game.gameSetup.payoff_player_1)
@@ -572,26 +605,27 @@ def test_multipleplayers():
     # plt.close()
     plt.show()
             
-def custom_game_alg_experiments(delta = 0.25, eps = 0.1, n_exp = 10, max_iter = 100000):
+def custom_game_alg_experiments(delta = 0.25, eps = 0.1, n_exp = 50, max_iter = 10000):
     
-    action_space = [0, 1, 2, 3, 4, 5]
+    action_space = np.arange(0, 35)
     no_actions = len(action_space)
     no_players = 2
     
     firstNE = np.array([1,1])
-    secondNE = np.array([2,2])
+    secondNE = np.array([no_actions - 2, no_actions - 2])
+
+    # secondNE = np.array([2,2])
     
     # initial_action_profile = np.array([2,2])
     
-    payoff_matrix = generate_one_plateau_payoff_matrix(delta, no_actions = no_actions, trench = 0.1)
+    # payoff_matrix = generate_one_plateau_payoff_matrix(delta, no_actions = no_actions, trench = 0.1)
     
     initial_action_profile = secondNE
-    # payoff_matrix = generate_two_plateau_payoff_matrix(delta, no_actions = no_actions)
+    payoff_matrix = generate_two_plateau_payoff_matrix(delta, no_actions = no_actions)
 
-    
     gameSetup = IdenticalInterestGame(action_space, no_players, firstNE, secondNE, delta = delta, payoff_matrix = payoff_matrix)
 
-    game_log_linear = Game(gameSetup, algorithm = "log_linear", max_iter = max_iter, mu=mu)
+    game_log_linear = Game(gameSetup, algorithm = "log_linear_fast", max_iter = max_iter, mu=mu)
     game_log_linear.set_initial_action_profile(initial_action_profile)
 
     game_mwu = Game(gameSetup, algorithm = "multiplicative_weight", max_iter = max_iter, mu=mu)
@@ -600,21 +634,27 @@ def custom_game_alg_experiments(delta = 0.25, eps = 0.1, n_exp = 10, max_iter = 
     game_alpha_best = Game(gameSetup, algorithm = "alpha_best_response", max_iter = max_iter, mu=mu)
     game_alpha_best.set_initial_action_profile(initial_action_profile)
 
-    potentials_history_log_linear = np.zeros((n_exp, max_iter))
+    potentials_history_log_linear = np.zeros((1, max_iter))
     potentials_history_mwu = np.zeros((n_exp, max_iter))
-    potentials_history_alpha_best = np.zeros((n_exp, max_iter))
+    potentials_history_alpha_best = np.zeros((1, max_iter))
     
     beta_t = game_log_linear.compute_beta(1e-1)
     
+    mu_matrix = np.zeros([1, len(action_space)**no_players])
+    mu_matrix[0, initial_action_profile[0]*game_log_linear.gameSetup.no_actions + initial_action_profile[1]] = 1
+    game_log_linear.set_mu_matrix(mu_matrix)
+    
+    game_log_linear.play(beta = beta_t)
+    game_alpha_best.play()
+    
+    potentials_history_log_linear[0] = np.transpose(game_log_linear.expected_value)
+    potentials_history_alpha_best[0] = np.transpose(game_alpha_best.potentials_history)  
+
     for i in range(n_exp):
-        
-        game_log_linear.play(beta = beta_t)
+           
         game_mwu.play()
-        game_alpha_best.play()
         
-        potentials_history_log_linear[i] = np.transpose(game_log_linear.potentials_history)
         potentials_history_mwu[i] = np.transpose(game_mwu.potentials_history)
-        potentials_history_alpha_best[i] = np.transpose(game_alpha_best.potentials_history)  
         
     mean_potential = np.zeros((4, max_iter))
     mean_potential[0] = np.mean(potentials_history_log_linear, 0)
@@ -630,8 +670,8 @@ def custom_game_alg_experiments(delta = 0.25, eps = 0.1, n_exp = 10, max_iter = 
     labels = ['Log linear learning', 'Multiplicative weight update', 'Alpha best response',  r'$\Phi(a^*) - \epsilon$']
     
     save = True
-    folder = 'WEEK 6'
-    setup = 'Comparison_one_plateau_secondNE'
+    folder = 'WEEK 7'
+    setup = 'Comparison_two_plateau_secondNE_delta_' + str(delta) + '_maxiter_' + str(max_iter) + '_no_actions_' + str(no_actions) + '_3'
     plot_payoff(payoff_matrix, save = save, folder = folder, file_name = 'Payoff_matrix_' + setup)
     plot_lines_with_std(mean_potential, std, labels, plot_e_efficient = True, save = save, folder = folder, file_name = setup)
     
@@ -642,75 +682,87 @@ def custom_game_alg_experiments(delta = 0.25, eps = 0.1, n_exp = 10, max_iter = 
     
     # initial_action_profile = np.array([1,3])
     
-    initial_action_profile = np.array([4,4])
-    game_log_linear.set_initial_action_profile(initial_action_profile)
-    game_mwu.set_initial_action_profile(initial_action_profile)
-    game_alpha_best.set_initial_action_profile(initial_action_profile)
+    # # initial_action_profile = np.array([4,4])
+    # game_log_linear.set_initial_action_profile(initial_action_profile)
+    # game_mwu.set_initial_action_profile(initial_action_profile)
+    # game_alpha_best.set_initial_action_profile(initial_action_profile)
     
-    beta_t = game_log_linear.compute_beta(1e-1)
+    # mu_matrix = np.zeros([1, len(action_space)**no_players])
+    # mu_matrix[0, initial_action_profile[0]*game_log_linear.gameSetup.no_actions + initial_action_profile[1]] = 1
+    # game_log_linear.set_mu_matrix(mu_matrix)
     
-    for i in range(n_exp):
-        
-        game_log_linear.play(beta = beta_t)
-        game_mwu.play()
-        game_alpha_best.play()
-        
-        potentials_history_log_linear[i] = np.transpose(game_log_linear.potentials_history)
-        potentials_history_mwu[i] = np.transpose(game_mwu.potentials_history)
-        potentials_history_alpha_best[i] = np.transpose(game_alpha_best.potentials_history) 
+    # beta_t = game_log_linear.compute_beta(1e-1)
     
-    mean_potential[0] = np.mean(potentials_history_log_linear, 0)
-    mean_potential[1] = np.mean(potentials_history_mwu, 0)
-    mean_potential[2] = np.mean(potentials_history_alpha_best, 0)
-    mean_potential[3] = (1-eps) * np.ones((1, max_iter)) 
+    # game_log_linear.play(beta = beta_t)
+    # game_alpha_best.play()
+    
+    # potentials_history_log_linear[0] = np.transpose(game_log_linear.expected_value)
+    # potentials_history_alpha_best[0] = np.transpose(game_alpha_best.potentials_history)  
 
-    std[0] = np.std(potentials_history_log_linear, 0)
-    std[1] = np.std(potentials_history_mwu, 0)
-    std[2] = np.std(potentials_history_alpha_best, 0)
+    # for i in range(n_exp):
+           
+    #     game_mwu.play()
         
-    setup = 'Comparison_one_plateau_trench'
-    # plot_payoff(payoff_matrix, 'Payoff_matrix_' + setup)
-    plot_lines_with_std(mean_potential, std, labels, plot_e_efficient = True, save = save, folder = folder, file_name = setup)
+    #     potentials_history_mwu[i] = np.transpose(game_mwu.potentials_history)
     
-    if not save:
-        plt.show(block = False)
-        plt.pause(60)
-        plt.close()
-    
-    initial_action_profile = np.array([0,0])
-    game_log_linear.set_initial_action_profile(initial_action_profile)
-    game_mwu.set_initial_action_profile(initial_action_profile)
-    game_alpha_best.set_initial_action_profile(initial_action_profile)
-    
-    beta_t = game_log_linear.compute_beta(1e-1)
-    
-    for i in range(n_exp):
-        
-        game_log_linear.play(beta = beta_t)
-        game_mwu.play()
-        game_alpha_best.play()
-        
-        potentials_history_log_linear[i] = np.transpose(game_log_linear.potentials_history)
-        potentials_history_mwu[i] = np.transpose(game_mwu.potentials_history)
-        potentials_history_alpha_best[i] = np.transpose(game_alpha_best.potentials_history) 
-    
-    mean_potential[0] = np.mean(potentials_history_log_linear, 0)
-    mean_potential[1] = np.mean(potentials_history_mwu, 0)
-    mean_potential[2] = np.mean(potentials_history_alpha_best, 0)
-    mean_potential[3] = (1-eps) * np.ones((1, max_iter)) 
+    # mean_potential[0] = np.mean(potentials_history_log_linear, 0)
+    # mean_potential[1] = np.mean(potentials_history_mwu, 0)
+    # mean_potential[2] = np.mean(potentials_history_alpha_best, 0)
+    # mean_potential[3] = (1-eps) * np.ones((1, max_iter)) 
 
-    std[0] = np.std(potentials_history_log_linear, 0)
-    std[1] = np.std(potentials_history_mwu, 0)
-    std[2] = np.std(potentials_history_alpha_best, 0)
+    # std[0] = np.std(potentials_history_log_linear, 0)
+    # std[1] = np.std(potentials_history_mwu, 0)
+    # std[2] = np.std(potentials_history_alpha_best, 0)
+        
+    # setup = 'Comparison_two_plateau_trench_delta_' + str(delta) + '_maxiter_' + str(max_iter) + '_no_actions_' + str(no_actions)
+    # # plot_payoff(payoff_matrix, 'Payoff_matrix_' + setup)
+    # plot_lines_with_std(mean_potential, std, labels, plot_e_efficient = True, save = save, folder = folder, file_name = setup)
     
-    setup = 'Comparison_one_plateau_plateau'
-    # plot_payoff(payoff_matrix, 'Payoff_matrix_' + setup)
-    plot_lines_with_std(mean_potential, std, labels, plot_e_efficient = True, save = save, folder = folder, file_name = setup)
+    # if not save:
+    #     plt.show(block = False)
+    #     plt.pause(60)
+    #     plt.close()
     
-    if not save:
-        plt.show(block = False)
-        plt.pause(60)
-        plt.close()
+    # initial_action_profile = np.array([0,0])
+    # game_log_linear.set_initial_action_profile(initial_action_profile)
+    # game_mwu.set_initial_action_profile(initial_action_profile)
+    # game_alpha_best.set_initial_action_profile(initial_action_profile)
+    
+    # mu_matrix = np.zeros([1, len(action_space)**no_players])
+    # mu_matrix[0, initial_action_profile[0]*game_log_linear.gameSetup.no_actions + initial_action_profile[1]] = 1
+    # game_log_linear.set_mu_matrix(mu_matrix)
+    
+    # beta_t = game_log_linear.compute_beta(1e-1)
+    
+    # game_log_linear.play(beta = beta_t)
+    # game_alpha_best.play()
+    
+    # potentials_history_log_linear[0] = np.transpose(game_log_linear.expected_value)
+    # potentials_history_alpha_best[0] = np.transpose(game_alpha_best.potentials_history)  
+    
+    # for i in range(n_exp):
+           
+    #     game_mwu.play()
+        
+    #     potentials_history_mwu[i] = np.transpose(game_mwu.potentials_history)
+    
+    # mean_potential[0] = np.mean(potentials_history_log_linear, 0)
+    # mean_potential[1] = np.mean(potentials_history_mwu, 0)
+    # mean_potential[2] = np.mean(potentials_history_alpha_best, 0)
+    # mean_potential[3] = (1-eps) * np.ones((1, max_iter)) 
+
+    # std[0] = np.std(potentials_history_log_linear, 0)
+    # std[1] = np.std(potentials_history_mwu, 0)
+    # std[2] = np.std(potentials_history_alpha_best, 0)
+    
+    # setup = 'Comparison_two_plateau_plateau_delta_' + str(delta) + '_maxiter_' + str(max_iter) + '_no_actions_' + str(no_actions)
+    # # plot_payoff(payoff_matrix, 'Payoff_matrix_' + setup)
+    # plot_lines_with_std(mean_potential, std, labels, plot_e_efficient = True, save = save, folder = folder, file_name = setup)
+    
+    # if not save:
+    #     plt.show(block = False)
+    #     plt.pause(60)
+    #     plt.close()
 
 def compare_log_linear_t(delta = 0.25, max_iter = 200000):
     action_space = [0, 1, 2, 3, 4, 5]
@@ -1046,6 +1098,89 @@ def custom_game_no_actions_experiments(k = [6, 8, 12, 18], delta = 0.25, eps = 1
     # labels = [r'k = 6', r'k = 8', r'k = 12', r'k = 18',  r'$\Phi(a^*) - \epsilon$']
 
     # plot_lines(expected_values, labels, plot_e_efficient = True, title = 'Expected potential value', save = save, folder = folder, file_name = 'comparison_no_actions_one_plateau_uniform')
+    
+    # # SECOND NE
+    # for idx, no_actions in enumerate(k):
+       
+    #     mu_matrix = np.zeros([1, no_actions**2])
+    #     mu_matrix[0, (no_actions - 2)*no_actions + no_actions - 2] = 1
+    #     # mu_matrix /= np.sum(mu_matrix)
+    #     games[idx].set_mu_matrix(mu_matrix)
+        
+    #     beta = games[idx].compute_beta(eps)
+    #     print(beta)
+    #     print(games[idx].compute_t(eps))
+    #     games[idx].play(beta = beta, scale_factor = scale_factor)
+            
+    #     expected_values[idx] = np.transpose(games[idx].expected_value)
+        
+    # plot_lines(expected_values, labels, plot_e_efficient = True, title = 'Expected potential value', save = save, folder = folder, file_name = 'comprison_no_actions_one_plateau_secondNE')
+    
+    # # trench
+    # for idx, no_actions in enumerate(k):
+       
+    #     mu_matrix = np.zeros([1, no_actions**2])
+    #     if no_actions == 6:
+    #         mu_matrix[0, 6*2 + 3] = 1
+    #     else:
+    #         mu_matrix[0, no_actions*(int(no_actions/2) - 1) + (int(no_actions/2) - 1) ] = 1
+    #         print("correct element? ")
+    #         print(payoff_matrices[idx][4,4])
+    #     # mu_matrix /= np.sum(mu_matrix)
+    #     games[idx].set_mu_matrix(mu_matrix)
+        
+    #     beta = games[idx].compute_beta(eps)
+    #     print(beta)
+    #     print(games[idx].compute_t(eps))
+    #     games[idx].play(beta = beta, scale_factor = scale_factor)
+            
+    #     expected_values[idx] = np.transpose(games[idx].expected_value)
+        
+    # plot_lines(expected_values, labels, plot_e_efficient = True, title = 'Expected potential value', save = save, folder = folder, file_name = 'comprison_no_actions_one_plateau_trench')
+    
+    # plt.show()
+ 
+def custom_game_no_players_experiments(N = [2, 4, 6], delta = 0.25, eps = 1e-1, max_iter = 100000):
+    
+    action_space = np.arange(0, 4)
+    no_actions = len(action_space)
+    no_players = N
+    payoff_matrices = []
+    gameSetups = []
+    games = []
+    expected_values = np.zeros((len(N)+1, max_iter))
+    # UNIFORM
+    save = True
+    folder = 'WEEK 7'
+    
+    for idx, no_players in enumerate(N):
+        payoff_matrices.append(generate_two_plateau_payoff_matrix_multi(delta = delta, no_actions = len(action_space), no_players = no_players))
+        gameSetups.append(IdenticalInterestGame(action_space, no_players, np.array([1,1]), np.array([no_actions-2, no_actions-2]), delta = delta, payoff_matrix = payoff_matrices[idx]))        
+        # plot_payoff(payoff_matrices[idx], save = save, folder = folder, file_name = "Payoff matrix no_players_" + str(no_actions) + "_experiments_two_plateau_asymmetrical")
+        
+        mu_matrix = np.ones([1, no_actions**no_players])
+        mu_matrix /= np.sum(mu_matrix)
+        games.append(Game(gameSetups[idx], algorithm = "log_linear_fast", max_iter = max_iter, mu=mu))
+        games[idx].set_mu_matrix(mu_matrix)
+        
+        beta = games[idx].compute_beta(eps)
+        print(no_players)
+        print(beta)
+        print(games[idx].compute_t(eps))
+        
+        # epsilon_experiments_fast(games[idx], save = save, folder = folder, scale_factor = scale_factor, file_name = "comparison_no_players_" +  str(no_actions) + "_eps_experiment_fast_faster_unifrom_real_scale_50_two_plateau")
+
+        games[idx].play(beta = beta)
+            
+        expected_values[idx] = np.transpose(games[idx].expected_value)
+        
+        # plot_potential(expected_values[idx])
+                        
+    
+    expected_values[len(N)] = (1 - eps) * np.ones((1, max_iter))
+    labels = [r'N = 2', r'N = 4', r'N = 6',  r'$\Phi(a^*) - \epsilon$']
+
+    plot_lines(expected_values, labels, plot_e_efficient = True, title = 'Expected potential value', save = save, folder = folder, file_name = 'comparison_no_players_two_plateau_uniform_asymmetrical_2')
     
     # # SECOND NE
     # for idx, no_actions in enumerate(k):

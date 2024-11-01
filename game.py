@@ -2,7 +2,7 @@ import numpy as np
 from itertools import product
 from player import Player
 from aux_functions.helpers import rejection_sampling
-from scipy.sparse import lil_matrix, csr_matrix
+from scipy.sparse import lil_matrix, csr_matrix, coo_matrix
 from scipy.sparse.linalg import matrix_power
 
 rng = np.random.default_rng()
@@ -96,7 +96,6 @@ class Game:
     def log_linear_fast(self, beta, scale_factor):
         
         P = self.gameSetup.formulate_transition_matrix(beta)
-        self.gameSetup.formulate_potential_vec()
         mu0 = csr_matrix(self.mu_matrix) # self.mu_matrix.copy()
         
         self.expected_value = np.zeros((int(self.max_iter), 1))
@@ -220,7 +219,7 @@ class Game:
         delta = self.gameSetup.delta
         
         # return 1/max(epsilon/2, delta)*np.log(A**N*(1-epsilon/2)*(4/(epsilon*A**N*(epsilon/2)) - 1/(A**N*(epsilon/2))))
-        
+
         return 1/max(epsilon, delta)*np.log(A**N/epsilon)
 
     def compute_t(self, epsilon):
@@ -276,33 +275,18 @@ class IdenticalInterestGame:
             self.utility_functions.append(lambda player_action, opponents_action: self.utility_function(i, player_action, opponents_action))
         
     def formulate_transition_matrix(self, beta):
-            
-        # for j in range(self.no_actions):
-        #     for k in range(self.no_actions):
-                
-        #         utilities = np.array([self.utility_functions[0](i, k) for i in range(self.no_actions)])
-        #         exp_values = np.exp(beta * utilities)
+        self.action_profiles = enumerate(np.array(list(product(np.arange(self.no_actions), repeat = self.no_players))))
         
-        #         p = exp_values/np.sum(exp_values)
-                
-        #         self.P[j*self.no_actions+k, k::self.no_actions] += 1/self.no_players*p
-
-        # for j in range(self.no_actions):
-        #     for k in range(self.no_actions):
-                
-        #         utilities = np.array([self.utility_functions[1](i, j) for i in range(self.no_actions)])
-        #         exp_values = np.exp(beta * utilities)
-        
-        #         p = exp_values/np.sum(exp_values)
-                
-        #         self.P[j*self.no_actions+k, j*self.no_actions:(j+1)*self.no_actions] += 1/self.no_players*p
+        self.potential = lil_matrix((self.no_action_profiles, 1))
         
         # P = np.zeros([self.no_action_profiles, self.no_action_profiles])     
-        
-        # P = lil_matrix((self.no_action_profiles, self.no_action_profiles))
-        P = np.zeros([self.no_action_profiles, self.no_action_profiles])     
 
-        for idx, profile in enumerate(np.array(list(product(np.arange(self.no_actions), repeat = self.no_players)))):
+        P_row, P_col, P_data = [], [], []
+
+        for idx, profile in self.action_profiles:
+            
+            self.potential[idx] = self.potential_function(profile)
+
             for player_id in range(self.no_players):
                 
                 mask = np.arange(len(profile)) != player_id
@@ -314,9 +298,23 @@ class IdenticalInterestGame:
                 p = exp_values/np.sum(exp_values)
                 
                 i = idx - profile[player_id]*self.no_actions**(self.no_players - 1 - player_id)
-                P[idx, i: i + self.no_actions**(self.no_players - player_id) :self.no_actions**(self.no_players - 1 - player_id)] += 1/self.no_players*p
+                stride = self.no_actions ** (self.no_players - 1 - player_id)
+                
+                for j, prob in enumerate(p):
+                    P_row.append(idx)
+                    P_col.append(i + j * stride)
+                    P_data.append(prob / self.no_players)  
+                
+                # P[idx, i: i + self.no_actions**(self.no_players - player_id) :self.no_actions**(self.no_players - 1 - player_id)] += 1/self.no_players*p
+     
         
-        self.P = csr_matrix(P)
+        P = coo_matrix((P_data, (P_row, P_col)), shape=(self.no_action_profiles, self.no_action_profiles))
+                
+        self.P = P.tocsr()
+        # self.P = csr_matrix(P)
+        
+        # self.formulate_potential_vec()
+                
         return self.P
            
     def generate_payoff_matrix(self):
