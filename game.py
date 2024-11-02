@@ -1,7 +1,7 @@
 import numpy as np
 from itertools import product
 from player import Player
-from aux_functions.helpers import rejection_sampling
+from aux_functions.helpers import rejection_sampling, make_symmetric_nd
 from scipy.sparse import lil_matrix, csr_matrix, coo_matrix
 from scipy.sparse.linalg import matrix_power
 
@@ -326,8 +326,7 @@ class IdenticalInterestGame:
         self.payoff_player_1[tuple(self.secondNE)] = 1 - self.delta
         
         if self.type == "Symmetrical": 
-            self.payoff_player_1 = (self.payoff_player_1 + np.transpose(self.payoff_player_1)) / 2
-    
+            self.payoff_player_1 = make_symmetric_nd(self.payoff_player_1)
     def reset_payoff_matrix(self, delta = None):
         
         if delta:
@@ -340,7 +339,7 @@ class IdenticalInterestGame:
         self.payoff_player_1 = payoff
         
         if self.type == "Symmetrical":
-            self.payoff_player_1 = (self.payoff_player_1 + np.transpose(self.payoff_player_1)) / 2
+            self.payoff_player_1 = make_symmetric_nd(self.payoff_player_1)
 
     def potential_function(self, action_profile):
         

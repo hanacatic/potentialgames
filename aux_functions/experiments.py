@@ -1,6 +1,7 @@
 import numpy as np
 from game import Game,IdenticalInterestGame, rng
 from aux_functions.plot import *
+from aux_functions.helpers import make_symmetric_nd
 from scipy.sparse import csr_matrix
 RATIONALITY = 100
 EPS = 0.5e-1
@@ -222,6 +223,15 @@ def delta_experiments_fast(game, deltas = [0.9, 0.75, 0.5, 0.25, 0.1], trench = 
         plt.show(block = False)
         plt.pause(20)
         plt.close()
+
+def generate_two_value_payoff_matrix(delta = 0.25, no_actions = 6, no_players = 2):
+    
+    firstNE = np.array([1]*no_players)
+    payoff = np.ones(size = [no_actions] * no_players) * (1-delta)
+    
+    payoff[tuple(firstNE)] = 1
+    
+    return payoff
 
 def generate_two_plateau_payoff_matrix(delta = 0.25, no_actions = 6):
         
@@ -553,11 +563,29 @@ def test_generalisation():
     # plt.close()
     plt.show()
 
+def test_symmetric_payoff():
+    action_space = np.arange(0, 4)
+    
+    no_players = 3
+
+    delta = 0.25
+
+    payoff_matrix = generate_two_plateau_payoff_matrix_multi(delta, len(action_space), no_players)
+
+    sym = make_symmetric_nd(payoff_matrix)
+    test1 = np.array([1, 1, 1])
+    test2 = np.array([2, 1, 1])
+    test3 = np.array([1, 2, 1])
+    
+    print(sym[tuple(test1)])
+    print(sym[tuple(test2)])
+    print(sym[tuple(test3)])
+    
 def test_multipleplayers():
     action_space = np.arange(0, 4)
     # action_space = [0, 1]
     no_actions = len(action_space)
-    no_players = 8
+    no_players = 4
     
     # firstNE = np.array([0, 0, 0, 0, 0])
     # secondNE = np.array([1, 1, 1, 1, 1])
@@ -1140,7 +1168,7 @@ def custom_game_no_actions_experiments(k = [6, 8, 12, 18], delta = 0.25, eps = 1
     
     # plt.show()
  
-def custom_game_no_players_experiments(N = [2, 4, 6], delta = 0.25, eps = 1e-1, max_iter = 100000):
+def custom_game_no_players_experiments(N = [4, 6, 8], delta = 0.25, eps = 1e-1, max_iter = 10000):
     
     action_space = np.arange(0, 4)
     no_actions = len(action_space)
@@ -1150,12 +1178,13 @@ def custom_game_no_players_experiments(N = [2, 4, 6], delta = 0.25, eps = 1e-1, 
     games = []
     expected_values = np.zeros((len(N)+1, max_iter))
     # UNIFORM
-    save = True
+    save = False
     folder = 'WEEK 7'
+    game_type = "Symmetrical"
     
     for idx, no_players in enumerate(N):
         payoff_matrices.append(generate_two_plateau_payoff_matrix_multi(delta = delta, no_actions = len(action_space), no_players = no_players))
-        gameSetups.append(IdenticalInterestGame(action_space, no_players, np.array([1,1]), np.array([no_actions-2, no_actions-2]), delta = delta, payoff_matrix = payoff_matrices[idx]))        
+        gameSetups.append(IdenticalInterestGame(action_space, no_players, np.array([1,1]), np.array([no_actions-2, no_actions-2]), type = game_type, delta = delta, payoff_matrix = payoff_matrices[idx]))        
         # plot_payoff(payoff_matrices[idx], save = save, folder = folder, file_name = "Payoff matrix no_players_" + str(no_actions) + "_experiments_two_plateau_asymmetrical")
         
         mu_matrix = np.ones([1, no_actions**no_players])
@@ -1172,7 +1201,7 @@ def custom_game_no_players_experiments(N = [2, 4, 6], delta = 0.25, eps = 1e-1, 
 
         games[idx].play(beta = beta)
             
-        expected_values[idx] = np.transpose(games[idx].expected_value)
+        expected_values[idx] = np.transpose(games[idx].expected_value) #potentials_history) 
         
         # plot_potential(expected_values[idx])
                         
@@ -1180,7 +1209,7 @@ def custom_game_no_players_experiments(N = [2, 4, 6], delta = 0.25, eps = 1e-1, 
     expected_values[len(N)] = (1 - eps) * np.ones((1, max_iter))
     labels = [r'N = 2', r'N = 4', r'N = 6',  r'$\Phi(a^*) - \epsilon$']
 
-    plot_lines(expected_values, labels, plot_e_efficient = True, title = 'Expected potential value', save = save, folder = folder, file_name = 'comparison_no_players_two_plateau_uniform_asymmetrical_2')
+    plot_lines(expected_values, labels, plot_e_efficient = True, title = 'Expected potential value', save = save, folder = folder, file_name = 'comparison_no_players_two_plateau_uniform_' + game_type)
     
     # # SECOND NE
     # for idx, no_actions in enumerate(k):
@@ -1221,7 +1250,7 @@ def custom_game_no_players_experiments(N = [2, 4, 6], delta = 0.25, eps = 1e-1, 
         
     # plot_lines(expected_values, labels, plot_e_efficient = True, title = 'Expected potential value', save = save, folder = folder, file_name = 'comprison_no_actions_one_plateau_trench')
     
-    # plt.show()
+    plt.show()
     
 def epsilon_experiments(delta):
      
@@ -1256,3 +1285,4 @@ def epsilon_experiments(delta):
     epsilon_experiments_fast(game, save = save, folder = "WEEK 6", scale_factor = 50, file_name = "eps_experiment_fast_faster_unifrom_real_scale_50")
     epsilon_experiments_fast(game, save = save, folder = "WEEK 6", scale_factor = 5000, file_name = "eps_experiment_fast_faster_unifrom_real_scale_5000")
     epsilon_experiments_fast(game, save = save, folder = "WEEK 6", scale_factor = 1000000, file_name = "eps_experiment_fast_faster_unifrom_real_scale_mil")
+

@@ -20,4 +20,6 @@ if __name__ == '__main__':
     # epsilon_experiments(0.25)
     # custom_game_no_actions_experiments()
     custom_game_no_players_experiments()
+    # test_symmetric_payoff()
+    # test_multipleplayers()
     # cProfile.run('test_multipleplayers()')
