@@ -227,7 +227,7 @@ def delta_experiments_fast(game, deltas = [0.9, 0.75, 0.5, 0.25, 0.1], trench = 
 def generate_two_value_payoff_matrix(delta = 0.25, no_actions = 6, no_players = 2):
     
     firstNE = np.array([1]*no_players)
-    payoff = np.ones(size = [no_actions] * no_players) * (1-delta)
+    payoff = np.ones(shape = [no_actions] * no_players) * (1-delta)
     
     payoff[tuple(firstNE)] = 1
     
@@ -256,6 +256,18 @@ def generate_two_plateau_payoff_matrix(delta = 0.25, no_actions = 6):
     
     return payoff
 
+def generate_two_plateau_diagonal_payoff_matrix(delta = 0.25, no_actions = 6):
+    
+    no_players = 2
+    firstNE = np.array([1]*no_players)
+
+    payoff = np.ones(shape = [no_actions] * no_players) *0.1
+
+    np.fill_diagonal(payoff, 1 - delta)
+    payoff[tuple(firstNE)] = 1
+    
+    return payoff 
+
 def generate_two_plateau_payoff_matrix_multi(delta = 0.25, no_actions = 4, no_players = 2):
         
     firstNE = tuple(np.zeros(no_players, dtype=int))     
@@ -281,7 +293,6 @@ def generate_two_plateau_payoff_matrix_multi(delta = 0.25, no_actions = 4, no_pl
     payoff[secondNE] = 1 - delta
     
     return payoff
-
 
 def generate_one_plateau_payoff_matrix(delta = 0.25, no_actions = 6, trench = None):
         
@@ -838,7 +849,7 @@ def custom_game_no_actions_experiments(k = [6, 8, 12, 18], delta = 0.25, eps = 1
     
     # plt.show()
  
-def custom_game_no_players_experiments(N = [4, 6, 8], delta = 0.25, eps = 1e-1, max_iter = 10000):
+def custom_game_no_players_experiments(N = [8], delta = 0.25, eps = 1e-1, max_iter = 100000):
     
     action_space = np.arange(0, 4)
     no_actions = len(action_space)
@@ -848,9 +859,9 @@ def custom_game_no_players_experiments(N = [4, 6, 8], delta = 0.25, eps = 1e-1, 
     games = []
     expected_values = np.zeros((len(N)+1, max_iter))
     # UNIFORM
-    save = False
+    save = True
     folder = 'WEEK 7'
-    game_type = "Symmetrical"
+    game_type = "Asymmetrical"
     
     for idx, no_players in enumerate(N):
         payoff_matrices.append(generate_two_plateau_payoff_matrix_multi(delta = delta, no_actions = len(action_space), no_players = no_players))
@@ -873,11 +884,35 @@ def custom_game_no_players_experiments(N = [4, 6, 8], delta = 0.25, eps = 1e-1, 
             
         expected_values[idx] = np.transpose(games[idx].expected_value) #potentials_history) 
         
-        # plot_potential(expected_values[idx])
-                        
+        # plot_potential(expected_values[idx])                    
     
     expected_values[len(N)] = (1 - eps) * np.ones((1, max_iter))
     labels = [r'N = 2', r'N = 4', r'N = 6',  r'$\Phi(a^*) - \epsilon$']
+    labels = [r'N = 8',  r'$\Phi(a^*) - \epsilon$']
+
+    plot_lines(expected_values, labels, plot_e_efficient = True, title = 'Expected potential value', save = save, folder = folder, file_name = 'comparison_no_players_two_plateau_uniform_' + game_type)
+    
+    game_type = "Symmetrical"
+    for idx, no_players in enumerate(N):
+        
+        gameSetups[idx].type = game_type
+        gameSetups[idx].set_payoff_matrix(payoff_matrices[idx])
+        
+        games[idx].gameSetup = gameSetups[idx]
+        games[idx].reset_game()
+        
+        beta = games[idx].compute_beta(eps)
+        print(no_players)
+        print(beta)
+        print(games[idx].compute_t(eps))
+        
+        # epsilon_experiments_fast(games[idx], save = save, folder = folder, scale_factor = scale_factor, file_name = "comparison_no_players_" +  str(no_actions) + "_eps_experiment_fast_faster_unifrom_real_scale_50_two_plateau")
+
+        games[idx].play(beta = beta)
+            
+        expected_values[idx] = np.transpose(games[idx].expected_value) #potentials_history) 
+ 
+    expected_values[len(N)] = (1 - eps) * np.ones((1, max_iter))
 
     plot_lines(expected_values, labels, plot_e_efficient = True, title = 'Expected potential value', save = save, folder = folder, file_name = 'comparison_no_players_two_plateau_uniform_' + game_type)
     
@@ -955,4 +990,3 @@ def epsilon_experiments(delta):
     epsilon_experiments_fast(game, save = save, folder = "WEEK 6", scale_factor = 50, file_name = "eps_experiment_fast_faster_unifrom_real_scale_50")
     epsilon_experiments_fast(game, save = save, folder = "WEEK 6", scale_factor = 5000, file_name = "eps_experiment_fast_faster_unifrom_real_scale_5000")
     epsilon_experiments_fast(game, save = save, folder = "WEEK 6", scale_factor = 1000000, file_name = "eps_experiment_fast_faster_unifrom_real_scale_mil")
-

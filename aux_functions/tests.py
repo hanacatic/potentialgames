@@ -42,10 +42,8 @@ def test_custom_game():
     plt.show(block = False)
     plt.pause(20)
     plt.close()
-    
      
     beta_experiments_fast(game, save = False, folder = "WEEK 5", file_name = "betas_experiment_fast_uniform_2")
-    # epsilon_experiments_fast(game, save = True, folder = "WEEK 5", file_name = "eps_experiment_fast_uniform_")
     
     print(game.stationary)
     print(np.sum(game.gameSetup.P[0,:]))
@@ -81,8 +79,7 @@ def test_log_linear_t(delta = 0.25):
     for i in range(10):
         game.play(beta = beta_t)
         potentials_history[i] = np.transpose(game.potentials_history).copy()
-
-            
+       
     mean_potential_history = np.mean(potentials_history, 0)
     
     std = np.std(potentials_history, 0)
@@ -125,45 +122,7 @@ def test_best_response(delta = 0.25):
     plt.show(block = False)
     plt.pause(20)
     plt.close()
-    
-def test_transition_matrix():
-    
-    action_space = [0, 1, 2, 3, 4, 5]
-    no_players = 2
-    
-    firstNE = np.array([1,1])
-    secondNE = np.array([3,3])
-    
-    delta = 0.25
-    payoff_matrix = generate_two_plateau_payoff_matrix(delta)
-        
-    gameSetup = IdenticalInterestGame(action_space, no_players, firstNE, secondNE, delta = delta, payoff_matrix = payoff_matrix)
-
-    mu_matrix = np.zeros([1, len(action_space)**2])
-    mu_matrix[0, 15] = 1
-    
-    # mu_matrix = np.ones([1, len(action_space)**2])
-    # mu_matrix /= np.sum(mu_matrix)
-    
-    game = Game(gameSetup, algorithm = "log_linear_fast", max_iter = 1e6, mu=mu)
-    beta_t = game.compute_beta(0.1)
-    
-    game.set_mu_matrix(mu_matrix)
-    game.play(beta = beta_t)
-    
-    print("Stationary distribution: ")
-    print(game.stationary)
-    
-    stationary = np.reshape(game.stationary,(-1, game.gameSetup.no_actions))
-    
-    plot_payoff(game.gameSetup.P, title = "Transition matrix")
-    plot_payoff(stationary, title = "Stationary distribution")
-    plot_potential(game.expected_value)
-    
-    plt.show(block = False)
-    plt.pause(60)
-    plt.close()
-        
+         
 def test_alpha_best_response(initial_action_profile):
     action_space = [0, 1, 2, 3, 4, 5]
     no_players = 2
@@ -213,6 +172,120 @@ def test_epsilon(initial_action_profile):
     game.play(beta = beta_t)
     print(beta_t)
 
+    print("Stationary distribution: ")
+    print(game.stationary)
+    
+    stationary = np.reshape(game.stationary,(-1, game.gameSetup.no_actions))
+    
+    plot_payoff(game.gameSetup.P, title = "Transition matrix")
+    plot_payoff(stationary, title = "Stationary distribution")
+    plot_potential(game.expected_value)
+    
+    plt.show(block = False)
+    plt.pause(60)
+    plt.close()
+
+def test_two_value_game():
+    action_space = [0, 1, 2, 3, 4, 5]
+    no_players = 2
+    
+    firstNE = np.array([1,1])
+    secondNE = np.array([3,3])
+    
+    delta = 0.25
+    payoff_matrix = generate_two_value_payoff_matrix(delta)
+        
+    gameSetup = IdenticalInterestGame(action_space, no_players, firstNE, secondNE, delta = delta, payoff_matrix = payoff_matrix)
+
+    mu_matrix = np.zeros([1, len(action_space)**2])
+    mu_matrix[0, 15] = 1
+    
+    # mu_matrix = np.ones([1, len(action_space)**2])
+    # mu_matrix /= np.sum(mu_matrix)
+    
+    game = Game(gameSetup, algorithm = "log_linear_fast", max_iter = 1000, mu=mu)
+    beta_t = game.compute_beta(0.1)
+    
+    game.set_mu_matrix(mu_matrix)
+    game.play(beta = beta_t)
+    
+    print("Stationary distribution: ")
+    print(game.stationary)
+    
+    stationary = np.reshape(game.stationary,(-1, game.gameSetup.no_actions))
+    
+    plot_payoff(game.gameSetup.P.todense(), title = "Transition matrix")
+    plot_payoff(stationary, title = "Stationary distribution")
+    plot_potential(game.expected_value)
+    
+    plt.show(block = False)
+    plt.pause(60)
+    plt.close()
+
+def test_two_plateau_diagonal_game():
+    
+    action_space = [0, 1, 2, 3, 4, 5]
+    no_players = 2
+    
+    firstNE = np.array([1,1])
+    secondNE = np.array([3,3])
+    
+    delta = 0.25
+    payoff_matrix = generate_two_plateau_diagonal_payoff_matrix(delta, len(action_space))
+        
+    gameSetup = IdenticalInterestGame(action_space, no_players, firstNE, secondNE, delta = delta, payoff_matrix = payoff_matrix)
+
+    # mu_matrix = np.zeros([1, len(action_space)**2])
+    # mu_matrix[0, 15] = 1
+    
+    mu_matrix = np.ones([1, len(action_space)**2])
+    mu_matrix /= np.sum(mu_matrix)
+    
+    game = Game(gameSetup, algorithm = "log_linear_fast", max_iter = 1e6, mu=mu)
+    beta_t = game.compute_beta(0.1)
+    
+    game.set_mu_matrix(mu_matrix)
+    game.play(beta = beta_t, scale_factor = 10)
+    
+    print(beta_t)
+    print(game.compute_t(0.1))
+    print("Stationary distribution: ")
+    print(game.stationary)
+    
+    stationary = np.reshape(game.stationary,(-1, game.gameSetup.no_actions))
+    
+    plot_payoff(game.gameSetup.P, title = "Transition matrix")
+    plot_payoff(stationary, title = "Stationary distribution")
+    plot_potential(game.expected_value)
+    
+    plt.show(block = False)
+    plt.pause(60)
+    plt.close() 
+def test_transition_matrix():
+    
+    action_space = [0, 1, 2, 3, 4, 5]
+    no_players = 2
+    
+    firstNE = np.array([1,1])
+    secondNE = np.array([3,3])
+    
+    delta = 0.25
+    payoff_matrix = generate_two_plateau_payoff_matrix(delta)
+        
+    gameSetup = IdenticalInterestGame(action_space, no_players, firstNE, secondNE, delta = delta, payoff_matrix = payoff_matrix)
+
+    mu_matrix = np.zeros([1, len(action_space)**2])
+    mu_matrix[0, 15] = 1
+    
+    # mu_matrix = np.ones([1, len(action_space)**2])
+    # mu_matrix /= np.sum(mu_matrix)
+    
+    game = Game(gameSetup, algorithm = "log_linear_fast", max_iter = 1e6, mu=mu)
+    beta_t = game.compute_beta(0.1)
+    
+    game.set_mu_matrix(mu_matrix)
+    game.play(beta = beta_t)
+    
     print("Stationary distribution: ")
     print(game.stationary)
     
@@ -275,11 +348,39 @@ def test_symmetric_payoff():
     test1 = np.array([1, 1, 1])
     test2 = np.array([2, 1, 1])
     test3 = np.array([1, 2, 1])
+    test4 = np.array([1, 1, 2])
     
     print(sym[tuple(test1)])
     print(sym[tuple(test2)])
     print(sym[tuple(test3)])
+    print(sym[tuple(test4)])
     
+def test_two_value_payoff_matrix():
+       
+    action_space = np.arange(0, 6)
+    
+    no_players = 2
+
+    delta = 0.25
+
+    payoff_matrix = generate_two_value_payoff_matrix(delta, len(action_space), no_players)
+    
+    plot_payoff(payoff_matrix)
+    
+    plt.show()
+    
+def test_two_plateau_diagonal_payoff_matrix():
+       
+    action_space = np.arange(0, 6)
+    
+    delta = 0.25
+
+    payoff_matrix = generate_two_plateau_diagonal_payoff_matrix(delta, len(action_space))
+    
+    plot_payoff(payoff_matrix)
+    
+    plt.show()
+  
 def test_multipleplayers():
     action_space = np.arange(0, 4)
     # action_space = [0, 1]

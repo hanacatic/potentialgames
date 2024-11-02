@@ -54,7 +54,10 @@ class Game:
                 self.log_linear_tatarenko()
             case "log_linear_fast":
                 # self.set_mu_matrix(mu_matrix)
-                self.log_linear_fast(beta, scale_factor)
+                if self.gameSetup.no_players == 2:
+                    self.log_linear_fast(beta, scale_factor)
+                else:
+                    self.log_linear_fast_sparse(beta, scale_factor)
             case "best_response":
                 self.best_response()
             case "alpha_best_response":
@@ -92,10 +95,30 @@ class Game:
 
   
             self.log_linear_iteration(i, beta)
-            
+    
     def log_linear_fast(self, beta, scale_factor):
         
         P = self.gameSetup.formulate_transition_matrix(beta)
+        mu0 = self.mu_matrix.copy()
+        
+        self.expected_value = np.zeros((int(self.max_iter), 1))
+        
+        P = np.linalg.matrix_power(P, scale_factor)
+        
+        for i in range(self.max_iter):
+            
+            mu = mu0 @ P
+            
+            mu0 = mu
+            
+            self.expected_value[i] = mu @ self.gameSetup.potential
+        
+        self.expected_value = self.expected_value
+        self.stationary = mu
+                
+    def log_linear_fast_sparse(self, beta, scale_factor):
+        
+        P = self.gameSetup.formulate_transition_matrix_sparse(beta)
         mu0 = csr_matrix(self.mu_matrix) # self.mu_matrix.copy()
         
         self.expected_value = np.zeros((int(self.max_iter), 1))
@@ -247,7 +270,6 @@ class Game:
         self.algorithm = algorithm
         
     def reset_game(self):
-        
         # self.gameSetup = gameSetup
         [self.players[i].reset_player(self.gameSetup.no_actions, self.gameSetup.utility_functions[i]) for i in range(0, self.gameSetup.no_players)]
 
@@ -273,8 +295,39 @@ class IdenticalInterestGame:
         
         for i in range(0, self.no_players):
             self.utility_functions.append(lambda player_action, opponents_action: self.utility_function(i, player_action, opponents_action))
+    
+    def formulate_transition_matrix(self, beta): 
+         
+        self.action_profiles = enumerate(np.array(list(product(np.arange(self.no_actions), repeat = self.no_players))))
         
-    def formulate_transition_matrix(self, beta):
+        self.potential = np.zeros((self.no_action_profiles, 1))
+        
+        P = np.zeros([self.no_action_profiles, self.no_action_profiles])     
+
+        for idx, profile in self.action_profiles:
+            
+            self.potential[idx] = self.potential_function(profile)
+
+            for player_id in range(self.no_players):
+                
+                mask = np.arange(len(profile)) != player_id
+                opponents_actions = profile[mask] # extract the opponents actions from the action profile
+                
+                utilities = np.array([self.utility_functions[player_id](i, opponents_actions) for i in range(self.no_actions)])
+                exp_values = np.exp(beta * utilities)
+        
+                p = exp_values/np.sum(exp_values)
+                
+                i = idx - profile[player_id]*self.no_actions**(self.no_players - 1 - player_id)
+                stride = self.no_actions ** (self.no_players - 1 - player_id)
+                
+                P[idx, i: i + self.no_actions**(self.no_players - player_id) : stride] += 1/self.no_players*p
+                     
+        self.P = P
+                
+        return self.P
+         
+    def formulate_transition_matrix_sparse(self, beta):
         self.action_profiles = enumerate(np.array(list(product(np.arange(self.no_actions), repeat = self.no_players))))
         
         self.potential = lil_matrix((self.no_action_profiles, 1))
@@ -327,6 +380,7 @@ class IdenticalInterestGame:
         
         if self.type == "Symmetrical": 
             self.payoff_player_1 = make_symmetric_nd(self.payoff_player_1)
+    
     def reset_payoff_matrix(self, delta = None):
         
         if delta:
@@ -339,6 +393,7 @@ class IdenticalInterestGame:
         self.payoff_player_1 = payoff
         
         if self.type == "Symmetrical":
+            print("Here")
             self.payoff_player_1 = make_symmetric_nd(self.payoff_player_1)
 
     def potential_function(self, action_profile):
