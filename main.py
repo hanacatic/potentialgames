@@ -2,6 +2,7 @@ import numpy as np
 from game import Game, IdenticalInterestGame, rng 
 from aux_functions.plot import *
 from aux_functions.experiments import *
+from aux_functions.tests import *
 import cProfile
 import sys
 
@@ -19,7 +20,7 @@ if __name__ == '__main__':
     # test_custom_game()
     # epsilon_experiments(0.25)
     # custom_game_no_actions_experiments()
-    custom_game_no_players_experiments()
-    # test_symmetric_payoff()
+    # custom_game_no_players_experiments()
+    test_symmetric_payoff()
     # test_multipleplayers()
     # cProfile.run('test_multipleplayers()')
