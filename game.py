@@ -4,7 +4,7 @@ from player import Player
 from aux_functions.helpers import rejection_sampling, make_symmetric_nd
 from scipy.sparse import lil_matrix, csr_matrix, coo_matrix
 from scipy.sparse.linalg import matrix_power
-
+from functools import partial
 rng = np.random.default_rng()
 
 class Game:
@@ -119,6 +119,7 @@ class Game:
     def log_linear_fast_sparse(self, beta, scale_factor):
         
         P = self.gameSetup.formulate_transition_matrix_sparse(beta)
+        print("transition_matrix_formulated")
         mu0 = csr_matrix(self.mu_matrix) # self.mu_matrix.copy()
         
         self.expected_value = np.zeros((int(self.max_iter), 1))
@@ -242,8 +243,10 @@ class Game:
         delta = self.gameSetup.delta
         
         # return 1/max(epsilon/2, delta)*np.log(A**N*(1-epsilon/2)*(4/(epsilon*A**N*(epsilon/2)) - 1/(A**N*(epsilon/2))))
-
-        return 1/max(epsilon, delta)*np.log(A**N/epsilon)
+        # if self.gameSetup.type == "Asymmetrical":
+        #     return 1/max(epsilon, delta)*np.log(A**N/epsilon)
+        # print("Symmetrical in compute beta")
+        return  1/max(epsilon, delta)*np.log(N**A/epsilon)
 
     def compute_t(self, epsilon):
         
@@ -285,7 +288,7 @@ class IdenticalInterestGame:
         self.secondNE = secondNE
         self.delta = delta
         self.type = type
-        
+        self.action_profile_template = [0]*self.no_players
         if payoff_matrix is None:
             self.generate_payoff_matrix()
         else:
@@ -294,7 +297,8 @@ class IdenticalInterestGame:
         self.utility_functions = []
         
         for i in range(0, self.no_players):
-            self.utility_functions.append(lambda player_action, opponents_action: self.utility_function(i, player_action, opponents_action))
+            self.utility_functions.append(partial(self.utility_function, i))
+            # self.utility_functions.append(lambda player_action, opponents_action: self.utility_function(i, player_action, opponents_action))
     
     def formulate_transition_matrix(self, beta): 
          
@@ -328,46 +332,40 @@ class IdenticalInterestGame:
         return self.P
          
     def formulate_transition_matrix_sparse(self, beta):
-        self.action_profiles = enumerate(np.array(list(product(np.arange(self.no_actions), repeat = self.no_players))))
-        
-        self.potential = lil_matrix((self.no_action_profiles, 1))
-        
-        # P = np.zeros([self.no_action_profiles, self.no_action_profiles])     
-
+            
         P_row, P_col, P_data = [], [], []
 
-        for idx, profile in self.action_profiles:
+        i = 0
+
+        strides = self.no_actions ** (self.no_players - 1 - np.arange(0, self.no_players))
+        opponents_idx = [ np.delete(np.arange(self.no_players), player_id) for player_id in range(self.no_players) ]
+        action_space = np.arange(0, self.no_actions)
+       
+        while i < self.no_actions**(self.no_players - 1):
             
-            self.potential[idx] = self.potential_function(profile)
+            opponents_actions = np.unravel_index(i, (self.no_actions,)*(self.no_players - 1))
 
             for player_id in range(self.no_players):
                 
-                mask = np.arange(len(profile)) != player_id
-                opponents_actions = profile[mask] # extract the opponents actions from the action profile
-                
                 utilities = np.array([self.utility_functions[player_id](i, opponents_actions) for i in range(self.no_actions)])
-                exp_values = np.exp(beta * utilities)
+                
+                exp_values = np.exp(beta * (utilities - np.max(utilities)))
         
                 p = exp_values/np.sum(exp_values)
                 
-                i = idx - profile[player_id]*self.no_actions**(self.no_players - 1 - player_id)
-                stride = self.no_actions ** (self.no_players - 1 - player_id)
+                stride = strides[player_id]
+                idx = opponents_actions @ strides[opponents_idx[player_id]]
                 
                 for j, prob in enumerate(p):
-                    P_row.append(idx)
-                    P_col.append(i + j * stride)
-                    P_data.append(prob / self.no_players)  
-                
-                # P[idx, i: i + self.no_actions**(self.no_players - player_id) :self.no_actions**(self.no_players - 1 - player_id)] += 1/self.no_players*p
-     
-        
+                    P_row.extend(idx + action_space*stride)
+                    P_col.extend([idx + j * stride]*self.no_actions)
+                    P_data.extend([prob / self.no_players]*self.no_actions)   
+                      
+            i += 1 
+            
         P = coo_matrix((P_data, (P_row, P_col)), shape=(self.no_action_profiles, self.no_action_profiles))
-                
         self.P = P.tocsr()
-        # self.P = csr_matrix(P)
-        
-        # self.formulate_potential_vec()
-                
+                          
         return self.P
            
     def generate_payoff_matrix(self):
@@ -401,15 +399,17 @@ class IdenticalInterestGame:
         return self.payoff_player_1[tuple(action_profile)]
     
     def utility_function(self, player_id, player_action, opponents_action):
+
+        self.action_profile_template[:player_id] = opponents_action[:player_id]
+        self.action_profile_template[player_id + 1:] = opponents_action[player_id:]
+        self.action_profile_template[player_id] = player_action
         
-        action_profile = np.insert(opponents_action, player_id, player_action)
-        
-        return self.potential_function(action_profile)
+        return self.potential_function(self.action_profile_template)
         
     def formulate_potential_vec(self):
         
-        # self.potential = np.zeros([self.no_action_profiles, 1])
         self.potential = lil_matrix((self.no_action_profiles, 1))
         
-        for idx, element in enumerate(np.array(list(product(np.arange(self.no_actions), repeat = self.no_players)))):
+        for idx in np.arange(self.no_action_profiles):
+            element = np.unravel_index(idx, (self.no_actions,)*(self.no_players))
             self.potential[idx] = self.potential_function(element)

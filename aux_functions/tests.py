@@ -224,15 +224,19 @@ def test_two_value_game():
 
 def test_two_plateau_diagonal_game():
     
-    action_space = [0, 1, 2, 3, 4, 5]
+    action_space = [0, 1, 2, 3, 4, 5, 6, 7]
     no_players = 2
     
     firstNE = np.array([1,1])
     secondNE = np.array([3,3])
     
-    delta = 0.25
-    payoff_matrix = generate_two_plateau_diagonal_payoff_matrix(delta, len(action_space))
-        
+    delta = 0.3
+    trench = 0.001
+    scale_factor = 1000
+    
+    payoff_matrix = generate_two_plateau_diagonal_payoff_matrix(delta, len(action_space), trench)
+    # plot_payoff(payoff_matrix)
+    # plt.show()
     gameSetup = IdenticalInterestGame(action_space, no_players, firstNE, secondNE, delta = delta, payoff_matrix = payoff_matrix)
 
     # mu_matrix = np.zeros([1, len(action_space)**2])
@@ -245,7 +249,7 @@ def test_two_plateau_diagonal_game():
     beta_t = game.compute_beta(0.1)
     
     game.set_mu_matrix(mu_matrix)
-    game.play(beta = beta_t, scale_factor = 10)
+    game.play(beta = beta_t, scale_factor = scale_factor)
     
     print(beta_t)
     print(game.compute_t(0.1))
@@ -253,25 +257,31 @@ def test_two_plateau_diagonal_game():
     print(game.stationary)
     
     stationary = np.reshape(game.stationary,(-1, game.gameSetup.no_actions))
-    
+    save = True
+    folder = "WEEK 7"
+    setup = "two_plateau_diagonal_no_actions_" + str(len(action_space)) + "delta_" + str(delta) + "_trench_" + str(trench) + "_scaling_factor_" + str(scale_factor)
+    plot_payoff(payoff_matrix, save = save, folder = folder, file_name = "Payoff_matrix_" + setup) 
     plot_payoff(game.gameSetup.P, title = "Transition matrix")
     plot_payoff(stationary, title = "Stationary distribution")
-    plot_potential(game.expected_value)
+    plot_potential(game.expected_value, save = save, folder = folder, title = "Expected potential value", file_name = "Expected_pot_" + setup)
     
     plt.show(block = False)
     plt.pause(60)
     plt.close() 
+
 def test_transition_matrix():
     
-    action_space = [0, 1, 2, 3, 4, 5]
-    no_players = 2
+    action_space = [0, 1, 2, 3]
+    no_actions = len(action_space)
+    no_players = 10
     
     firstNE = np.array([1,1])
     secondNE = np.array([3,3])
     
     delta = 0.25
-    payoff_matrix = generate_two_plateau_payoff_matrix(delta)
-        
+    payoff_matrix = generate_two_plateau_payoff_matrix_multi(delta, no_actions, no_players)
+    
+    print("payoff_matrix_generated")    
     gameSetup = IdenticalInterestGame(action_space, no_players, firstNE, secondNE, delta = delta, payoff_matrix = payoff_matrix)
 
     mu_matrix = np.zeros([1, len(action_space)**2])
@@ -279,25 +289,26 @@ def test_transition_matrix():
     
     # mu_matrix = np.ones([1, len(action_space)**2])
     # mu_matrix /= np.sum(mu_matrix)
-    
     game = Game(gameSetup, algorithm = "log_linear_fast", max_iter = 1e6, mu=mu)
     beta_t = game.compute_beta(0.1)
     
-    game.set_mu_matrix(mu_matrix)
-    game.play(beta = beta_t)
+    transition_matrix_sparse = gameSetup.formulate_transition_matrix_sparse(beta_t)
+    print("transition_matrix_formulated")
+    # game.set_mu_matrix(mu_matrix)
+    # game.play(beta = beta_t)
     
-    print("Stationary distribution: ")
-    print(game.stationary)
+    # print("Stationary distribution: ")
+    # print(game.stationary)
     
-    stationary = np.reshape(game.stationary,(-1, game.gameSetup.no_actions))
+    # stationary = np.reshape(game.stationary,(-1, game.gameSetup.no_actions))
     
-    plot_payoff(game.gameSetup.P, title = "Transition matrix")
-    plot_payoff(stationary, title = "Stationary distribution")
-    plot_potential(game.expected_value)
+    # plot_payoff(game.gameSetup.P, title = "Transition matrix")
+    # plot_payoff(stationary, title = "Stationary distribution")
+    # plot_potential(game.expected_value)
     
-    plt.show(block = False)
-    plt.pause(60)
-    plt.close()
+    # plt.show(block = False)
+    # plt.pause(60)
+    # plt.close()
    
 def test_generalisation():
     action_space = [0, 1, 2, 3, 4, 5]
@@ -385,7 +396,7 @@ def test_multipleplayers():
     action_space = np.arange(0, 4)
     # action_space = [0, 1]
     no_actions = len(action_space)
-    no_players = 4
+    no_players = 10
     
     # firstNE = np.array([0, 0, 0, 0, 0])
     # secondNE = np.array([1, 1, 1, 1, 1])
@@ -406,30 +417,41 @@ def test_multipleplayers():
     mu_matrix = np.ones([1, len(action_space)**no_players])
     mu_matrix /= np.sum(mu_matrix)
     
-    game = Game(gameSetup, algorithm = "log_linear_fast", max_iter = 1e4, mu=mu)
+    game = Game(gameSetup, algorithm = "log_linear_fast", max_iter = 1e1, mu=mu)
     beta_t = game.compute_beta(0.1)
-    print(payoff_matrix)
+
     # mu_matrix = np.zeros([1, len(action_space)**no_players])
     # mu_matrix[0, secondNE[0]*game.gameSetup.no_actions + secondNE[1]] = 1
     
     game.set_mu_matrix(mu_matrix)
     
-    P = gameSetup.formulate_transition_matrix(beta_t)
+    # P = gameSetup.formulate_transition_matrix(beta_t)
     # test = np.linalg.matrix_power(game.gameSetup.P.todense(), 10)
     
     print(game.compute_t(0.1))
     # plot_payoff((P @ P).todense())
     # plot_payoff(test)
 
-    game.play(beta = beta_t, scale_factor = 100)
+    game.play(beta = beta_t)
         
-    print(game.stationary.shape)
+    # print(game.stationary.shape)
     # plot_payoff(game.stationary)
-    plot_potential(game.expected_value)
+    # plot_potential(game.potentials_history)
     
-    # plot_payoff(game.gameSetup.payoff_player_1)
-    # plt.show(block = False)
-    # plt.pause(20)
-    # plt.close()
-    plt.show()
+    # # plot_payoff(game.gameSetup.payoff_player_1)
+    # # plt.show(block = False)
+    # # plt.pause(20)
+    # # plt.close()
+    # plt.show()
  
+def test():
+
+    no_actions = 6
+    no_players = 3
+    # Define the shape of the "array" you want to iterate over
+    action_profiles = np.ndindex((no_actions,) * no_players)
+
+    # Use np.ndindex to generate indices for all elements in this shape
+    for idx, index in enumerate(action_profiles):
+        print(idx)
+        print(index)

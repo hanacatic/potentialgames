@@ -2,7 +2,9 @@ import numpy as np
 from game import Game,IdenticalInterestGame, rng
 from aux_functions.plot import *
 from aux_functions.helpers import make_symmetric_nd
-from scipy.sparse import csr_matrix
+from scipy.sparse import csr_matrix, dia_matrix
+import sparse 
+
 RATIONALITY = 100
 EPS = 0.5e-1
     
@@ -201,6 +203,8 @@ def delta_experiments_fast(game, deltas = [0.9, 0.75, 0.5, 0.25, 0.1], trench = 
             payoff_matrix = generate_two_plateau_payoff_matrix(delta)
         else:
             payoff_matrix = generate_one_plateau_payoff_matrix(delta = delta, no_actions = game.gameSetup.no_actions, trench = trench)
+            payoff_matrix = generate_two_plateau_diagonal_payoff_matrix(delta, no_actions = game.gameSetup.no_actions, trench = trench)
+
 
         game.gameSetup.set_payoff_matrix(payoff_matrix)
         game.reset_game()
@@ -256,14 +260,17 @@ def generate_two_plateau_payoff_matrix(delta = 0.25, no_actions = 6):
     
     return payoff
 
-def generate_two_plateau_diagonal_payoff_matrix(delta = 0.25, no_actions = 6):
+def generate_two_plateau_diagonal_payoff_matrix(delta = 0.25, no_actions = 6, trench = 0):
     
     no_players = 2
     firstNE = np.array([1]*no_players)
+    
+    # payoff = np.ones(shape = [no_actions] * no_players) * trench
 
-    payoff = np.ones(shape = [no_actions] * no_players) *0.1
+    # np.fill_diagonal(payoff, 1 - delta)
 
-    np.fill_diagonal(payoff, 1 - delta)
+    payoff = np.kron(np.eye(no_actions//2,dtype=int), np.ones((2, 2)) * (1-delta - trench)) + np.ones(shape = [no_actions] * no_players) * trench
+    
     payoff[tuple(firstNE)] = 1
     
     return payoff 
@@ -274,8 +281,16 @@ def generate_two_plateau_payoff_matrix_multi(delta = 0.25, no_actions = 4, no_pl
     secondNE = tuple((3 * np.ones(no_players)).astype(int))  
 
     b = 1 - delta 
+    
+    # shape = [no_actions] * no_players
+    # dtype = np.float32  # Choose appropriate data type (float64 or float32)
+    # payoff = np.memmap("payoff_matrix.npy", dtype=dtype, mode='write', shape=shape)
+    
+    # Generate the initial matrix values
+    payoff = (rng.random(size=[no_actions] * no_players) * 0.25 + 0.75) * 0.6 * (1 - delta)
+    
        
-    payoff = (rng.random(size = [no_actions] * no_players) * 0.25 + 0.75) * 0.6 * (1-delta) # 0.25
+    # payoff = (rng.random(size = [no_actions] * no_players) * 0.25 + 0.75) * 0.6 * (1-delta) # 0.25
 
     # payoff_firstNE = (rng.random(size=np.array([5, 5]))*0.6 + 0.4) * 0.75 * b
     payoff_firstNE= (rng.random(size=[2]*no_players)*0.1 + 0.9) * b
@@ -291,6 +306,16 @@ def generate_two_plateau_payoff_matrix_multi(delta = 0.25, no_actions = 4, no_pl
     
     payoff[firstNE] = 1
     payoff[secondNE] = 1 - delta
+    
+    return payoff
+
+def generate_two_plateau_diagonal_payoff_matrix_multi(delta = 0.25, no_actions = 4, no_players = 2):
+    
+    coords = [np.arange(0, no_actions)]*no_players
+    payoffs = (1-delta)*np.ones(no_actions)
+    payoffs[1] = 1
+    
+    payoff = sparse.COO(coords, payoffs, shape = [no_actions]*no_players)
     
     return payoff
 
@@ -670,7 +695,7 @@ def main_simulation_experiment():
     # plt.pause(20)
     # plt.close()
 
-def custom_game_experiments(delta):
+def custom_game_experiments(delta = 0.25):
     
     # action_space = [0, 1, 2, 3, 4, 5, 6, 7, 8, 9]
 
@@ -683,10 +708,11 @@ def custom_game_experiments(delta):
     
     firstNE = np.array([1,1])
     secondNE = np.array([4,4])
-    trench = 0.25
+    trench = 0.2
     
-    payoff_matrix = generate_one_plateau_payoff_matrix(delta, no_actions = no_actions, trench = trench)
+    # payoff_matrix = generate_one_plateau_payoff_matrix(delta, no_actions = no_actions, trench = trench)
     # payoff_matrix = generate_two_plateau_payoff_matrix(delta)
+    payoff_matrix = generate_two_plateau_diagonal_payoff_matrix(delta, no_actions = no_actions, trench = trench)
 
     # payoff_matrix = np.zeros([6,6])
     # payoff_matrix[0,0] = 1
@@ -697,61 +723,62 @@ def custom_game_experiments(delta):
     mu_matrix = np.ones([1, no_actions**2])
     mu_matrix /= np.sum(mu_matrix)
     
-    game = Game(gameSetup, algorithm = "log_linear_fast", max_iter = 3 * 1e3, mu=mu)
+    game = Game(gameSetup, algorithm = "log_linear_fast", max_iter = 1e6, mu=mu)
     game.set_mu_matrix(mu_matrix)
     
-    folder = 'WEEK 6'
-    save = False
+    folder = 'WEEK 7'
+    save = True
     
-    beta_experiments_fast(game, save = save, folder = folder, file_name = "betas_experiment_fast_uniform_one_plateau")
+    setup = "_diagonal_blocks_trench_" + str(trench)
+    
+    beta_experiments_fast(game, save = save, folder = folder, file_name = "betas_experiment_fast_uniform" + setup)
     
     mu_matrix = np.zeros([1, len(action_space)**2])
     mu_matrix[0, 28] = 1
     game.set_mu_matrix(mu_matrix)
 
-    beta_experiments_fast(game, save = save, folder = folder, file_name = "betas_experiment_fast_trench_one_plateau")
+    beta_experiments_fast(game, save = save, folder = folder, file_name = "betas_experiment_fast_trench" + setup)
 
     mu_matrix = np.zeros([1, len(action_space)**2])
     mu_matrix[0, 14] = 1
     game.set_mu_matrix(mu_matrix)
     
-    beta_experiments_fast(game, save = save, folder = folder, file_name = "betas_experiment_fast_secondNE_one_plateau")
+    beta_experiments_fast(game, save = save, folder = folder, file_name = "betas_experiment_fast_secondNE" + setup)
 
     mu_matrix = np.ones([1, no_actions**2])
     mu_matrix /= np.sum(mu_matrix)
     game.set_mu_matrix(mu_matrix)
     
-    epsilon_experiments_fast(game, save = save, folder = folder, scale_factor = 5, file_name = "eps_experiment_fast_scale_factor_5_uniform_one_plateau")
+    epsilon_experiments_fast(game, save = save, folder = folder, scale_factor = 5, file_name = "eps_experiment_fast_scale_factor_5_uniform" + setup)
     
     mu_matrix = np.zeros([1, len(action_space)**2])
     mu_matrix[0, 28] = 1
     game.set_mu_matrix(mu_matrix)
     
-    epsilon_experiments_fast(game, save = save, folder = folder, scale_factor = 5, file_name = "eps_experiment_fast_scale_factor_5_trench_one_plateau")
+    epsilon_experiments_fast(game, save = save, folder = folder, scale_factor = 5, file_name = "eps_experiment_fast_scale_factor_5_trench" + setup)
 
     mu_matrix = np.zeros([1, len(action_space)**2])
     mu_matrix[0, 14] = 1
     game.set_mu_matrix(mu_matrix)
     
-    epsilon_experiments_fast(game, save = save, folder = folder, scale_factor = 5, file_name = "eps_experiment_fast_scale_factor_5_secondNE_one_plateau")
+    epsilon_experiments_fast(game, save = save, folder = folder, scale_factor = 5, file_name = "eps_experiment_fast_scale_factor_5_secondNE" + setup)
 
     mu_matrix = np.ones([1, no_actions**2])
     mu_matrix /= np.sum(mu_matrix)
     game.set_mu_matrix(mu_matrix)
     
-    delta_experiments_fast(game, trench = trench, save = save, folder = folder, file_name = "delta_experiment_fast_faster_unifrom_one_plateau")
-    
+    delta_experiments_fast(game, trench = trench, save = save, folder = folder, file_name = "delta_experiment_fast_faster_unifrom" + setup)
     mu_matrix = np.zeros([1, len(action_space)**2])
     mu_matrix[0, 28] = 1
     game.set_mu_matrix(mu_matrix)
     
-    delta_experiments_fast(game, trench = trench, save = save, folder = folder, file_name = "delta_experiment_fast_faster_trench_one_plateau")
+    delta_experiments_fast(game, trench = trench, save = save, folder = folder, file_name = "delta_experiment_fast_faster_trench" + setup)
     
     mu_matrix = np.zeros([1, len(action_space)**2])
     mu_matrix[0, 14] = 1
     game.set_mu_matrix(mu_matrix)
     
-    delta_experiments_fast(game, trench = trench, save = save, folder = folder, file_name = "delta_experiment_fast_faster_secondNE_one_plateau")
+    delta_experiments_fast(game, trench = trench, save = save, folder = folder, file_name = "delta_experiment_fast_faster_secondNE_diagonal_trench_" + str(trench) )
         
     print(game.stationary)
     print(np.sum(game.gameSetup.P[0,:]))
@@ -849,7 +876,7 @@ def custom_game_no_actions_experiments(k = [6, 8, 12, 18], delta = 0.25, eps = 1
     
     # plt.show()
  
-def custom_game_no_players_experiments(N = [8], delta = 0.25, eps = 1e-1, max_iter = 100000):
+def custom_game_no_players_experiments(N = [2, 4, 6], delta = 0.25, eps = 1e-1, max_iter = 10000):
     
     action_space = np.arange(0, 4)
     no_actions = len(action_space)
@@ -888,9 +915,9 @@ def custom_game_no_players_experiments(N = [8], delta = 0.25, eps = 1e-1, max_it
     
     expected_values[len(N)] = (1 - eps) * np.ones((1, max_iter))
     labels = [r'N = 2', r'N = 4', r'N = 6',  r'$\Phi(a^*) - \epsilon$']
-    labels = [r'N = 8',  r'$\Phi(a^*) - \epsilon$']
+    # labels = [r'N = 8',  r'$\Phi(a^*) - \epsilon$']
 
-    plot_lines(expected_values, labels, plot_e_efficient = True, title = 'Expected potential value', save = save, folder = folder, file_name = 'comparison_no_players_two_plateau_uniform_' + game_type)
+    plot_lines(expected_values, labels, plot_e_efficient = True, title = 'Expected potential value', save = save, folder = folder, file_name = 'comparison_no_players_two_plateau_uniform_' + game_type + "_real")
     
     game_type = "Symmetrical"
     for idx, no_players in enumerate(N):
@@ -914,7 +941,7 @@ def custom_game_no_players_experiments(N = [8], delta = 0.25, eps = 1e-1, max_it
  
     expected_values[len(N)] = (1 - eps) * np.ones((1, max_iter))
 
-    plot_lines(expected_values, labels, plot_e_efficient = True, title = 'Expected potential value', save = save, folder = folder, file_name = 'comparison_no_players_two_plateau_uniform_' + game_type)
+    plot_lines(expected_values, labels, plot_e_efficient = True, title = 'Expected potential value', save = save, folder = folder, file_name = 'comparison_no_players_two_plateau_uniform_' + game_type + "_real")
     
     # # SECOND NE
     # for idx, no_actions in enumerate(k):
