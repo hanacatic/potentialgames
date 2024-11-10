@@ -1,5 +1,5 @@
 import numpy as np
-from aux_functions.helpers import rejection_sampling
+
 rng = np.random.default_rng()
 
 class Player:

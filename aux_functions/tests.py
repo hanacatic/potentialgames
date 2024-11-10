@@ -1,7 +1,7 @@
 from aux_functions.experiments import *
 from game import *
 from player import *
-from scipy.sparse import csc_matrix
+
 def test_custom_game():
     
     action_space = [0, 1, 2, 3, 4, 5, 6, 7, 8, 9]
@@ -56,7 +56,34 @@ def test_custom_game():
     plt.show(block = False)
     plt.pause(20)
     plt.close()
-        
+    
+def test_log_linear():
+
+    action_space = [0, 1, 2, 3, 4, 5]
+    no_players = 2
+    
+    firstNE = np.array([1,1])
+    secondNE = np.array([4,4])
+    
+    delta = 0.25
+    payoff_matrix = generate_two_plateau_diagonal_payoff_matrix(delta = delta, no_actions = len(action_space), trench = 0.6)
+            
+    gameSetup = IdenticalInterestGame(action_space, no_players, firstNE, secondNE, delta, payoff_matrix = payoff_matrix)
+    
+    game = Game(gameSetup, algorithm = "log_linear",  max_iter = 200000, mu=mu)
+    game.set_initial_action_profile(secondNE)
+
+    game.set_initial_action_profile(np.array([1,4]))
+
+    potentials_history = np.zeros((1, game.max_iter))
+    beta_t = game.compute_beta(1e-1)
+    
+    game.play(beta = beta_t)
+    potentials_history = game.potentials_history
+    
+    plot_potential(potentials_history)
+    plt.show()
+
 def test_log_linear_t(delta = 0.25):
     action_space = [0, 1, 2, 3, 4, 5]
     no_players = 2
@@ -91,6 +118,33 @@ def test_log_linear_t(delta = 0.25):
     plt.pause(60)
     plt.close()
 
+def test_mwu():
+    
+    action_space = [0, 1, 2, 3, 4, 5]
+    no_players = 2
+    
+    firstNE = np.array([1,1])
+    secondNE = np.array([4,4])
+    
+    delta = 0.25
+    payoff_matrix = generate_two_plateau_diagonal_payoff_matrix(delta = delta, no_actions = len(action_space), trench = 0.6)
+            
+    gameSetup = IdenticalInterestGame(action_space, no_players, firstNE, secondNE, delta, payoff_matrix = payoff_matrix)
+    
+    game = Game(gameSetup, algorithm = "multiplicative_weight",  max_iter = 10000, mu=mu)
+    game.set_initial_action_profile(secondNE)
+
+    game.set_initial_action_profile(np.array([1,4]))
+
+    potentials_history = np.zeros((1, game.max_iter))
+    beta_t = game.compute_beta(1e-1)
+    
+    game.play(beta = beta_t)
+    potentials_history = game.potentials_history
+    
+    plot_potential(potentials_history)
+    plt.show()
+    
 def test_best_response(delta = 0.25):
     
     action_space = [0, 1, 2, 3]
@@ -273,7 +327,7 @@ def test_transition_matrix():
     
     action_space = [0, 1, 2, 3]
     no_actions = len(action_space)
-    no_players = 4
+    no_players = 2
     
     firstNE = np.array([1,1])
     secondNE = np.array([3,3])
@@ -468,29 +522,3 @@ def test_multipleplayers():
     plt.close()
     # plt.show()
  
-def test_log_linear():
-
-    action_space = [0, 1, 2, 3, 4, 5]
-    no_players = 2
-    
-    firstNE = np.array([1,1])
-    secondNE = np.array([4,4])
-    
-    delta = 0.25
-    payoff_matrix = generate_two_plateau_diagonal_payoff_matrix(delta = delta, no_actions = len(action_space), trench = 0.6)
-            
-    gameSetup = IdenticalInterestGame(action_space, no_players, firstNE, secondNE, delta, payoff_matrix = payoff_matrix)
-    
-    game = Game(gameSetup, algorithm = "log_linear",  max_iter = 200000, mu=mu)
-    game.set_initial_action_profile(secondNE)
-
-    game.set_initial_action_profile(np.array([1,4]))
-
-    potentials_history = np.zeros((1, game.max_iter))
-    beta_t = game.compute_beta(1e-1)
-    
-    game.play(beta = beta_t)
-    potentials_history = game.potentials_history
-    
-    plot_potential(potentials_history)
-    plt.show()

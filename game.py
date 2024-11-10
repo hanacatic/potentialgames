@@ -3,7 +3,6 @@ from itertools import product
 from player import Player
 from aux_functions.helpers import *
 from scipy.sparse import lil_matrix, csr_matrix, csc_matrix, csc_array
-from scipy.sparse.linalg import matrix_power
 from functools import partial
 
 rng = np.random.default_rng()
@@ -18,7 +17,7 @@ class Game:
         
         self.players = np.array([ Player(i, self.gameSetup.no_actions, gameSetup.utility_functions[i]) for i in range(0, self.gameSetup.no_players)], dtype = object)
         
-        self.action_profile = np.random.randint(0, self.gameSetup.no_players, self.gameSetup.no_players) # discrete uniform distribution
+        self.action_profile = np.random.randint(0, self.gameSetup.no_actions, self.gameSetup.no_players) # discrete uniform distribution
         self.action_profile = self.sample_initial_action_profile(mu)
            
         self.potentials_history = np.zeros((self.max_iter, 1))
@@ -77,7 +76,7 @@ class Game:
             self.log_linear_iteration(i, beta)
     
     def log_linear_t(self, beta_t):
-        print(beta_t)
+
         for i in range(self.max_iter): 
             
             beta = beta_t*(1/self.gameSetup.no_players *np.log(1+i)/(1+ 1/self.gameSetup.no_players * np.log(i+1)))
@@ -89,9 +88,7 @@ class Game:
         for i in range(self.max_iter): 
 
             # beta = np.log(i+1)*(self.gameSetup.no_players**2+1)/self.gameSetup.no_players
-            
-            # beta = np.log(i+1)
-            
+                        
             beta = min((i+1), 500) # Tatarenko
 
   
@@ -120,7 +117,7 @@ class Game:
     def log_linear_fast_sparse(self, beta, scale_factor):
         
         P = self.gameSetup.formulate_transition_matrix_sparse(beta)
-        mu0 = csc_array(self.mu_matrix) # self.mu_matrix.copy()
+        mu0 = csc_array(self.mu_matrix)
         
         self.expected_value = np.zeros((int(self.max_iter), 1))
         self.expected_value = csr_matrix(self.expected_value)
@@ -204,7 +201,7 @@ class Game:
         
         gamma_t = np.sqrt(np.log(self.gameSetup.no_players)/self.max_iter) 
         mixed_strategies = np.zeros([self.gameSetup.no_players, self.gameSetup.no_actions])
-              
+                      
         for i in range(self.max_iter):            
                         
             for player_id in range(self.gameSetup.no_players):
@@ -262,7 +259,7 @@ class Game:
         self.algorithm = algorithm
         
     def reset_game(self):
-        # self.gameSetup = gameSetup
+
         [self.players[i].reset_player(self.gameSetup.no_actions, self.gameSetup.utility_functions[i]) for i in range(0, self.gameSetup.no_players)]
 
 class IdenticalInterestGame:
@@ -278,7 +275,8 @@ class IdenticalInterestGame:
         self.delta = delta
         self.type = type
         self.action_profile_template = [0]*self.no_players
-        
+        self.opponents_idx_map = [ np.delete(np.arange(self.no_players), player_id) for player_id in range(self.no_players) ]
+
         if payoff_matrix is None:
             self.generate_payoff_matrix()
         else:
@@ -298,14 +296,15 @@ class IdenticalInterestGame:
         
         P = np.zeros([self.no_action_profiles, self.no_action_profiles])     
 
-        for idx, profile in self.action_profiles:
+        for idx in self.no_action_profiles:
             
-            self.potential[idx] = self.potential_function(profile)
+            profile = np.unravel_index(i, (self.no_actions,)*(self.no_players))
 
+            self.potential[idx] = self.potential_function(profile)
+                        
             for player_id in range(self.no_players):
                 
-                mask = np.arange(len(profile)) != player_id
-                opponents_actions = profile[mask] # extract the opponents actions from the action profile
+                opponents_actions = profile[self.opponents_idx_map[player_id]] # extract the opponents actions from the action profile
                 
                 utilities = np.array([self.utility_functions[player_id](i, opponents_actions) for i in range(self.no_actions)])
                 exp_values = np.exp(beta * utilities)
@@ -328,7 +327,6 @@ class IdenticalInterestGame:
         i = 0
 
         strides = self.no_actions ** (self.no_players - 1 - np.arange(0, self.no_players))
-        opponents_idx_map = [ np.delete(np.arange(self.no_players), player_id) for player_id in range(self.no_players) ]
         action_space = np.arange(0, self.no_actions)
        
         while i < self.no_actions**(self.no_players - 1):
@@ -344,7 +342,7 @@ class IdenticalInterestGame:
                 p = exp_values/np.sum(exp_values)
                 
                 stride = strides[player_id]
-                idx = opponents_actions @ strides[opponents_idx_map[player_id]]
+                idx = opponents_actions @ strides[self.opponents_idx_map[player_id]]
                 
                 for j, prob in enumerate(p):
                     P_row.extend(idx + action_space*stride)
@@ -364,7 +362,6 @@ class IdenticalInterestGame:
         
         self.payoff_player_1 = np.random.uniform(0.0, 1 - self.delta, size = [self.no_actions] * self.no_players)
         
-        
         self.payoff_player_1[tuple(self.firstNE)] = 1
         self.payoff_player_1[tuple(self.secondNE)] = 1 - self.delta
         
@@ -383,7 +380,6 @@ class IdenticalInterestGame:
         self.payoff_player_1 = payoff
         
         if self.type == "Symmetrical":
-            print("Here")
             self.payoff_player_1 = make_symmetric_nd(self.payoff_player_1)
 
     def potential_function(self, action_profile):
