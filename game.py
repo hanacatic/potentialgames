@@ -2,7 +2,7 @@ import numpy as np
 from itertools import product
 from player import Player
 from aux_functions.helpers import *
-from scipy.sparse import lil_matrix, csr_matrix, coo_matrix, csc_array
+from scipy.sparse import lil_matrix, csr_matrix, csc_matrix, csc_array
 from scipy.sparse.linalg import matrix_power
 from functools import partial
 
@@ -23,6 +23,8 @@ class Game:
            
         self.potentials_history = np.zeros((self.max_iter, 1))
         self.expected_value = None
+        
+        self.opponents_idx_map = [ np.delete(np.arange(self.gameSetup.no_players), player_id) for player_id in range(self.gameSetup.no_players) ]
                
     def sample_initial_action_profile(self, mu):
         
@@ -69,7 +71,7 @@ class Game:
                 self.log_linear(beta)
         
     def log_linear(self, beta):
-        
+               
         for i in range(0, self.max_iter): 
             
             self.log_linear_iteration(i, beta)
@@ -79,8 +81,6 @@ class Game:
         for i in range(self.max_iter): 
             
             beta = beta_t*(1/self.gameSetup.no_players *np.log(1+i)/(1+ 1/self.gameSetup.no_players * np.log(i+1)))
-            # beta = beta_t*(np.log(1+i)/(1 + np.log(i+1)))
-
             
             self.log_linear_iteration(i, beta)
             
@@ -120,24 +120,15 @@ class Game:
     def log_linear_fast_sparse(self, beta, scale_factor):
         
         P = self.gameSetup.formulate_transition_matrix_sparse(beta)
-        print("transition_matrix_formulated")
         mu0 = csc_array(self.mu_matrix) # self.mu_matrix.copy()
         
         self.expected_value = np.zeros((int(self.max_iter), 1))
         self.expected_value = csr_matrix(self.expected_value)
-        
-        # P = np.linalg.matrix_power(P, scale_factor)
-        
-        # P = matrix_power(P, scale_factor)
-        
-        # P = np.linalg.matrix_power(P, 10)
 
         for i in range(self.max_iter):
             
             mu = mu0 @ P
-            
-            # mu = sparse_col_vec_dot(P, mu0)
-            
+                        
             mu0 = mu
             
             self.expected_value[i] = mu @ self.gameSetup.potential
@@ -150,9 +141,8 @@ class Game:
         player_id = rng.integers(0, len(self.players), 1) # randomly choose a player
             
         player = self.players[player_id][0] 
-            
-        mask = np.arange(len(self.action_profile)) != player_id
-        opponents_actions = self.action_profile[mask] # extract the opponents actions from the action profile
+        
+        opponents_actions = self.action_profile[self.opponents_idx_map[player_id[0]]] # extract the opponents actions from the action profile
             
         self.action_profile[player_id] = player.update_log_linear(beta, opponents_actions) # update the players action
             
@@ -166,9 +156,8 @@ class Game:
             
             player = self.players[player_id][0] 
             
-            mask = np.arange(len(self.action_profile)) != player_id
-            opponents_actions = self.action_profile[mask] # extract the opponents actions from the action profile
-        
+            opponents_actions = self.action_profile[self.opponents_idx_map[player_id[0]]] # extract the opponents actions from the action profile
+    
             self.action_profile[player_id] = player.best_response(opponents_actions) # update the players action
 
             self.potentials_history[i] = self.gameSetup.potential_function(self.action_profile) # compute the value of the potential function
@@ -192,9 +181,8 @@ class Game:
                           
                 player = self.players[player_id]
             
-                mask = np.arange(len(self.action_profile)) != player_id
-                opponents_actions = self.action_profile[mask] # extract the opponents actions from the action profile
-                
+                opponents_actions = self.action_profile[self.opponents_idx_map[player_id]] # extract the opponents actions from the action profile
+
                 current_payoff = player.utility(self.action_profile[player_id], opponents_actions)
                 best_action = player.best_response(opponents_actions) # update the players action
                 
@@ -215,10 +203,9 @@ class Game:
     def multiplicative_weight(self):
         
         gamma_t = np.sqrt(np.log(self.gameSetup.no_players)/self.max_iter) 
+        mixed_strategies = np.zeros([self.gameSetup.no_players, self.gameSetup.no_actions])
               
-        for i in range(self.max_iter):
-            
-            mixed_strategies = np.zeros([self.gameSetup.no_players, self.gameSetup.no_actions])
+        for i in range(self.max_iter):            
                         
             for player_id in range(self.gameSetup.no_players):
                 
@@ -232,8 +219,7 @@ class Game:
 
             for player_id in range(self.gameSetup.no_players):
                 
-                mask = np.arange(len(self.action_profile)) != player_id
-                opponents_actions = self.action_profile[mask] # extract the opponents actions from the action profile
+                opponents_actions = self.action_profile[self.opponents_idx_map[player_id]] # extract the opponents actions from the action profile
                 
                 player = self.players[player_id]
                 
@@ -292,6 +278,7 @@ class IdenticalInterestGame:
         self.delta = delta
         self.type = type
         self.action_profile_template = [0]*self.no_players
+        
         if payoff_matrix is None:
             self.generate_payoff_matrix()
         else:
@@ -341,7 +328,7 @@ class IdenticalInterestGame:
         i = 0
 
         strides = self.no_actions ** (self.no_players - 1 - np.arange(0, self.no_players))
-        opponents_idx = [ np.delete(np.arange(self.no_players), player_id) for player_id in range(self.no_players) ]
+        opponents_idx_map = [ np.delete(np.arange(self.no_players), player_id) for player_id in range(self.no_players) ]
         action_space = np.arange(0, self.no_actions)
        
         while i < self.no_actions**(self.no_players - 1):
@@ -357,7 +344,7 @@ class IdenticalInterestGame:
                 p = exp_values/np.sum(exp_values)
                 
                 stride = strides[player_id]
-                idx = opponents_actions @ strides[opponents_idx[player_id]]
+                idx = opponents_actions @ strides[opponents_idx_map[player_id]]
                 
                 for j, prob in enumerate(p):
                     P_row.extend(idx + action_space*stride)

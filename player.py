@@ -13,6 +13,7 @@ class Player:
         self.action_space = np.arange(self.no_actions).reshape(1, self.no_actions)
         self.prob = 1/self.no_actions*np.ones([1, self.no_actions])
         self.initial_action = np.array([0])
+        self.ones = np.ones(self.no_actions)
         self.past_opponents_actions = None
         self.utilities = None
         
@@ -56,8 +57,7 @@ class Player:
             self.utilities = np.array([self.utility(i, opponents_actions) for i in range(self.no_actions)]).reshape(1, self.no_actions)
             self.past_opponents_actions = opponents_actions
 
-
-        losses = np.ones(self.no_actions) - self.utilities
+        losses = self.ones - self.utilities
         
         self.prob = np.multiply( self.prob, 1 + gamma_t * (-losses))
         
@@ -67,4 +67,3 @@ class Player:
 
         self.no_actions = no_actions # size of the actions space
         self.utility = utility # utility function
-        
