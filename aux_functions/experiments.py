@@ -265,11 +265,11 @@ def generate_two_plateau_diagonal_payoff_matrix(delta = 0.25, no_actions = 6, tr
     no_players = 2
     firstNE = np.array([1]*no_players)
     
-    # payoff = np.ones(shape = [no_actions] * no_players) * trench
+    payoff = np.ones(shape = [no_actions] * no_players) * trench
 
-    # np.fill_diagonal(payoff, 1 - delta)
+    np.fill_diagonal(payoff, 1 - delta)
 
-    payoff = np.kron(np.eye(no_actions//2,dtype=int), np.ones((2, 2)) * (1-delta - trench)) + np.ones(shape = [no_actions] * no_players) * trench
+    # payoff = np.kron(np.eye(no_actions//2,dtype=int), np.ones((2, 2)) * (1-delta - trench)) + np.ones(shape = [no_actions] * no_players) * trench
     
     payoff[tuple(firstNE)] = 1
     
@@ -339,7 +339,7 @@ def generate_one_plateau_payoff_matrix(delta = 0.25, no_actions = 6, trench = No
     
     return payoff
            
-def custom_game_alg_experiments(delta = 0.25, eps = 0.1, n_exp = 50, max_iter = 10000):
+def custom_game_alg_experiments(delta = 0.3, eps = 0.1, n_exp = 20, max_iter = 100000):
     
     action_space = np.arange(0, 35)
     no_actions = len(action_space)
@@ -355,7 +355,7 @@ def custom_game_alg_experiments(delta = 0.25, eps = 0.1, n_exp = 50, max_iter = 
     # payoff_matrix = generate_one_plateau_payoff_matrix(delta, no_actions = no_actions, trench = 0.1)
     
     initial_action_profile = secondNE
-    payoff_matrix = generate_two_plateau_payoff_matrix(delta, no_actions = no_actions)
+    payoff_matrix = generate_two_plateau_diagonal_payoff_matrix(delta, no_actions = no_actions, trench = 0.55)
 
     gameSetup = IdenticalInterestGame(action_space, no_players, firstNE, secondNE, delta = delta, payoff_matrix = payoff_matrix)
 
@@ -404,8 +404,8 @@ def custom_game_alg_experiments(delta = 0.25, eps = 0.1, n_exp = 50, max_iter = 
     labels = ['Log linear learning', 'Multiplicative weight update', 'Alpha best response',  r'$\Phi(a^*) - \epsilon$']
     
     save = True
-    folder = 'WEEK 7'
-    setup = 'Comparison_two_plateau_secondNE_delta_' + str(delta) + '_maxiter_' + str(max_iter) + '_no_actions_' + str(no_actions) + '_3'
+    folder = 'WEEK 8'
+    setup = 'Comparison_two_plateau_diagonal_secondNE_delta_' + str(delta) + '_maxiter_' + str(max_iter) + '_no_actions_' + str(no_actions) + '_3'
     plot_payoff(payoff_matrix, save = save, folder = folder, file_name = 'Payoff_matrix_' + setup)
     plot_lines_with_std(mean_potential, std, labels, plot_e_efficient = True, save = save, folder = folder, file_name = setup)
     
@@ -876,7 +876,7 @@ def custom_game_no_actions_experiments(k = [6, 8, 12, 18], delta = 0.25, eps = 1
     
     # plt.show()
  
-def custom_game_no_players_experiments(N = [2, 4, 6], delta = 0.25, eps = 1e-1, max_iter = 10000):
+def custom_game_no_players_experiments(N = [2, 4, 6], delta = 0.25, eps = 1e-1, max_iter = 100):
     
     action_space = np.arange(0, 4)
     no_actions = len(action_space)
@@ -887,7 +887,7 @@ def custom_game_no_players_experiments(N = [2, 4, 6], delta = 0.25, eps = 1e-1, 
     expected_values = np.zeros((len(N)+1, max_iter))
     # UNIFORM
     save = True
-    folder = 'WEEK 7'
+    folder = 'WEEK 8'
     game_type = "Asymmetrical"
     
     for idx, no_players in enumerate(N):
@@ -897,8 +897,9 @@ def custom_game_no_players_experiments(N = [2, 4, 6], delta = 0.25, eps = 1e-1, 
         
         mu_matrix = np.ones([1, no_actions**no_players])
         mu_matrix /= np.sum(mu_matrix)
-        games.append(Game(gameSetups[idx], algorithm = "log_linear_fast", max_iter = max_iter, mu=mu))
+        games.append(Game(gameSetups[idx], algorithm = "log_linear", max_iter = max_iter, mu=mu))
         games[idx].set_mu_matrix(mu_matrix)
+        games[idx].set_initial_action_profile(np.array([no_actions-2]*no_players))
         
         beta = games[idx].compute_beta(eps)
         print(no_players)

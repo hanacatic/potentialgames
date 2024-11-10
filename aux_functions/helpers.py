@@ -1,6 +1,6 @@
 import numpy as np
 from itertools import permutations
-
+from scipy.sparse import csc_matrix
 # def metropolis_hastings(prob_func, initial_profile, iterations = 100):
 # in this implementation it is not working because the application is discrete
     
@@ -54,3 +54,30 @@ def make_symmetric_nd(matrix):
     symmetric_matrix /= len(permutations_axes)
     
     return symmetric_matrix
+
+def sparse_col_vec_dot(csc_mat, csc_vec):
+    # row numbers of vector non-zero entries
+    v_rows = csc_vec.indices
+    v_data = csc_vec.data
+    # matrix description arrays
+    m_dat = csc_mat.data
+    m_ind = csc_mat.indices
+    m_ptr = csc_mat.indptr
+    # output arrays
+    sizes = m_ptr.take(v_rows+1) - m_ptr.take(v_rows)
+    sizes = np.concatenate(([0], np.cumsum(sizes)))
+    data = np.empty((sizes[-1],), dtype=csc_mat.dtype)
+    indices = np.empty((sizes[-1],), dtype=np.intp)
+    indptr = np.zeros((2,), dtype=np.intp)
+
+    for j in range(len(sizes)-1):
+        slice_ = slice(*m_ptr[[v_rows[j] ,v_rows[j]+1]])
+        np.multiply(m_dat[slice_], v_data[j], out=data[sizes[j]:sizes[j+1]])
+        indices[sizes[j]:sizes[j+1]] = m_ind[slice_]
+    indptr[-1] = len(data)
+    
+    ret = csc_matrix((data, indices, indptr),
+                         shape=csc_vec.shape)
+    ret.sum_duplicates()
+
+    return ret

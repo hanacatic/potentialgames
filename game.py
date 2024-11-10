@@ -1,10 +1,11 @@
 import numpy as np
 from itertools import product
 from player import Player
-from aux_functions.helpers import rejection_sampling, make_symmetric_nd
-from scipy.sparse import lil_matrix, csr_matrix, coo_matrix
+from aux_functions.helpers import *
+from scipy.sparse import lil_matrix, csr_matrix, coo_matrix, csc_array
 from scipy.sparse.linalg import matrix_power
 from functools import partial
+
 rng = np.random.default_rng()
 
 class Game:
@@ -120,7 +121,7 @@ class Game:
         
         P = self.gameSetup.formulate_transition_matrix_sparse(beta)
         print("transition_matrix_formulated")
-        mu0 = csr_matrix(self.mu_matrix) # self.mu_matrix.copy()
+        mu0 = csc_array(self.mu_matrix) # self.mu_matrix.copy()
         
         self.expected_value = np.zeros((int(self.max_iter), 1))
         self.expected_value = csr_matrix(self.expected_value)
@@ -130,10 +131,12 @@ class Game:
         # P = matrix_power(P, scale_factor)
         
         # P = np.linalg.matrix_power(P, 10)
-        
+
         for i in range(self.max_iter):
             
             mu = mu0 @ P
+            
+            # mu = sparse_col_vec_dot(P, mu0)
             
             mu0 = mu
             
@@ -363,9 +366,11 @@ class IdenticalInterestGame:
                       
             i += 1 
             
-        P = coo_matrix((P_data, (P_row, P_col)), shape=(self.no_action_profiles, self.no_action_profiles))
-        self.P = P.tocsr()
-                          
+        P = csc_matrix((P_data, (P_row, P_col)), shape=(self.no_action_profiles, self.no_action_profiles))
+        P.sum_duplicates()
+        self.P = P
+
+        self.formulate_potential_vec()
         return self.P
            
     def generate_payoff_matrix(self):
