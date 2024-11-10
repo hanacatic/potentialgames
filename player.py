@@ -34,27 +34,34 @@ class Player:
     
     def best_response(self, opponents_actions):
         
-        utilities = np.array([self.utility(i, opponents_actions) for i in range(self.no_actions)]).reshape(1, self.no_actions)
+        if self.utilities is None or self.past_opponents_actions != opponents_actions:
+        
+            self.utilities = np.array([self.utility(i, opponents_actions) for i in range(self.no_actions)]).reshape(1, self.no_actions)
 
-        idx_a = np.argmax(utilities)
+            idx_a = np.argmax(self.utilities)
         
-        self.past_action = idx_a
+            self.past_action = idx_a
+            self.past_opponents_actions = opponents_actions
         
-        return idx_a
+        return self.past_action
     
     def mixed_strategy(self):
         
-        return self.p
+        return self.prob
         
     def update_mw(self, opponents_actions, gamma_t = 0.5):
         
-        utilities = np.array([self.utility(i, opponents_actions) for i in range(self.no_actions)]).reshape(1, self.no_actions)
+        if self.utilities is None or self.past_opponents_actions != opponents_actions:
+            
+            self.utilities = np.array([self.utility(i, opponents_actions) for i in range(self.no_actions)]).reshape(1, self.no_actions)
+            self.past_opponents_actions = opponents_actions
 
-        losses = np.ones(self.no_actions) - utilities
+
+        losses = np.ones(self.no_actions) - self.utilities
         
-        self.p = np.multiply( self.p, 1 + gamma_t * (-losses))
+        self.prob = np.multiply( self.prob, 1 + gamma_t * (-losses))
         
-        self.p = self.p / np.sum(self.p)
+        self.prob = self.prob / np.sum(self.prob)
         
     def reset_player(self, no_actions, utility):
 
