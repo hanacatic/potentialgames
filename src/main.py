@@ -42,6 +42,7 @@ if __name__ == '__main__':
     # cProfile.run('custom_game_alg_experiments()', sort='cumtime')
     # test_two_plateau_hard_payoff_matrix()
     
-    test_mwu()
+    # test_mwu()
     
     # custom_game_no_players_sim_experiments()
+    test_congestion_game()

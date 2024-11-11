@@ -1,2 +1,5 @@
 __pycache__ 
 *.txt
+*.c
+*.pyx
+setup.py
