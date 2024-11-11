@@ -1,15 +1,21 @@
 import os
 import numpy as np 
 import pandas as pd
-import openmatrix as omx
+import networkx as nx
+from itertools import islice
 
 class CongestionGame:
     
     def __init__(self):
-        self.load_from_tntp()
         
+        self.load_from_tntp()
+        self.build_network()
+        self.compute_strategies()
+         
     def load_from_tntp(self, network = "SiouxFalls"):
+        
         # Based on _scripts https://github.com/bstabler/TransportationNetworks
+        
         root = os.path.dirname(os.path.abspath('.'))
         netfile = os.path.join(root, "potentialgames_ws", "TransportationNetworks", network, network + '_net.tntp')
         net = pd.read_csv(netfile, skiprows=8, sep='\t')
@@ -20,6 +26,17 @@ class CongestionGame:
         net.drop(['~', ';'], axis=1, inplace=True)
         
         self.net = net.to_numpy() # initial node, terminal node, capacity, length, free flow time, b, power, speed, toll, link type
+        
+        initial_nodes = self.net[:, 0] - 1
+        terminal_nodes = self.net[:, 1] - 1
+        
+        self.nodes = (np.unique(np.stack([initial_nodes, terminal_nodes], 0))).astype(int)
+        self.edges = np.array([initial_nodes, terminal_nodes]).astype(int)
+        self.capacities = self.net[:, 2] / 100 
+        self.lengths = self.net[:, 3]
+        self.free_flows = self.net[:, 4]
+        self.b = self.net[:, 5]
+        self.powers = self.net[:, 6]
         
         tripsfile = os.path.join(root, "potentialgames_ws", "TransportationNetworks", network, network + '_trips.tntp')
         
@@ -46,3 +63,43 @@ class CongestionGame:
                 mat[i, j] = matrix.get(i+1,{}).get(j+1,0)
 
         self.demand = mat
+        
+        coordsfile = os.path.join(root, "potentialgames_ws", "TransportationNetworks", network, network + '_node.tntp')
+        coords = pd.read_csv(coordsfile, sep='\t')
+        trimmed= [s.strip().lower() for s in coords.columns]
+
+        coords.columns = trimmed
+
+        # And drop the silly first and last columns
+        coords.drop([';'], axis=1, inplace=True)
+        
+        self.coords = coords.to_numpy() #
+        self.coords = np.stack([self.coords[:, 1], self.coords[:, 2]], 1)
+        
+        self.agents = np.array(np.nonzero(self.demand))
+        print(self.agents)
+        self.no_players = len(self.agents[0])
+    
+    def build_network(self):
+        
+        # based on https://github.com/sessap/noregretgames/blob/master/Traffic_Routing/Network_functions.py
+        
+        self.network = nx.DiGraph()
+        
+        for node in self.nodes: 
+            self.network.add_node(str(node), pos = (self.coords[node, 0], self.coords[node, 1]))
+            
+        for i in range(len(self.edges[0])):
+            self.network.add_edge(str(self.edges[0, i]), str(self.edges[1, i]), weight = self.lengths[i])        
+        
+    def compute_strategies(self):
+        i = 0
+        self.action_space = []
+        
+        for i in range(self.no_players):
+            self.action_space.append(self.k_shortest_paths(str(self.agents[0,i]), str(self.agents[1,i]), 5, weight="weight"))
+            
+    def k_shortest_paths(self, source, target, k, weight=None):
+        return list(
+            islice(nx.shortest_simple_paths(self.network, source, target, weight=weight), k)
+        )

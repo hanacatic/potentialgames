@@ -2,6 +2,7 @@ from lib.aux_functions.experiments import *
 from lib.games import *
 from lib.player import *
 from lib.games.trafficrouting import CongestionGame
+
 def test_custom_game():
     
     action_space = [0, 1, 2, 3, 4, 5, 6, 7, 8, 9]
@@ -561,3 +562,6 @@ def test_multipleplayers():
 def test_congestion_game():
     
     gameSetup = CongestionGame()
+    
+    print(gameSetup.no_players)
+    plot_network(gameSetup.network)

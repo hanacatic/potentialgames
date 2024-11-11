@@ -1,5 +1,6 @@
 import matplotlib.pyplot as plt
 import matplotlib.cm as cm
+import networkx as nx 
 
 def plot_payoff(payoff, title = "Payoff matrix", folder = None, save = False, file_name = "Payoff matrix"):
     
@@ -31,7 +32,6 @@ def plot_potential(mean_potential, title = 'Average potential', file_name = None
     else:
         f.show()
         
-    
 def plot_potential_with_std(mean_potential, std, title = 'Average potential', file_name = None, folder = None, save = False):
     
     f = plt.figure()
@@ -130,3 +130,10 @@ def plot_lines_eps_exp(lines_to_plot, list_labels, plot_e_efficient = False, tit
         plt.savefig('../' + folder + '/' + file_name + '.png')
     else:
         f.show()
+        
+def plot_network(network):
+    
+    nx.draw(network , nx.get_node_attributes(network, 'pos') , with_labels=True, node_size=500)
+    nx.draw_networkx_edge_labels(network , nx.get_node_attributes(network, 'pos') , edge_labels = nx.get_edge_attributes(network,'weight'))
+
+    plt.show()
