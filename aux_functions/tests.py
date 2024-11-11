@@ -120,14 +120,14 @@ def test_log_linear_t(delta = 0.25):
 
 def test_mwu():
     
-    action_space = [0, 1, 2, 3, 4, 5]
+    action_space = np.arange(0,6)
     no_players = 2
     
     firstNE = np.array([1,1])
-    secondNE = np.array([4,4])
+    secondNE = np.array([5,5])
     
     delta = 0.25
-    payoff_matrix = generate_two_plateau_diagonal_payoff_matrix(delta = delta, no_actions = len(action_space), trench = 0.6)
+    payoff_matrix = generate_two_plateau_hard_payoff_matrix(delta = delta, trench = 0.0)
             
     gameSetup = IdenticalInterestGame(action_space, no_players, firstNE, secondNE, delta, payoff_matrix = payoff_matrix)
     
@@ -469,7 +469,43 @@ def test_two_plateau_diagonal_payoff_matrix():
     plot_potential(potentials_history)
     
     plt.show()
-  
+
+def test_two_plateau_hard_payoff_matrix():
+          
+    action_space = np.arange(0, 6)
+    no_actions = len(action_space)
+    no_players = 2
+    
+    firstNE = np.array([1,1])
+    secondNE = np.array([no_actions - 2, no_actions - 2])
+    initial_action_profile = secondNE
+    
+    delta = 0.25
+    max_iter = 10000
+    payoff_matrix = generate_two_plateau_hard_payoff_matrix(delta, trench = 0.1)
+    
+    plot_payoff(payoff_matrix)
+    
+    gameSetup = IdenticalInterestGame(action_space, no_players , firstNE, secondNE, delta = delta, payoff_matrix = payoff_matrix)
+
+    game = Game(gameSetup, algorithm = "log_linear_fast", max_iter = max_iter, mu=mu)
+    game.set_initial_action_profile(initial_action_profile)
+
+    potentials_history = np.zeros((1, max_iter))
+    beta_t = game.compute_beta(1e-1)
+    
+    mu_matrix = np.zeros([1, len(action_space)**no_players])
+    mu_matrix[0, [0]*game.gameSetup.no_actions + initial_action_profile[1]] = 1
+    game.set_mu_matrix(mu_matrix)
+    
+    game.play(beta = beta_t, scale_factor = 10000)
+    
+    potentials_history = game.expected_value
+    
+    plot_potential(potentials_history)
+    
+    plt.show()
+
 def test_multipleplayers():
     action_space = np.arange(0, 4)
     # action_space = [0, 1]

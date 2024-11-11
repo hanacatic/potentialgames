@@ -18,8 +18,8 @@ class Player:
         self.utilities = None
         
     def update_log_linear(self, beta, opponents_actions): # choose a new action only based on the opponents action, in this case they will be the same as the actions in the previous step
-    
-        if self.utilities is None or self.past_opponents_actions != opponents_actions:
+        
+        if self.utilities is None or all(self.past_opponents_actions != opponents_actions):
             self.utilities = np.array([self.utility(i, opponents_actions) for i in range(self.no_actions)]).reshape(1, self.no_actions)
         
             exp_values = np.exp(beta * self.utilities)

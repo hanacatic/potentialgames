@@ -296,15 +296,15 @@ class IdenticalInterestGame:
         
         P = np.zeros([self.no_action_profiles, self.no_action_profiles])     
 
-        for idx in self.no_action_profiles:
+        for idx in range(self.no_action_profiles):
             
-            profile = np.unravel_index(i, (self.no_actions,)*(self.no_players))
+            profile = np.unravel_index(idx, (self.no_actions,)*(self.no_players))
 
             self.potential[idx] = self.potential_function(profile)
                         
             for player_id in range(self.no_players):
                 
-                opponents_actions = profile[self.opponents_idx_map[player_id]] # extract the opponents actions from the action profile
+                opponents_actions = profile[self.opponents_idx_map[player_id][0]] # extract the opponents actions from the action profile
                 
                 utilities = np.array([self.utility_functions[player_id](i, opponents_actions) for i in range(self.no_actions)])
                 exp_values = np.exp(beta * utilities)
@@ -388,9 +388,13 @@ class IdenticalInterestGame:
     
     def utility_function(self, player_id, player_action, opponents_action):
 
-        self.action_profile_template[:player_id] = opponents_action[:player_id]
-        self.action_profile_template[player_id + 1:] = opponents_action[player_id:]
-        self.action_profile_template[player_id] = player_action
+        if self.no_players > 2:
+            self.action_profile_template[:player_id] = opponents_action[:player_id]
+            self.action_profile_template[player_id + 1:] = opponents_action[player_id:]
+            self.action_profile_template[player_id] = player_action
+        else:
+            self.action_profile_template[player_id] = player_action
+            self.action_profile_template[not player_id] = opponents_action
         
         return self.potential_function(self.action_profile_template)
         
