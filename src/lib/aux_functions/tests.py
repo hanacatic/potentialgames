@@ -1,6 +1,6 @@
-from aux_functions.experiments import *
-from game import *
-from player import *
+from lib.aux_functions.experiments import *
+from lib.games import *
+from lib.player import *
 
 def test_custom_game():
     

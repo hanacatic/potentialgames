@@ -1,11 +1,10 @@
 import numpy as np
-from game import Game, IdenticalInterestGame, rng 
-from aux_functions.plot import *
-from aux_functions.experiments import *
-from aux_functions.tests import *
+from lib.aux_functions.plot import *
+from lib.aux_functions.experiments import *
+from lib.aux_functions.tests import *
 import cProfile
 import sys
-import sparse
+
 if __name__ == '__main__':
     
     np.set_printoptions(threshold=sys.maxsize)
@@ -43,6 +42,6 @@ if __name__ == '__main__':
     # cProfile.run('custom_game_alg_experiments()', sort='cumtime')
     # test_two_plateau_hard_payoff_matrix()
     
-    # test_mwu()
+    test_mwu()
     
-    custom_game_no_players_sim_experiments()
+    # custom_game_no_players_sim_experiments()

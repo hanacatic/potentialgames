@@ -1,8 +1,8 @@
 import numpy as np
-from game import Game,IdenticalInterestGame, rng
-from aux_functions.plot import *
-from aux_functions.helpers import make_symmetric_nd
-from scipy.sparse import csr_matrix, dia_matrix
+from lib.games.gamebase import *
+from lib.games.identinterest import *
+from lib.aux_functions.plot import *
+
 import sparse 
 
 RATIONALITY = 100
