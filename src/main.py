@@ -38,5 +38,11 @@ if __name__ == '__main__':
     # print(payoff.nbytes)
     # cProfile.run('test_transition_matrix()', sort='ncalls')
     # cProfile.run('test_multipleplayers()', sort='cumtime')
+    # cProfile.run('test_log_linear()', sort='cumtime')
+    # cProfile.run('test_mwu()', sort='cumtime')
+    # cProfile.run('custom_game_alg_experiments()', sort='cumtime')
+    # test_two_plateau_hard_payoff_matrix()
     
-    cProfile.run('test_log_linear()', sort='cumtime')
+    # test_mwu()
+    
+    custom_game_no_players_sim_experiments()
