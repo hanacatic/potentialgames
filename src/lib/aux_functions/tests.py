@@ -559,9 +559,17 @@ def test_multipleplayers():
     plt.close()
     # plt.show()
  
+def mu_congestion(profile):
+    if (profile == np.zeros(len(profile))).all():
+        return 1
+    return 0
+
 def test_congestion_game():
     
     gameSetup = CongestionGame()
     
-    print(gameSetup.no_players)
+    gameSetup.travel_time(0, 0, np.zeros((gameSetup.no_players - 1)).astype(int))
+        
+    game = Game(gameSetup, mu = mu_congestion)
+    
     plot_network(gameSetup.network)

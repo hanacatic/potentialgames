@@ -4,10 +4,10 @@ rng = np.random.default_rng()
 
 class Player:
     
-    def __init__(self, player_id, no_actions, utility):
+    def __init__(self, player_id, action_space, utility):
         
         self.id = player_id
-        self.no_actions = no_actions # size of the actions space
+        self.no_actions = len(action_space) # size of the actions space
         self.utility = utility # utility function
         self.past_action = None
         self.action_space = np.arange(self.no_actions).reshape(1, self.no_actions)

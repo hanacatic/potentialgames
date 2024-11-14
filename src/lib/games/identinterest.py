@@ -1,6 +1,6 @@
 import numpy as np
 from lib.aux_functions.helpers import *
-from scipy.sparse import lil_matrix, csc_matrix
+from scipy.sparse import lil_matrix, csr_matrix
 from functools import partial
 
 class IdenticalInterestGame:
@@ -10,7 +10,7 @@ class IdenticalInterestGame:
         self.no_players = no_players
         self.no_actions = len(action_space)
         self.no_action_profiles = self.no_actions**self.no_players
-        self.action_space = action_space
+        self.action_space = [action_space]*self.no_players
         self.firstNE = firstNE
         self.secondNE = secondNE
         self.delta = delta
@@ -66,8 +66,7 @@ class IdenticalInterestGame:
         i = 0
 
         strides = self.no_actions ** (self.no_players - 1 - np.arange(0, self.no_players))
-        action_space = np.arange(0, self.no_actions)
-       
+        action_space = np.arange(0, self.no_actions).tolist()
         while i < self.no_actions**(self.no_players - 1):
             
             opponents_actions = np.unravel_index(i, (self.no_actions,)*(self.no_players - 1))
@@ -83,14 +82,18 @@ class IdenticalInterestGame:
                 stride = strides[player_id]
                 idx = opponents_actions @ strides[self.opponents_idx_map[player_id]]
                 
+                print(idx + np.multiply(action_space, stride))
+                
                 for j, prob in enumerate(p):
-                    P_row.extend(idx + action_space*stride)
+                    P_row.extend(idx + np.multiply(action_space, stride))
                     P_col.extend([idx + j * stride]*self.no_actions)
                     P_data.extend([prob / self.no_players]*self.no_actions)   
                       
             i += 1 
             
-        P = csc_matrix((P_data, (P_row, P_col)), shape=(self.no_action_profiles, self.no_action_profiles))
+        P_data = np.concatenate(P_data).tolist()
+        
+        P = csr_matrix((P_data, (P_row, P_col)), shape=(self.no_action_profiles, self.no_action_profiles))
         P.sum_duplicates()
         self.P = P
 

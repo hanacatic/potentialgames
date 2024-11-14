@@ -3,7 +3,7 @@ import numpy as np
 import pandas as pd
 import networkx as nx
 from itertools import islice
-
+from functools import partial
 class CongestionGame:
     
     def __init__(self):
@@ -11,7 +11,14 @@ class CongestionGame:
         self.load_from_tntp()
         self.build_network()
         self.compute_strategies()
-         
+        
+        self.opponents_idx_map = [ np.delete(np.arange(self.no_players), player_id) for player_id in range(self.no_players) ]
+        
+        self.utility_functions = []
+        
+        for i in range(0, self.no_players):
+            self.utility_functions.append(partial(self.utility_function, i))
+    
     def load_from_tntp(self, network = "SiouxFalls"):
         
         # Based on _scripts https://github.com/bstabler/TransportationNetworks
@@ -100,7 +107,6 @@ class CongestionGame:
         
         # based on https://github.com/sessap/noregretgames/blob/master/Traffic_Routing/Network_functions.py
 
-        
         i = 0
         self.action_space = []
                 
@@ -128,3 +134,22 @@ class CongestionGame:
         return list(
             islice(nx.shortest_simple_paths(self.network, source, target, weight=weight), k)
         )
+    
+    def travel_time(self, agent_id, action, opponents_actions):
+        
+        ones = self.action_space[agent_id][action] > 0
+#        
+        phi = np.sum([np.multiply(ones, self.action_space[self.opponents_idx_map[agent_id][i]][opponents_actions[i]]) for i in range(self.no_players - 1)], axis = 0)
+        
+        x =  self.action_space[agent_id][action] + phi
+        
+        travel_times = np.multiply(np.multiply(ones.T, self.free_flows),(1 + np.multiply(self.b, np.exp(np.divide(x.T, self.capacities)[0].T, self.powers))))
+                
+        return travel_times
+        
+    def utility_function(self, agent_id, action, opponents_actions):
+        
+        total_travel_time = self.action_space[agent_id][action] @ self.travel_time(agent_id, action, opponents_actions)
+        
+        return -total_travel_time
+        

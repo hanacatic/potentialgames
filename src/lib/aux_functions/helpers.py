@@ -19,12 +19,12 @@ from itertools import permutations
 # def proposal_sampler(action_profile):
 #     return action_profile + np.random.normal(0, 0.1, size = action_profile.shape)
 
-def rejection_sampling(prob_func, initial_profile, action_space_size, M = 1.0, iterations = 1000):
+def rejection_sampling(prob_func, initial_profile, action_space, M = 1.0, iterations = 1000):
     
     current_profile = initial_profile
     
     for _ in range(iterations):
-        proposed_profile = proposal_sampler(current_profile, action_space_size)
+        proposed_profile = proposal_sampler(current_profile, action_space)
         
         acceptance_ratio = prob_func(proposed_profile)/(M*prob_func(current_profile))
         
@@ -33,8 +33,8 @@ def rejection_sampling(prob_func, initial_profile, action_space_size, M = 1.0, i
         
     return -1
 
-def proposal_sampler(action_profile, action_space_size):
-    return np.random.randint(0, action_space_size, size = action_profile.shape)
+def proposal_sampler(action_profile, action_space):
+    return [np.random.randint(0, len(action_space[i]), size = 1) for i in range(len(action_space))]
 
 def make_symmetric_nd(matrix):
     # Get the number of dimensions

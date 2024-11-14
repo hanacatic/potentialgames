@@ -13,9 +13,9 @@ class Game:
         self.algorithm = algorithm
         self.max_iter = int(max_iter)
         
-        self.players = np.array([ Player(i, self.gameSetup.no_actions, gameSetup.utility_functions[i]) for i in range(0, self.gameSetup.no_players)], dtype = object)
+        self.players = np.array([ Player(i, self.gameSetup.action_space[i], gameSetup.utility_functions[i]) for i in range(0, self.gameSetup.no_players)], dtype = object)
         
-        self.action_profile = np.random.randint(0, self.gameSetup.no_actions, self.gameSetup.no_players) # discrete uniform distribution
+        self.action_profile = [0] * self.gameSetup.no_players # np.random.randint(0, self.gameSetup.no_actions, self.gameSetup.no_players) # discrete uniform distribution
         self.action_profile = self.sample_initial_action_profile(mu)
            
         self.potentials_history = np.zeros((self.max_iter, 1))
@@ -25,7 +25,7 @@ class Game:
                
     def sample_initial_action_profile(self, mu):
         
-        self.initial_action_profile = rejection_sampling(mu, self.action_profile, self.gameSetup.no_actions)
+        self.initial_action_profile = rejection_sampling(mu, self.action_profile, self.gameSetup.action_space)
         
         return self.initial_action_profile
     
@@ -205,7 +205,7 @@ class Game:
                 
                 mixed_strategies[player_id] = player.mixed_strategy()
                 
-                self.action_profile[player_id] = rng.choice(self.gameSetup.action_space, 1, p = mixed_strategies[player_id])
+                self.action_profile[player_id] = rng.choice(self.gameSetup.action_space[player_id], 1, p = mixed_strategies[player_id])
             
             self.potentials_history[i] = self.gameSetup.potential_function(self.action_profile) # compute the value of the potential function
 
@@ -256,4 +256,3 @@ class Game:
     def reset_game(self):
 
         [self.players[i].reset_player(self.gameSetup.no_actions, self.gameSetup.utility_functions[i]) for i in range(0, self.gameSetup.no_players)]
-
