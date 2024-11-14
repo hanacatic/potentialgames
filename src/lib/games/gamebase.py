@@ -44,28 +44,25 @@ class Game:
         else:
             self.action_profile = initial_action_profile
         
-        match self.algorithm:
-            case "log_linear":
-                print(beta)
-                self.log_linear(beta)
-            case "log_linear_t":
-                self.log_linear_t(beta)
-            case "log_linear_tatarenko":
+        if self.algorithm == "log_linear":
+            print(beta)
+            self.log_linear(beta)
+        elif self.algorithm == "log_linear_t":
+            self.log_linear_t(beta)
+        elif self.algorithm == "log_linear_tatarenko":
                 self.log_linear_tatarenko()
-            case "log_linear_fast":
-                # self.set_mu_matrix(mu_matrix)
-                if self.gameSetup.no_players == 2:
-                    self.log_linear_fast(beta, scale_factor)
-                else:
-                    self.log_linear_fast_sparse(beta, scale_factor)
-            case "best_response":
-                self.best_response()
-            case "alpha_best_response":
-                self.alpha_best_response()
-            case "multiplicative_weight":
-                self.multiplicative_weight()
-            case _:
-                self.log_linear(beta)
+        elif self.algorithm == "log_linear_fast":
+            # self.set_mu_matrix(mu_matrix)
+            if self.gameSetup.no_players == 2:
+                self.log_linear_fast(beta, scale_factor)
+            else:
+                self.log_linear_fast_sparse(beta, scale_factor)
+        elif self.algorithm == "best_response":
+            self.best_response()
+        elif self.algorithm == "alpha_best_response":
+            self.alpha_best_response()
+        elif self.algorithm == "multiplicative_weight":
+            self.multiplicative_weight()
         
     def log_linear(self, beta):
                
