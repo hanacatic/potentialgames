@@ -45,7 +45,7 @@ class CongestionGame:
         blocks = all_rows.split('Origin')[1:]
         matrix = {}
         
-        for k in range(len(blocks)):
+        for k in range(len(blocks)): 
             orig = blocks[k].split('\n')
             dests = orig[1:]                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                     
             orig=int(orig[0])
@@ -61,8 +61,6 @@ class CongestionGame:
             for j in range(zones):
                 # We map values to a index i-1, as Numpy is base 0
                 mat[i, j] = matrix.get(i+1,{}).get(j+1,0)
-
-        self.demand = mat
         
         coordsfile = os.path.join(root, "potentialgames_ws", "TransportationNetworks", network, network + '_node.tntp')
         coords = pd.read_csv(coordsfile, sep='\t')
@@ -72,13 +70,14 @@ class CongestionGame:
 
         # And drop the silly first and last columns
         coords.drop([';'], axis=1, inplace=True)
-        
         self.coords = coords.to_numpy() #
         self.coords = np.stack([self.coords[:, 1], self.coords[:, 2]], 1)
         
-        self.agents = np.array(np.nonzero(self.demand))
-        print(self.agents)
+        self.agents = np.array(np.nonzero(mat))
         self.no_players = len(self.agents[0])
+        self.demand = np.zeros((self.no_players, 1))
+        for i in range(self.no_players):
+            self.demand[i] = mat[self.agents[0, i], self.agents[1, i]] / 100
     
     def build_network(self):
         
@@ -91,13 +90,39 @@ class CongestionGame:
             
         for i in range(len(self.edges[0])):
             self.network.add_edge(str(self.edges[0, i]), str(self.edges[1, i]), weight = self.lengths[i])        
-        
+    
+    def find_edge_idx(self, node1, node2):
+        for e in range(len(self.edges[0])):
+            if self.edges[0][e] == node1 and self.edges[1][e] == node2:
+                return e
+       
     def compute_strategies(self):
+        
+        # based on https://github.com/sessap/noregretgames/blob/master/Traffic_Routing/Network_functions.py
+
+        
         i = 0
         self.action_space = []
-        
+                
         for i in range(self.no_players):
-            self.action_space.append(self.k_shortest_paths(str(self.agents[0,i]), str(self.agents[1,i]), 5, weight="weight"))
+        
+            actions = self.k_shortest_paths(str(self.agents[0,i]), str(self.agents[1,i]), 5, weight="weight")
+            self.action_space_i = []                    
+            for j in range(len(actions)):
+
+                edges_vec = np.zeros((len(self.edges[0]), 1))
+
+                for node in range(len(actions[j]) - 1):
+                    idx = self.find_edge_idx(int(actions[j][node]), int(actions[j][node + 1]))
+                    edges_vec[idx] = 1
+                    
+                demand_vec = np.multiply(edges_vec, self.demand[i])
+                if j == 0:
+                    self.action_space_i.append(demand_vec)
+                elif np.dot(demand_vec.T, self.free_flows) < 3 * np.dot(self.action_space_i[0].T, self.free_flows):
+                    self.action_space_i.append(demand_vec)
+                    
+            self.action_space.append(self.action_space_i)
             
     def k_shortest_paths(self, source, target, k, weight=None):
         return list(
