@@ -25,7 +25,7 @@ class Game:
                
     def sample_initial_action_profile(self, mu):
         
-        self.initial_action_profile = rejection_sampling(mu, self.action_profile, self.gameSetup.action_space)
+        self.initial_action_profile = rejection_sampling(mu, self.action_profile, self.gameSetup.action_space, M = 0.5, iterations = 1000)
         
         return self.initial_action_profile
     
@@ -39,7 +39,7 @@ class Game:
 
     def play(self, initial_action_profile = None, beta = None, scale_factor = 1):
         
-        if initial_action_profile == None:
+        if initial_action_profile is None:
             self.action_profile = self.initial_action_profile.copy()
         else:
             self.action_profile = initial_action_profile
@@ -225,9 +225,11 @@ class Game:
         
         # return 1/max(epsilon/2, delta)*np.log(A**N*(1-epsilon/2)*(4/(epsilon*A**N*(epsilon/2)) - 1/(A**N*(epsilon/2))))
         # if self.gameSetup.type == "Asymmetrical":
-        #     return 1/max(epsilon, delta)*np.log(A**N/epsilon)
+        # return 1/max(epsilon, delta)*np.log(A**N/epsilon)
+
+        return 1/max(epsilon, delta)*(N*np.log(A) - np.log(epsilon))
         # print("Symmetrical in compute beta")
-        return  1/max(epsilon, delta)*np.log(N**A/epsilon)
+        # return  1/max(epsilon, delta)*np.log(N**A/epsilon)
 
     def compute_t(self, epsilon):
         
