@@ -1,25 +1,34 @@
 import os
 import numpy as np 
 import pandas as pd
+import pickle
 import networkx as nx
 from itertools import islice
 from functools import partial
+
+rng = np.random.default_rng()
+
 class CongestionGame:
     
-    def __init__(self):
+    def __init__(self, network = "SiouxFalls", no_actions = 5):
         
-        self.load_from_tntp()
+        self.no_actions = no_actions
+        
+        self.load_from_tntp(network)
         self.build_network()
-        self.compute_strategies()
-        
+    
         self.opponents_idx_map = [ np.delete(np.arange(self.no_players), player_id) for player_id in range(self.no_players) ]
         
+        self.load_precomputed_data(network)
+        
+        self.delta = 1e-6
+                
         self.utility_functions = []
         
         for i in range(0, self.no_players):
             self.utility_functions.append(partial(self.utility_function, i))
     
-    def load_from_tntp(self, network = "SiouxFalls"):
+    def load_from_tntp(self, network):
         
         # Based on _scripts https://github.com/bstabler/TransportationNetworks
         
@@ -41,7 +50,7 @@ class CongestionGame:
         self.edges = np.array([initial_nodes, terminal_nodes]).astype(int)
         self.capacities = self.net[:, 2] / 100 
         self.lengths = self.net[:, 3]
-        self.free_flows = self.net[:, 4]
+        self.free_flows = self.net[:, 4] #/ 100
         self.b = self.net[:, 5]
         self.powers = self.net[:, 6]
         
@@ -86,6 +95,26 @@ class CongestionGame:
         for i in range(self.no_players):
             self.demand[i] = mat[self.agents[0, i], self.agents[1, i]] / 100
     
+    def load_precomputed_data(self, network):
+        
+        root = os.path.join(os.path.dirname(os.path.abspath('.')),  "potentialgames_ws", "potentialgames", "src", "lib", "games", "data", network)
+        self.file_path_strategies = os.path.join(root, "precomputed_strategies.pckl")
+        
+        if os.path.exists(self.file_path_strategies):
+            with open(self.file_path_strategies, 'rb') as f:
+                self.action_space = pickle.load(f)
+        else:
+            self.compute_strategies()
+            
+        self.file_path_travel_times = os.path.join(root, "estimated_travel_times.pckl")
+        # self.file_path_delta = os.path.join(root, "estimated_delta.pckl")
+        
+        if os.path.exists(self.file_path_travel_times):
+            with open(self.file_path_travel_times, 'rb') as f:
+                self.action_space = pickle.load(f)
+        else:
+            self.estimate_travel_times()
+        
     def build_network(self):
         
         # based on https://github.com/sessap/noregretgames/blob/master/Traffic_Routing/Network_functions.py
@@ -112,7 +141,7 @@ class CongestionGame:
                 
         for i in range(self.no_players):
         
-            actions = self.k_shortest_paths(str(self.agents[0,i]), str(self.agents[1,i]), 5, weight="weight")
+            actions = self.k_shortest_paths(str(self.agents[0,i]), str(self.agents[1,i]), self.no_actions, weight="weight")
             self.action_space_i = []                    
             for j in range(len(actions)):
 
@@ -123,33 +152,63 @@ class CongestionGame:
                     edges_vec[idx] = 1
                     
                 demand_vec = np.multiply(edges_vec, self.demand[i])
-                if j == 0:
-                    self.action_space_i.append(demand_vec)
-                elif np.dot(demand_vec.T, self.free_flows) < 3 * np.dot(self.action_space_i[0].T, self.free_flows):
-                    self.action_space_i.append(demand_vec)
+                
+                self.action_space_i.append(demand_vec)
                     
             self.action_space.append(self.action_space_i)
             
+        with open(self.file_path_strategies, 'wb') as f:
+            pickle.dump(self.action_space, f, pickle.HIGHEST_PROTOCOL)
+                    
     def k_shortest_paths(self, source, target, k, weight=None):
         return list(
             islice(nx.shortest_simple_paths(self.network, source, target, weight=weight), k)
         )
     
+    def estimate_travel_times(self):
+        
+        self.max_travel_times = np.zeros(self.no_players)
+        
+        for i in range(10000):
+            if i % 100 == 0:
+                print("Currently on " + str(i) + "th iteration")
+            
+            action_profile = np.array([rng.integers(0, len(self.action_space[agent_id]), 1)[0] for agent_id in range(self.no_players)])
+            
+            self.max_travel_times = [max(self.max_travel_times[agent_id], self.travel_time(agent_id, action_profile[agent_id], action_profile[self.opponents_idx_map[agent_id]])) for agent_id in range(self.no_players)]
+            
+                
     def travel_time(self, agent_id, action, opponents_actions):
         
         ones = self.action_space[agent_id][action] > 0
-#        
+                
         phi = np.sum([np.multiply(ones, self.action_space[self.opponents_idx_map[agent_id][i]][opponents_actions[i]]) for i in range(self.no_players - 1)], axis = 0)
         
         x =  self.action_space[agent_id][action] + phi
         
-        travel_times = np.multiply(np.multiply(ones.T, self.free_flows),(1 + np.multiply(self.b, np.exp(np.divide(x.T, self.capacities)[0].T, self.powers))))
+        congestions = np.multiply(np.multiply(ones.T, self.free_flows),(1 + np.multiply(self.b, np.power(np.divide(x.T, self.capacities)[0].T, self.powers))))
                 
-        return travel_times
+        return self.action_space[agent_id][action].T @ congestions[0]
         
     def utility_function(self, agent_id, action, opponents_actions):
+
+        total_travel_time = self.travel_time(agent_id, action, opponents_actions)
         
-        total_travel_time = self.action_space[agent_id][action] @ self.travel_time(agent_id, action, opponents_actions)
+        utility = 1-0.00025*(total_travel_time)
+
+        return  max(utility, [0.0]) #-total_travel_time
         
-        return -total_travel_time
+    def potential_function(self, profile):
+        total_time = 0
+        # for i in range(self.no_players):
+        #     total_time = total_time + self.travel_time(i, profile[i], profile[self.opponents_idx_map[i]])
+        return self.objective(profile)
+    
+    def objective(self, profile):
+        ones = np.ones(len(self.edges[0]))
         
+        x = np.sum([np.multiply(ones, self.action_space[player_id][profile[player_id]]) for player_id in range(self.no_players)], axis = 0)
+        
+        congestion = np.mean(0.15* np.power(np.divide(x.T, self.capacities)[0].T, self.powers))
+        
+        return congestion
