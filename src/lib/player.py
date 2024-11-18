@@ -21,9 +21,7 @@ class Player:
         
         if self.utilities is None or all(self.past_opponents_actions != opponents_actions):
             self.utilities = np.array([self.utility(i, opponents_actions) for i in range(self.no_actions)]).reshape(1, self.no_actions)
-        
-            exp_values = np.exp(beta * self.utilities)
-        
+            exp_values = np.exp(beta * (self.utilities - np.max(self.utilities)))
             self.prob = exp_values/np.sum(exp_values)
             self.past_opponents_actions = opponents_actions
         
