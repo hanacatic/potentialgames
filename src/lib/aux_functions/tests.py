@@ -2,6 +2,7 @@ from lib.aux_functions.experiments import *
 from lib.games import *
 from lib.player import *
 from lib.games.trafficrouting import CongestionGame
+import matplotlib.pyplot as plt
 
 def test_custom_game():
     
@@ -569,7 +570,42 @@ def test_congestion_game():
     gameSetup = CongestionGame()
     
     gameSetup.travel_time(0, 0, np.zeros((gameSetup.no_players - 1)).astype(int))
-        
-    game = Game(gameSetup, mu = mu_congestion)
     
-    plot_network(gameSetup.network)
+    # plot_network(gameSetup.network)
+    
+    # plt.show(block = False)
+    # plt.pause(1)
+    # plt.close()
+        
+    game = Game(gameSetup, algorithm = "log_linear", max_iter = 2000, mu = mu_congestion)
+    
+    print(game.gameSetup.delta)
+    beta_t = game.compute_beta(0.1)
+    print(beta_t)
+    initial_action_profile = np.array([4]*game.gameSetup.no_players) # [0 0 0 0 0 0 2 0 0 0 0 0 0 3 0 0 0 4 0 0 1 0 0 0 0 1 0 0 0 0 3 1 1 0 0 1 3 
+    #                           1 2 2 0 0 0 0 0 0 1 1 2 0 0 0 0 0 2 3 0 4 0 1 0 1 0 0 0 4 0 0 0 0 0 0 3 1
+    #                           0 4 4 4 0 0 2 1 0 0 1 0 0 0 3 0 0 0 0 0 0 2 0 0 3 2 0 0 0 0 0 0 1 0 0 0 0 
+    #                           0 1 0 0 0 0 3 0 0 0 2 0 0 0 0 1 0 0 4 3 3 0 0 1 3 3 0 4 0 1 0 0 0 1 0 0 0 
+    #                           0 2 0 0 2 1 0 0 0 0 2 3 0 0 1 3 0 2 0 0 0 0 0 2 0 0 3 0 0 0 0 1 0 0 0 1 1
+    #                           2 0 0 1 1 1 2 0 0 2 3 0 1 0 0 0 1 3 2 0 0 1 0 0 0 1 0 1 1 0 0 0 1 2 0 2 1 
+    #                           0 0 0 1 3 0 0 0 0 0 1 0 1 2 2 3 0 2 0 0 0 0 0 0 0 2 0 3 1 0 0 0 1 3 0 1 0
+    #                           0 0 0 0 0 0 0 0 0 0 0 2 0 0 1 4 0 0 0 3 0 0 2 4 0 0 1 0 0 0 3 0 3 0 0 4 2
+    #                           2 1 0 0 1 0 4 0 4 0 3 2 1 0 0 3 4 3 0 0 4 1 3 0 0 0 3 1 0 2 3 1 0 0 0 0 0
+    #                           0 1 1 1 0 0 1 0 0 2 0 0 2 2 2 3 0 0 0 0 1 1 1 1 0 4 4 3 2 1 0 1 1 1 1 1 0
+    #                           0 0 0 0 3 0 3 0 0 2 0 4 0 0 0 1 0 1 1 2 0 1 0 0 1 0 0 0 0 3 2 3 2 2 1 2 1
+    #                           1 0 3 0 0 0 1 0 0 0 1 0 1 2 2 0 0 3 0 0 0 4 2 1 0 0 2 0 0 0 0 0 0 0 0 0 0
+    #                           0 0 0 0 3 0 0 4 0 0 0 0 1 1 0 0 0 0 1 0 1 0 0 0 3 2 0 0 0 0 2 0 0 0 0 1 0
+    #                           0 0 0 0 0 0 0 0 1 0 3 0 2 1 0 3 0 0 0 0 2 1 1 1 1 0 0 0 0 0 0 0 2 0 3 0 0
+    #                           0 0 2 2 0 1 0 0 0 0] #np.array([0]*game.gameSetup.no_players)
+    print(game.gameSetup.potential_function(initial_action_profile))
+    game.play(initial_action_profile = initial_action_profile, beta = beta_t)
+    
+    plt.plot(game.potentials_history)
+    
+    print(game.action_profile)
+    # print(game.gameSetup.objective(game.action_profile))
+    plt.grid()
+    plt.show()
+    plt.close()
+        
+    
