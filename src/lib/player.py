@@ -33,7 +33,7 @@ class Player:
     
     def best_response(self, opponents_actions):
         
-        if self.utilities is None or self.past_opponents_actions != opponents_actions:
+        if self.utilities is None or (self.past_opponents_actions != opponents_actions).any():
         
             self.utilities = np.array([self.utility(i, opponents_actions) for i in range(self.no_actions)]).reshape(1, self.no_actions)
 
@@ -50,7 +50,7 @@ class Player:
         
     def update_mw(self, opponents_actions, gamma_t = 0.5):
         
-        if self.utilities is None or self.past_opponents_actions != opponents_actions:
+        if self.utilities is None or (self.past_opponents_actions != opponents_actions).any():
             
             self.utilities = np.array([self.utility(i, opponents_actions) for i in range(self.no_actions)]).reshape(1, self.no_actions)
             self.past_opponents_actions = opponents_actions

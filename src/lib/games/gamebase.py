@@ -42,12 +42,13 @@ class Game:
         if initial_action_profile is None:
             self.action_profile = self.initial_action_profile.copy()
         else:
-            self.action_profile = initial_action_profile
+            self.action_profile = initial_action_profile.copy()
         
         if self.algorithm == "log_linear":
             print(beta)
             self.log_linear(beta)
         elif self.algorithm == "log_linear_t":
+            print(beta)
             self.log_linear_t(beta)
         elif self.algorithm == "log_linear_tatarenko":
                 self.log_linear_tatarenko()
@@ -74,8 +75,9 @@ class Game:
 
         for i in range(self.max_iter): 
             
-            beta = beta_t*(1/self.gameSetup.no_players *np.log(1+i)/(1+ 1/self.gameSetup.no_players * np.log(i+1)))
-            
+            # beta = beta_t*(1/self.gameSetup.no_players *np.log(1+i)/(1 + 1/self.gameSetup.no_players * np.log(i+1)))
+            beta = beta_t*(np.log(1/self.gameSetup.no_players)*np.log(1+i)/(1 + np.log(1/self.gameSetup.no_players)* np.log(i+1)))
+
             self.log_linear_iteration(i, beta)
             
     def log_linear_tatarenko(self):
@@ -84,8 +86,7 @@ class Game:
 
             # beta = np.log(i+1)*(self.gameSetup.no_players**2+1)/self.gameSetup.no_players
                         
-            beta = min((i+1), 500) # Tatarenko
-
+            beta = min((i+1), 5000) # Tatarenko
   
             self.log_linear_iteration(i, beta)
     
@@ -205,7 +206,8 @@ class Game:
                 
                 mixed_strategies[player_id] = player.mixed_strategy()
                 
-                self.action_profile[player_id] = rng.choice(self.gameSetup.action_space[player_id], 1, p = mixed_strategies[player_id])
+                print(mixed_strategies[player_id])
+                self.action_profile[player_id] = rng.choice(np.arange(len(self.gameSetup.action_space[player_id])), 1, p = mixed_strategies[player_id])
             
             self.potentials_history[i] = self.gameSetup.potential_function(self.action_profile) # compute the value of the potential function
 
@@ -240,7 +242,10 @@ class Game:
         
         # return 25*N**2*A**5*np.exp(4*beta)/16/np.pi**2*(np.log(np.log(A**N)) + np.log(beta) + 2*np.log(4/epsilon))
         
-        return N**2*A**5*(A**N/epsilon)**(1/max(epsilon, delta))
+        # return N**2*A**5*(A**N/epsilon)**(1/max(epsilon, delta))
+        
+        return np.log(N**2*A**5) + (1/max(epsilon, delta))*N*np.log(A/epsilon)
+
         # return self.game.no_players*(self.game.no_players**self.game.no_actions/epsilon)**(1/max(epsilon, self.game.delta))
 
     def set_max_iter(self, epsilon):
