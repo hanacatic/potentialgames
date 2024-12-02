@@ -75,7 +75,7 @@ class Player:
         self.prob = np.multiply(self.prob, np.exp(np.multiply(gamma_t, -losses)))
         
         self.prob = self.prob / np.sum(self.prob)
-    
+        
     def set_modified_utility(self, utility_modified):
         
         self.utility_modified = utility_modified

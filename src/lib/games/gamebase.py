@@ -200,10 +200,7 @@ class Game:
         #     self.players[player_id]
             
         #     self.time_played[player_id] = time
-            
-        
-        
-        
+              
     def best_response(self):
         
         for i in range(self.max_iter):
@@ -232,10 +229,14 @@ class Game:
             best_improvement = 0
             
             if improvement == False:
-                self.potentials_history[i] = self.gameSetup.potential_function(self.action_profile)
+                self.potentials_history[i] = self.potentials_history[i-1]
+                
+                if isinstance(self.gameSetup, CongestionGame):
+                    self.objectives_history[i] = self.objectives_history[i-1]
+                     
                 continue
-            else:
-                improvement = False
+
+            improvement = False
                 
             for player_id in range(0, self.gameSetup.no_players):
                           
@@ -257,16 +258,15 @@ class Game:
                     improvement = True
                          
             self.action_profile[chosen_player] = chosen_player_action 
-
-            print(self.action_profile)
             
             self.potentials_history[i] = self.gameSetup.potential_function(self.action_profile) # compute the value of the potential function
 
             if isinstance(self.gameSetup, CongestionGame):
                 self.objectives_history[i] = self.gameSetup.objective(self.action_profile)      
+    
     def multiplicative_weight(self):
         
-        gamma_t = np.sqrt(np.log(self.gameSetup.no_players)/self.max_iter) 
+        gamma_t = np.sqrt(8*np.log(self.gameSetup.no_actions)/self.max_iter) 
         mixed_strategies = np.zeros([self.gameSetup.no_players, self.gameSetup.no_actions])
                       
         for i in range(self.max_iter):            
