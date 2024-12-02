@@ -68,7 +68,7 @@ def plot_lines_with_std(lines_to_plot, std, list_labels, plot_e_efficient = Fals
     plt.xlabel('time', fontsize=10)
     plt.legend(fontsize=15)
     plt.title(title, fontsize=15)
-    plt.ylim(0, 1.1)
+    # plt.ylim(0, 1.1)
     plt.legend(loc="lower right")
     
     if save:
@@ -82,7 +82,7 @@ def plot_lines(lines_to_plot, list_labels, plot_e_efficient = False, title = 'Av
     f.clf()
     
     for idx, element in enumerate(lines_to_plot):
-        if idx < len(lines_to_plot) - 1:
+        if idx < len(list_labels) - 1:
             plt.plot(element, label = list_labels[idx])
         elif plot_e_efficient:
             plt.plot(element, 'k--', label =  list_labels[idx])

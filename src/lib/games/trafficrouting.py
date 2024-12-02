@@ -10,9 +10,11 @@ rng = np.random.default_rng()
 
 class CongestionGame:
     
-    def __init__(self, network = "SiouxFalls", no_actions = 5):
+    def __init__(self, network = "SiouxFalls", no_actions = 5, modified = False, modified_no_players = None):
         
         self.no_actions = no_actions
+        self.modified = modified
+        self.modified_no_players = modified_no_players
         
         self.load_from_tntp(network)
         self.build_network()
@@ -24,15 +26,21 @@ class CongestionGame:
         # self.delta = 1e-6
                 
         self.utility_functions = []
+        self.modified_utility_functions = []
         
         for i in range(0, self.no_players):
             self.utility_functions.append(partial(self.utility_function, i))
-            
-    def __del__(self):
+            self.modified_utility_functions.append(partial(self.modified_utility_function, i))
+
+    # def __del__(self):
         
-        with open(self.file_path_delta, 'wb') as f:
-            pickle.dump(self.improve_second_min_potential - self.improve_min_potential, f, pickle.HIGHEST_PROTOCOL)
+    #     print(self.file_path_delta)
+    #     if self.improve_second_min_potential - self.improve_min_potential > 0:
+    #         with open(self.file_path_delta, 'wb') as f:
+    #             pickle.dump(self.improve_second_min_potential - self.improve_min_potential, f, pickle.HIGHEST_PROTOCOL)
         
+    #     print(self.file_path_potential)
+
         with open(self.file_path_potential, 'wb') as f:
             pickle.dump(np.array([self.improve_max_potential, self.improve_min_potential]), f, pickle.HIGHEST_PROTOCOL)
             
@@ -79,6 +87,7 @@ class CongestionGame:
             for i in d:
                 destinations = {**destinations, **i}
             matrix[orig] = destinations
+        
         zones = max(matrix.keys())
         mat = np.zeros((zones, zones))
         for i in range(zones):
@@ -91,19 +100,34 @@ class CongestionGame:
         trimmed= [s.strip().lower() for s in coords.columns]
 
         coords.columns = trimmed
-
+        
         # And drop the silly first and last columns
         coords.drop([';'], axis=1, inplace=True)
         self.coords = coords.to_numpy() #
-        self.coords = np.stack([self.coords[:, 1], self.coords[:, 2]], 1)
-        
-        self.agents = np.array(np.nonzero(mat))
-        self.no_players = len(self.agents[0])
-        self.demand = np.zeros((self.no_players, 1))
-        for i in range(self.no_players):
-            self.demand[i] = mat[self.agents[0, i], self.agents[1, i]] / 100
+        self.coords = np.stack([self.coords[:, 1], self.coords[:, 2]], 1)        
     
+        if not self.modified:
+            self.agents = np.array(np.nonzero(mat))
+            self.no_players = len(self.agents[0])
+            self.demand = np.zeros((self.no_players, 1))
+            print("agents")
+            print(self.agents)
+            
+            for i in range(self.no_players):
+                self.demand[i] = mat[self.agents[0, i], self.agents[1, i]] / 100
+        else:
+            self.agents = np.array( np.nonzero(mat))
+            self.agents = np.repeat(self.agents, self.modified_no_players, axis = 1)
+            self.no_players = self.modified_no_players
+            self.demand = np.zeros((self.no_players, 1))
+            
+            for i in range(self.no_players):
+
+                self.demand[i] = mat[self.agents[0, i], self.agents[1, i]] / 100 / self.no_players
+        
     def load_precomputed_data(self, network):
+        
+        self.improve_max_potential = None
         
         root = os.path.join(os.path.dirname(os.path.abspath('.')),  "potentialgames_ws", "potentialgames", "src", "lib", "games", "data", network)
         self.file_path_strategies = os.path.join(root, "precomputed_strategies.pckl")
@@ -123,8 +147,8 @@ class CongestionGame:
                 self.max_travel_times = pickle.load(f)
             with open(self.file_path_potential, 'rb') as f:
                 potential = pickle.load(f)
-                self.max_potential = 1.01*potential[0]
-                self.min_potential = 0.99*potential[1]
+                self.max_potential = potential[0]
+                self.min_potential = potential[1]
                 # self.delta = potential[1]/self.max_potential
             with open(self.file_path_delta, 'rb') as f:
                 self.delta = pickle.load(f)/(self.max_potential - self.min_potential)
@@ -134,7 +158,7 @@ class CongestionGame:
         
         self.improve_max_potential = self.max_potential
         self.improve_min_potential = self.min_potential
-        self.improve_second_min_potential = self.min_potential
+        self.improve_second_min_potential = self.min_potential+self.delta*(self.max_potential - self.min_potential)
         
     def build_network(self):
         
@@ -227,6 +251,7 @@ class CongestionGame:
     def congestion(self, x):
         
         congestions = np.multiply(self.free_flows,(1 + np.multiply(self.b, np.power(np.divide(x.T, self.capacities)[0].T, self.powers))))
+        
         return congestions
                 
     def travel_time(self, agent_id, action, opponents_actions):
@@ -236,36 +261,68 @@ class CongestionGame:
         phi = np.sum([np.multiply(ones, self.action_space[self.opponents_idx_map[agent_id][i]][opponents_actions[i]]) for i in range(self.no_players - 1)], axis = 0)
         
         x =  self.action_space[agent_id][action] + phi
+
+        congestions = self.congestion(x)
+                
+        return (self.action_space[agent_id][action]>0).T @ congestions
+    
+    def travel_time_modified(self, agent_id, action, opponents_actions):
+        
+        ones = self.action_space[agent_id][action] > 0
+                
+        phi = np.sum([np.multiply(ones*opponents_actions[i], self.action_space[0][i]) for i in range(self.no_actions)], axis = 0)
+         
+        # print("agent id " + str(agent_id) + ":")
+        # print(ones*opponents_actions[0])
+        # print(self.action_space[0])
+        # print("multiply: ")
+        # print(np.multiply((ones*opponents_actions[0]), self.action_space[0][0]))
+        
+        # print("action_space[0]")
+        # print(self.action_space[0][0])
+        
+        x =  self.action_space[agent_id][action] + phi
+        
         
         congestions = self.congestion(x)
                 
-        return self.action_space[agent_id][action].T @ congestions
-        
+        return (self.action_space[agent_id][action]>0).T @ congestions
+    
     def utility_function(self, agent_id, action, opponents_actions):
 
         total_travel_time = self.travel_time(agent_id, action, opponents_actions)
         
-        return  -0.0001*(total_travel_time)
-
+        return ((-total_travel_time + self.max_potential)/(self.max_potential - self.min_potential))
+        # return  (-total_travel_time)/(self.max_potential - self.min_potential)
+        
+    def modified_utility_function(self, agent_id, action, opponents_actions):
+        
+        total_travel_time = self.travel_time_modified(agent_id, action, opponents_actions)
+        
+        return ((-total_travel_time + self.max_potential)/(self.max_potential - self.min_potential))
+        
     def potential_function_est(self, profile):
         
-        x = np.zeros(self.no_players)
+        x = np.zeros((len(self.edges[0]), 1))
         potentials = 0
         
         for i in range(self.no_players):
-            x = x  + self.action_space[i][profile[i]]
+            x = x + self.action_space[i][profile[i]]
             congestions = self.congestion(x)
-            potentials = potentials + congestions * (congestions > potentials)
+            # print(self.action_space[i][profile[i]].shape)
+            # print(x.shape)
+            potentials = potentials + (congestions * (congestions > potentials))
         
         potential = np.sum(potentials)
         
-        if self.improve_max_potential < potential:
-            self.improve_max_potential = potential
-        elif self.improve_min_potential > potential:
-            self.improve_second_min_potential = self.improve_min_potential
-            self.improve_min_potential = potential
-        elif self.improve_second_min_potential > potential:
-            self.improve_second_min_potential = potential
+        if self.improve_max_potential is not None:
+            if self.improve_max_potential < potential:
+                self.improve_max_potential = potential
+            elif self.improve_min_potential > potential:
+                self.improve_second_min_potential = self.improve_min_potential
+                self.improve_min_potential = potential
+            elif self.improve_second_min_potential > potential:
+                self.improve_second_min_potential = potential
             
         return potential
         

@@ -1,6 +1,7 @@
 import numpy as np
 from lib.games.gamebase import *
 from lib.games.identinterest import *
+from lib.games.trafficrouting import *
 from lib.aux_functions.plot import *
 
 import sparse 
@@ -10,6 +11,11 @@ EPS = 0.5e-1
     
 def mu(action_profile):
     return 1.0/16.0
+
+def mu_congestion(profile):
+    if (profile == np.zeros(len(profile))).all():
+        return 1
+    return 0
 
 def beta_experiments(game, n_exp = 10, eps = 0.1, algorithm = "log_linear", save = False, folder = None, file_name = None, title = 'Average potential'): 
     
@@ -1148,5 +1154,119 @@ def custom_game_no_players_sim_experiments(N = [6, 8, 10], delta = 0.25, eps = 1
     #     expected_values[idx] = np.transpose(games[idx].expected_value)
         
     # plot_lines(expected_values, labels, plot_e_efficient = True, title = 'Expected potential value', save = save, folder = folder, file_name = 'comprison_no_actions_one_plateau_trench')
+    
+    plt.show()
+
+def traffic_routing_experiments(eps = 1e-1, n_exp = 5, max_iter = 2000):
+    
+    gameSetup = CongestionGame()
+    
+    game = Game(gameSetup, algorithm = "log_linear_tatarenko", max_iter = 2000, mu = mu_congestion)
+    
+    print(game.gameSetup.delta)
+    beta_t = game.compute_beta(eps)
+    t = game.compute_t(eps)
+    print(beta_t)
+    print(t)
+    initial_action_profile = np.array([4]*game.gameSetup.no_players) # [0 0 0 0 0 0 2 0 0 0 0 0 0 3 0 0 0 4 0 0 1 0 0 0 0 1 0 0 0 0 3 1 1 0 0 1 3 
+    #                           1 2 2 0 0 0 0 0 0 1 1 2 0 0 0 0 0 2 3 0 4 0 1 0 1 0 0 0 4 0 0 0 0 0 0 3 1
+    #                           0 4 4 4 0 0 2 1 0 0 1 0 0 0 3 0 0 0 0 0 0 2 0 0 3 2 0 0 0 0 0 0 1 0 0 0 0 
+    #                           0 1 0 0 0 0 3 0 0 0 2 0 0 0 0 1 0 0 4 3 3 0 0 1 3 3 0 4 0 1 0 0 0 1 0 0 0 
+    #                           0 2 0 0 2 1 0 0 0 0 2 3 0 0 1 3 0 2 0 0 0 0 0 2 0 0 3 0 0 0 0 1 0 0 0 1 1
+    #                           2 0 0 1 1 1 2 0 0 2 3 0 1 0 0 0 1 3 2 0 0 1 0 0 0 1 0 1 1 0 0 0 1 2 0 2 1 
+    #                           0 0 0 1 3 0 0 0 0 0 1 0 1 2 2 3 0 2 0 0 0 0 0 0 0 2 0 3 1 0 0 0 1 3 0 1 0
+    #                           0 0 0 0 0 0 0 0 0 0 0 2 0 0 1 4 0 0 0 3 0 0 2 4 0 0 1 0 0 0 3 0 3 0 0 4 2
+    #                           2 1 0 0 1 0 4 0 4 0 3 2 1 0 0 3 4 3 0 0 4 1 3 0 0 0 3 1 0 2 3 1 0 0 0 0 0
+    #                           0 1 1 1 0 0 1 0 0 2 0 0 2 2 2 3 0 0 0 0 1 1 1 1 0 4 4 3 2 1 0 1 1 1 1 1 0
+    #                           0 0 0 0 3 0 3 0 0 2 0 4 0 0 0 1 0 1 1 2 0 1 0 0 1 0 0 0 0 3 2 3 2 2 1 2 1
+    #                           1 0 3 0 0 0 1 0 0 0 1 0 1 2 2 0 0 3 0 0 0 4 2 1 0 0 2 0 0 0 0 0 0 0 0 0 0
+    #                           0 0 0 0 3 0 0 4 0 0 0 0 1 1 0 0 0 0 1 0 1 0 0 0 3 2 0 0 0 0 2 0 0 0 0 1 0
+    #                           0 0 0 0 0 0 0 0 1 0 3 0 2 1 0 3 0 0 0 0 2 1 1 1 1 0 0 0 0 0 0 0 2 0 3 0 0
+    #                           0 0 2 2 0 1 0 0 0 0] #np.array([0]*game.gameSetup.no_players)
+    print(game.gameSetup.potential_function(initial_action_profile))
+    potentials_history = np.zeros((n_exp, max_iter))
+    
+    for i in range(n_exp):   
+        game.play(initial_action_profile = initial_action_profile, beta = beta_t)
+        potentials_history[i] = np.transpose(game.potentials_history)
+    
+    mean_potential = np.mean(potentials_history, 0)
+    
+    std = np.std(potentials_history, 0)
+    
+    plot_potential(mean_potential)
+    plot_potential_with_std(mean_potential, std)
+    plt.show()
+    
+def traffic_routing_alg_comparison_experiments(eps = 1e-1, n_exp = 5, max_iter = 600):
+    
+    save = True
+    folder = 'WEEK 11'
+    
+    network = "SiouxFalls"
+    gameSetup = CongestionGame()
+    # gameSetup = CongestionGame("SiouxFallsSymmetric", 10, modified = True, modified_no_players=100)
+        
+    game_log_linear = Game(gameSetup, algorithm = "log_linear", max_iter = max_iter, mu = mu_congestion)
+    game_mwu = Game(gameSetup, algorithm = "multiplicative_weight", max_iter = max_iter, mu = mu_congestion)
+    game_alpha_best = Game(gameSetup, algorithm = "alpha_best_response", max_iter = max_iter, mu = mu_congestion)
+    
+    print(game_log_linear.gameSetup.delta)
+    beta_t = game_log_linear.compute_beta(eps)
+    t = game_log_linear.compute_t(eps)
+    
+    initial_action_profile = np.array([4]*game_log_linear.gameSetup.no_players) 
+#np.array([4]*gameSetup.no_players)
+    
+    potentials_history_log_linear = np.zeros((n_exp, max_iter))
+    potentials_history_mwu = np.zeros((n_exp, max_iter))
+    
+    for i in range(n_exp):   
+        game_mwu.play(initial_action_profile = initial_action_profile, beta = beta_t)
+        potentials_history_mwu[i] = np.transpose(game_mwu.potentials_history)
+        game_log_linear.play(initial_action_profile = initial_action_profile, beta = beta_t)
+        potentials_history_log_linear[i] = np.transpose(game_log_linear.potentials_history)
+        
+    game_alpha_best.play(initial_action_profile = initial_action_profile, beta = beta_t)
+    potentials_history_alpha_best = np.transpose(game_alpha_best.potentials_history)
+    
+    mean_potential = np.zeros((4, max_iter))
+    mean_potential[0] = np.mean(potentials_history_log_linear, 0)
+    mean_potential[1] = np.mean(potentials_history_mwu, 0)
+    mean_potential[2] = np.mean(potentials_history_alpha_best, 0)
+    mean_potential[3] = (1-eps) * np.ones((1, max_iter))
+    
+    std = np.zeros((3,max_iter))
+    std[0] = np.std(potentials_history_log_linear, 0)
+    std[1] = np.std(potentials_history_mwu, 0)
+    std[2] = np.std(potentials_history_alpha_best, 0)
+    
+    labels = ['Log linear learning', 'HEDGE', 'Alpha best response',  r'$\Phi(a^*) - \epsilon$']
+    
+    
+    root = os.path.join(os.path.dirname(os.path.abspath('.')),  "potentialgames_ws", "potentialgames", "src", "lib", "games", "data", network)
+    
+    log_linear_potentials_path = os.path.join(root, "log_linear_potentials.pckl")
+    mwu_potentials_path = os.path.join(root, "mwu_potentials.pckl")
+    alpha_potentials_path = os.path.join(root, "alpha_best_potentials.pckl")
+    log_linear_objective_path = os.path.join(root, "log_linear_objective.pckl")
+    mwu_objective_path = os.path.join(root, "mwu_objective.pckl")
+    alpha_objective_path = os.path.join(root, "alpha_best_objective.pckl")
+
+    with open(log_linear_potentials_path, 'wb') as f:
+        pickle.dump(potentials_history_log_linear, f, pickle.HIGHEST_PROTOCOL)
+    with open(mwu_potentials_path, 'wb') as f:
+        pickle.dump(potentials_history_mwu, f, pickle.HIGHEST_PROTOCOL)
+    with open(alpha_potentials_path, 'wb') as f:
+        pickle.dump(potentials_history_alpha_best, f, pickle.HIGHEST_PROTOCOL)
+        
+    with open(log_linear_objective_path, 'wb') as f:
+        pickle.dump(game_log_linear.objectives_history, f, pickle.HIGHEST_PROTOCOL)
+    with open(mwu_objective_path, 'wb') as f:
+        pickle.dump(game_mwu.objectives_history, f, pickle.HIGHEST_PROTOCOL)
+    with open(alpha_objective_path, 'wb') as f:
+        pickle.dump(game_alpha_best.objectives_history, f, pickle.HIGHEST_PROTOCOL)
+
+    plot_lines_with_std(mean_potential, std, labels, plot_e_efficient = True, save = save, folder = folder, file_name="Comparison_8_actions")
     
     plt.show()

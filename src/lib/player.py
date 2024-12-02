@@ -31,6 +31,20 @@ class Player:
         
         return idx_a
     
+    def update_modified_log_linear(self, beta, opponents_actions):
+        
+        if self.utilities is None or (self.past_opponents_actions != opponents_actions).any():
+            self.utilities = np.array([self.utility_modified(i, opponents_actions) for i in range(self.no_actions)]).reshape(1, self.no_actions)
+            exp_values = np.exp(beta * (self.utilities - np.max(self.utilities)))
+            self.prob = exp_values/np.sum(exp_values)
+            self.past_opponents_actions = opponents_actions
+            
+        idx_a = rng.choice(self.action_space[0], size=1, p=self.prob[0])
+
+        self.past_action = idx_a
+        
+        return idx_a
+    
     def best_response(self, opponents_actions):
         
         if self.utilities is None or (self.past_opponents_actions != opponents_actions).any():
@@ -54,12 +68,17 @@ class Player:
             
             self.utilities = np.array([self.utility(i, opponents_actions) for i in range(self.no_actions)]).reshape(1, self.no_actions)
             self.past_opponents_actions = opponents_actions
-
+        
         losses = self.ones - self.utilities
         
-        self.prob = np.multiply( self.prob, 1 + gamma_t * (-losses))
+        # self.prob = np.multiply( self.prob, 1 + gamma_t * (-losses))
+        self.prob = np.multiply(self.prob, np.exp(np.multiply(gamma_t, -losses)))
         
         self.prob = self.prob / np.sum(self.prob)
+    
+    def set_modified_utility(self, utility_modified):
+        
+        self.utility_modified = utility_modified
         
     def reset_player(self, no_actions, utility):
 

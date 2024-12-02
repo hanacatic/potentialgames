@@ -1,5 +1,6 @@
 import numpy as np
 from lib.player import Player
+from lib.games.trafficrouting import CongestionGame
 from lib.aux_functions.helpers import *
 from scipy.sparse import csr_matrix, csc_array
 
@@ -14,18 +15,23 @@ class Game:
         self.max_iter = int(max_iter)
         
         self.players = np.array([ Player(i, self.gameSetup.action_space[i], gameSetup.utility_functions[i]) for i in range(0, self.gameSetup.no_players)], dtype = object)
-        
+        self.action_space = [np.arange(len(self.gameSetup.action_space[player_id])) for player_id in range(self.gameSetup.no_players)]
+
         self.action_profile = [0] * self.gameSetup.no_players # np.random.randint(0, self.gameSetup.no_actions, self.gameSetup.no_players) # discrete uniform distribution
         self.action_profile = self.sample_initial_action_profile(mu)
            
         self.potentials_history = np.zeros((self.max_iter, 1))
         self.expected_value = None
         
+        if isinstance(self.gameSetup, CongestionGame):
+            self.objectives_history = np.zeros((self.max_iter, 1))
+        
         self.opponents_idx_map = [ np.delete(np.arange(self.gameSetup.no_players), player_id) for player_id in range(self.gameSetup.no_players) ]
-               
+        self.player_idx_map = np.arange(0, self.gameSetup.no_players)  
+                    
     def sample_initial_action_profile(self, mu):
         
-        self.initial_action_profile = rejection_sampling(mu, self.action_profile, self.gameSetup.action_space, M = 0.5, iterations = 1000)
+        self.initial_action_profile = rejection_sampling(mu, self.action_profile, self.action_space, M = 0.5, iterations = 1000)
         
         return self.initial_action_profile
     
@@ -42,6 +48,7 @@ class Game:
         if initial_action_profile is None:
             self.action_profile = self.initial_action_profile.copy()
         else:
+            self.initial_action_profile = initial_action_profile.copy()
             self.action_profile = initial_action_profile.copy()
         
         if self.algorithm == "log_linear":
@@ -58,6 +65,10 @@ class Game:
                 self.log_linear_fast(beta, scale_factor)
             else:
                 self.log_linear_fast_sparse(beta, scale_factor)
+        elif self.algorithm == "modified_log_linear":
+            for i in self.player_idx_map:
+                self.players[i].set_modified_utility(self.gameSetup.modified_utility_functions[i])
+            self.modified_log_linear(beta = beta)
         elif self.algorithm == "best_response":
             self.best_response()
         elif self.algorithm == "alpha_best_response":
@@ -140,7 +151,59 @@ class Game:
         self.action_profile[player_id] = player.update_log_linear(beta, opponents_actions) # update the players action
             
         self.potentials_history[i] = self.gameSetup.potential_function(self.action_profile) # compute the value of the potential function
-         
+        
+        if isinstance(self.gameSetup, CongestionGame):
+            self.objectives_history[i] = self.gameSetup.objective(self.action_profile)
+    
+    def modified_log_linear(self, beta, alpha = 0.2):
+        
+        self.time_played = np.zeros(self.gameSetup.no_players)
+        self.phi = np.zeros(self.gameSetup.no_actions)
+        
+        for a in self.action_profile:
+            self.phi[a] += 1
+            
+        for i in range(self.max_iter):
+            time = i
+            self.modified_log_linear_iteration(time, beta, alpha)
+    
+    def modified_log_linear_iteration(self, i, beta, alpha):
+        
+        player_clock = [1/self.gameSetup.no_players*self.phi[self.action_profile[i]] for i in range(self.gameSetup.no_players)]
+        
+        # print("phi: ")
+        # print(self.phi)
+        # print("player clock: ")
+        # print(player_clock)
+        
+        player_clock = player_clock/np.sum(player_clock)
+        
+        # print(player_clock)
+        
+        player_id = rng.choice(self.player_idx_map, size=1, p=player_clock)
+        
+        player = self.players[player_id][0] 
+        
+        self.phi[self.action_profile[player_id]] -= 1
+        
+        self.action_profile[player_id] = player.update_modified_log_linear(beta, self.phi)
+        
+        self.potentials_history[i] = self.gameSetup.potential_function(self.action_profile) # compute the value of the potential function
+        
+        self.phi[self.action_profile[player_id]] += 1 
+        # for player_id in range(self.gameSetup.no_players):
+        #     player_clock = alpha * self.phi[self.action_profile[player_id]]
+            
+        #     if time - self.time_played[player_id] < player_clock:
+        #         continue
+            
+        #     self.players[player_id]
+            
+        #     self.time_played[player_id] = time
+            
+        
+        
+        
     def best_response(self):
         
         for i in range(self.max_iter):
@@ -159,6 +222,10 @@ class Game:
         
         improvement = True
         for i in range(self.max_iter):
+            
+            if i % 20 == 0:
+                print(str(i) + "th iteration")
+                        
             
             chosen_player = 0
             chosen_player_action = self.action_profile[chosen_player]
@@ -191,14 +258,21 @@ class Game:
                          
             self.action_profile[chosen_player] = chosen_player_action 
 
+            print(self.action_profile)
+            
             self.potentials_history[i] = self.gameSetup.potential_function(self.action_profile) # compute the value of the potential function
-    
+
+            if isinstance(self.gameSetup, CongestionGame):
+                self.objectives_history[i] = self.gameSetup.objective(self.action_profile)      
     def multiplicative_weight(self):
         
         gamma_t = np.sqrt(np.log(self.gameSetup.no_players)/self.max_iter) 
         mixed_strategies = np.zeros([self.gameSetup.no_players, self.gameSetup.no_actions])
                       
         for i in range(self.max_iter):            
+            
+            if i % 20 == 0:
+                print(str(i) + "th iteration")
                         
             for player_id in range(self.gameSetup.no_players):
                 
@@ -206,11 +280,13 @@ class Game:
                 
                 mixed_strategies[player_id] = player.mixed_strategy()
                 
-                print(mixed_strategies[player_id])
-                self.action_profile[player_id] = rng.choice(np.arange(len(self.gameSetup.action_space[player_id])), 1, p = mixed_strategies[player_id])
+                self.action_profile[player_id] = rng.choice(self.action_space[player_id], 1, p = mixed_strategies[player_id])
             
             self.potentials_history[i] = self.gameSetup.potential_function(self.action_profile) # compute the value of the potential function
-
+            
+            if isinstance(self.gameSetup, CongestionGame):
+                self.objectives_history[i] = self.gameSetup.objective(self.action_profile)
+                
             for player_id in range(self.gameSetup.no_players):
                 
                 opponents_actions = self.action_profile[self.opponents_idx_map[player_id]] # extract the opponents actions from the action profile

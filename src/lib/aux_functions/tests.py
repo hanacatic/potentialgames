@@ -567,7 +567,9 @@ def mu_congestion(profile):
 
 def test_congestion_game():
     
+    # gameSetup = CongestionGame("SiouxFallsSymmetric", 10, modified = True, modified_no_players=100)
     gameSetup = CongestionGame()
+
     
     gameSetup.travel_time(0, 0, np.zeros((gameSetup.no_players - 1)).astype(int))
     
@@ -577,12 +579,12 @@ def test_congestion_game():
     # plt.pause(1)
     # plt.close()
         
-    game = Game(gameSetup, algorithm = "log_linear", max_iter = 2000, mu = mu_congestion)
+    game = Game(gameSetup, algorithm = "log_linear", max_iter = 500, mu = mu_congestion)
     
     print(game.gameSetup.delta)
     beta_t = game.compute_beta(0.1)
     print(beta_t)
-    initial_action_profile = np.array([4]*game.gameSetup.no_players) # [0 0 0 0 0 0 2 0 0 0 0 0 0 3 0 0 0 4 0 0 1 0 0 0 0 1 0 0 0 0 3 1 1 0 0 1 3 
+    initial_action_profile = rng.integers(0, 5, size = game.gameSetup.no_players) #np.array([9]*game.gameSetup.no_players) 
     #                           1 2 2 0 0 0 0 0 0 1 1 2 0 0 0 0 0 2 3 0 4 0 1 0 1 0 0 0 4 0 0 0 0 0 0 3 1
     #                           0 4 4 4 0 0 2 1 0 0 1 0 0 0 3 0 0 0 0 0 0 2 0 0 3 2 0 0 0 0 0 0 1 0 0 0 0 
     #                           0 1 0 0 0 0 3 0 0 0 2 0 0 0 0 1 0 0 4 3 3 0 0 1 3 3 0 4 0 1 0 0 0 1 0 0 0 
@@ -600,12 +602,68 @@ def test_congestion_game():
     print(game.gameSetup.potential_function(initial_action_profile))
     game.play(initial_action_profile = initial_action_profile, beta = beta_t)
     
-    plt.plot(game.potentials_history)
+    plot_potential(game.potentials_history)
     
     print(game.action_profile)
     # print(game.gameSetup.objective(game.action_profile))
     plt.grid()
     plt.show()
     plt.close()
-        
     
+    plt.plot(game.objectives_history)
+    plt.grid()
+    plt.show()
+    plt.close()
+
+        
+def test_modified_log_linear():
+    gameSetup = CongestionGame("SiouxFallsSymmetric", 10, modified = True, modified_no_players=200)
+    
+    gameSetup.travel_time(0, 0, np.zeros((gameSetup.no_players - 1)).astype(int))
+    
+    # plot_network(gameSetup.network)
+    
+    # plt.show(block = False)
+    # plt.pause(1)
+    # plt.close()
+        
+    game = Game(gameSetup, algorithm = "log_linear", max_iter = 5000, mu = mu_congestion)
+    
+    print(game.gameSetup.delta)
+    beta_t = game.compute_beta(0.1)
+    print(beta_t)
+    initial_action_profile = rng.integers(0, 10, size = game.gameSetup.no_players) #np.array([9]*game.gameSetup.no_players) 
+    # initial_action_profile[game.gameSetup.no_actions - 1] = game.gameSetup.no_players
+    
+    print(initial_action_profile)
+    
+    # print(game.gameSetup.potential_function(initial_action_profile))
+    game.play(initial_action_profile = initial_action_profile, beta = beta_t)
+    
+    plot_potential(game.potentials_history)
+    
+    print(game.action_profile)
+    # print(game.gameSetup.objective(game.action_profile))
+    plt.grid()
+    plt.show()
+    plt.close()
+    
+    
+    game = Game(gameSetup, algorithm = "modified_log_linear", max_iter = 5000, mu = mu_congestion)
+    
+    print(game.gameSetup.delta)
+    beta_t = game.compute_beta(0.1)
+    print(beta_t)
+    
+    print(initial_action_profile)
+    
+    # print(game.gameSetup.potential_function(initial_action_profile))
+    game.play(initial_action_profile = initial_action_profile, beta = beta_t)
+    
+    plot_potential(game.potentials_history)
+    
+    print(game.action_profile)
+    # print(game.gameSetup.objective(game.action_profile))
+    plt.grid()
+    plt.show()
+    plt.close()
