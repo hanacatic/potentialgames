@@ -579,12 +579,12 @@ def test_congestion_game():
     # plt.pause(1)
     # plt.close()
         
-    game = Game(gameSetup, algorithm = "log_linear", max_iter = 500, mu = mu_congestion)
+    game = Game(gameSetup, algorithm = "log_linear", max_iter = 1000, mu = mu_congestion)
     
     print(game.gameSetup.delta)
     beta_t = game.compute_beta(0.1)
     print(beta_t)
-    initial_action_profile = rng.integers(0, 5, size = game.gameSetup.no_players) #np.array([9]*game.gameSetup.no_players) 
+    initial_action_profile =  np.array([4]*game.gameSetup.no_players) #rng.integers(0, 5, size = game.gameSetup.no_players)
     #                           1 2 2 0 0 0 0 0 0 1 1 2 0 0 0 0 0 2 3 0 4 0 1 0 1 0 0 0 4 0 0 0 0 0 0 3 1
     #                           0 4 4 4 0 0 2 1 0 0 1 0 0 0 3 0 0 0 0 0 0 2 0 0 3 2 0 0 0 0 0 0 1 0 0 0 0 
     #                           0 1 0 0 0 0 3 0 0 0 2 0 0 0 0 1 0 0 4 3 3 0 0 1 3 3 0 4 0 1 0 0 0 1 0 0 0 
@@ -614,7 +614,6 @@ def test_congestion_game():
     plt.grid()
     plt.show()
     plt.close()
-
         
 def test_modified_log_linear():
     gameSetup = CongestionGame("SiouxFallsSymmetric", 10, modified = True, modified_no_players=200)

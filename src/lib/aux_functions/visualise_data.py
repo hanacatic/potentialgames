@@ -6,7 +6,7 @@ from lib.aux_functions.plot import *
 def visualise_potential_history():
     
     network = "SiouxFalls"
-    # version = "no_actions_8"
+    version = "no_actions_5"
     root = os.path.join(os.path.dirname(os.path.abspath('.')),  "potentialgames_ws", "potentialgames", "src", "lib", "games", "data", network)
     
     log_linear_potentials_path = os.path.join(root, "log_linear_potentials.pckl")
@@ -50,14 +50,14 @@ def visualise_potential_history():
     
     labels = ['Log linear learning', 'Multiplicative weight update', 'Alpha best response',  r'$\Phi(a^*) - \epsilon$']
     
-    # plot_lines_with_std(mean_potential, std, labels, plot_e_efficient = True, save = save, folder = folder, file_name="Comparison_5_actions")
+    plot_lines_with_std(mean_potential, std, labels, plot_e_efficient = True, save = save, folder = folder, file_name="Comparison_5_actions")
     
-    # plt.show()
-    # list_labels = ['1', '2', '3', '4', '5', '..']
-    # plot_lines(potentials_history_log_linear, list_labels=list_labels)
-    # plt.show()
-    # plot_lines(potentials_history_mwu, list_labels=list_labels)
-    # plt.show()
+    plt.show()
+    list_labels = ['1', '2', '3', '4', '5', '..']
+    plot_lines(potentials_history_log_linear, list_labels=list_labels)
+    plt.show()
+    plot_lines(potentials_history_mwu, list_labels=list_labels)
+    plt.show()
     
     mean_objective = np.zeros((3, max_iter))
     mean_objective[0] = np.mean(objective_history_log_linear, 0)
@@ -72,6 +72,6 @@ def visualise_potential_history():
     plot_lines_with_std(mean_objective, std, labels, plot_e_efficient = False, save = save, folder = folder, file_name="Comparison_5_actions_average_congestion")
     plt.show()
     
-    print(mean_objective[2])
-    plt.plot(mean_objective[2])
-    plt.show()
+    # print(mean_objective[2])
+    # plt.plot(mean_objective[2])
+    # plt.show()

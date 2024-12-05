@@ -32,17 +32,21 @@ class CongestionGame:
             self.utility_functions.append(partial(self.utility_function, i))
             self.modified_utility_functions.append(partial(self.modified_utility_function, i))
 
-    # def __del__(self):
+    def __del__(self):
         
-    #     print(self.file_path_delta)
-    #     if self.improve_second_min_potential - self.improve_min_potential > 0:
-    #         with open(self.file_path_delta, 'wb') as f:
-    #             pickle.dump(self.improve_second_min_potential - self.improve_min_potential, f, pickle.HIGHEST_PROTOCOL)
-        
-    #     print(self.file_path_potential)
-
-        with open(self.file_path_potential, 'wb') as f:
-            pickle.dump(np.array([self.improve_max_potential, self.improve_min_potential]), f, pickle.HIGHEST_PROTOCOL)
+        try:
+            print(self.file_path_delta)
+            if self.improve_max_potential is not None and self.improve_second_min_potential - self.improve_min_potential > 0:
+                with open(self.file_path_delta, 'wb') as f:
+                    pickle.dump(self.improve_second_min_potential - self.improve_min_potential, f, pickle.HIGHEST_PROTOCOL)
+            
+            print(self.file_path_potential)
+            if self.improve_max_potential is not None:
+                with open(self.file_path_potential, 'wb') as f:
+                    pickle.dump(np.array([self.improve_max_potential, self.improve_min_potential]), f, pickle.HIGHEST_PROTOCOL)
+        except:
+            print("Error occurred")
+            
             
     def load_from_tntp(self, network):
         
@@ -144,7 +148,9 @@ class CongestionGame:
         
         if os.path.exists(self.file_path_travel_times):
             with open(self.file_path_travel_times, 'rb') as f:
-                self.max_travel_times = pickle.load(f)
+                travel_times = pickle.load(f)
+                self.max_travel_times = travel_times[0]
+                self.min_travel_times = travel_times[1]
             with open(self.file_path_potential, 'rb') as f:
                 potential = pickle.load(f)
                 self.max_potential = potential[0]
@@ -213,16 +219,18 @@ class CongestionGame:
     def estimate_travel_times(self):
         
         self.max_travel_times = np.zeros(self.no_players)
+        self.min_travel_times = np.ones(self.no_players) * np.inf
         self.max_potential = 0
         self.min_potential = None
         self.second_min_potential = None
-        for i in range(20000):
+        for i in range(10000):
             if i % 100 == 0:
                 print("Currently on " + str(i) + "th iteration")
             
             action_profile = np.array([rng.integers(0, len(self.action_space[agent_id]), 1)[0] for agent_id in range(self.no_players)])
             
             self.max_travel_times = [max(self.max_travel_times[agent_id], self.travel_time(agent_id, action_profile[agent_id], action_profile[self.opponents_idx_map[agent_id]])) for agent_id in range(self.no_players)]
+            self.min_travel_times = [min(self.min_travel_times[agent_id], self.travel_time(agent_id, action_profile[agent_id], action_profile[self.opponents_idx_map[agent_id]])) for agent_id in range(self.no_players)]
             
             potential = self.potential_function_est(action_profile)
             
@@ -240,7 +248,7 @@ class CongestionGame:
         self.delta = self.second_min_potential - self.min_potential
         
         with open(self.file_path_travel_times, 'wb') as f:
-            pickle.dump(self.max_travel_times, f, pickle.HIGHEST_PROTOCOL)
+            pickle.dump([self.max_travel_times, self.min_travel_times], f, pickle.HIGHEST_PROTOCOL)
         
         with open(self.file_path_delta, 'wb') as f:
             pickle.dump(self.delta, f, pickle.HIGHEST_PROTOCOL)
@@ -292,8 +300,9 @@ class CongestionGame:
 
         total_travel_time = self.travel_time(agent_id, action, opponents_actions)
         
-        return ((-total_travel_time + self.max_potential)/(self.max_potential - self.min_potential))
+        # return -((-total_travel_time + self.min_potential)/(self.max_potential - self.min_potential))
         # return  (-total_travel_time)/(self.max_potential - self.min_potential)
+        return -total_travel_time
         
     def modified_utility_function(self, agent_id, action, opponents_actions):
         
@@ -311,7 +320,7 @@ class CongestionGame:
             congestions = self.congestion(x)
             # print(self.action_space[i][profile[i]].shape)
             # print(x.shape)
-            potentials = potentials + (congestions * (congestions > potentials))
+            potentials = potentials + (congestions * (self.action_space[i][profile[i]] > 0))
         
         potential = np.sum(potentials)
         

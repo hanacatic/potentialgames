@@ -1045,7 +1045,7 @@ def epsilon_experiments(delta):
     epsilon_experiments_fast(game, save = save, folder = "WEEK 6", scale_factor = 5000, file_name = "eps_experiment_fast_faster_unifrom_real_scale_5000")
     epsilon_experiments_fast(game, save = save, folder = "WEEK 6", scale_factor = 1000000, file_name = "eps_experiment_fast_faster_unifrom_real_scale_mil")
 
-def custom_game_no_players_sim_experiments(N = [6, 8, 10], delta = 0.25, eps = 1e-1, n_exp = 10, max_iter = 10000):
+def custom_game_no_players_sim_experiments(N = [6, 8, 10], delta = 0.25, eps = 1e-1, n_exp = 1, max_iter = 100):
     
     action_space = np.arange(0, 4)
     no_actions = len(action_space)
@@ -1198,7 +1198,7 @@ def traffic_routing_experiments(eps = 1e-1, n_exp = 5, max_iter = 2000):
     plot_potential_with_std(mean_potential, std)
     plt.show()
     
-def traffic_routing_alg_comparison_experiments(eps = 1e-1, n_exp = 5, max_iter = 600):
+def traffic_routing_alg_comparison_experiments(eps = 1e-1, n_exp = 1, max_iter = 100):
     
     save = True
     folder = 'WEEK 11'
@@ -1219,16 +1219,21 @@ def traffic_routing_alg_comparison_experiments(eps = 1e-1, n_exp = 5, max_iter =
 #np.array([4]*gameSetup.no_players)
     
     potentials_history_log_linear = np.zeros((n_exp, max_iter))
+    objectives_history_log_lineaer = np.zeros((n_exp, max_iter))
     potentials_history_mwu = np.zeros((n_exp, max_iter))
+    objectives_history_mwu = np.zeros((n_exp, max_iter))
     
     for i in range(n_exp):   
         game_mwu.play(initial_action_profile = initial_action_profile, beta = beta_t)
         potentials_history_mwu[i] = np.transpose(game_mwu.potentials_history)
+        objectives_history_mwu[i] = np.transpose(game_mwu.objectives_history)
         game_log_linear.play(initial_action_profile = initial_action_profile, beta = beta_t)
         potentials_history_log_linear[i] = np.transpose(game_log_linear.potentials_history)
+        objectives_history_log_lineaer[i] = np.transpose(game_log_linear.objectives_history)
         
     game_alpha_best.play(initial_action_profile = initial_action_profile, beta = beta_t)
     potentials_history_alpha_best = np.transpose(game_alpha_best.potentials_history)
+    objectives_history_alpha_best = np.transpose(game_alpha_best.objectives_history)
     
     mean_potential = np.zeros((4, max_iter))
     mean_potential[0] = np.mean(potentials_history_log_linear, 0)
@@ -1261,12 +1266,14 @@ def traffic_routing_alg_comparison_experiments(eps = 1e-1, n_exp = 5, max_iter =
         pickle.dump(potentials_history_alpha_best, f, pickle.HIGHEST_PROTOCOL)
         
     with open(log_linear_objective_path, 'wb') as f:
-        pickle.dump(game_log_linear.objectives_history, f, pickle.HIGHEST_PROTOCOL)
+        pickle.dump(objectives_history_log_lineaer, f, pickle.HIGHEST_PROTOCOL)
     with open(mwu_objective_path, 'wb') as f:
-        pickle.dump(game_mwu.objectives_history, f, pickle.HIGHEST_PROTOCOL)
+        pickle.dump(objectives_history_mwu, f, pickle.HIGHEST_PROTOCOL)
     with open(alpha_objective_path, 'wb') as f:
-        pickle.dump(game_alpha_best.objectives_history, f, pickle.HIGHEST_PROTOCOL)
+        pickle.dump(objectives_history_alpha_best, f, pickle.HIGHEST_PROTOCOL)
 
     plot_lines_with_std(mean_potential, std, labels, plot_e_efficient = True, save = save, folder = folder, file_name="Comparison_8_actions")
     
+    plt.show()
+    plt.plot(objectives_history_alpha_best)
     plt.show()
