@@ -31,6 +31,32 @@ class Player:
         
         return idx_a
     
+    def update_log_linear_binary(self, beta, opponents_actions):
+        
+        new_action = rng.integers(0, self.no_actions, 1).astype(int)[0]
+        new_utility = self.utility(new_action, opponents_actions)
+        
+        if self.utilities is None or all(self.past_opponents_actions != opponents_actions):
+            self.utilities = self.utility(self.past_action, opponents_actions)
+        
+        actions = [self.past_action, new_action]
+        utilities = np.array([self.utilities, new_utility])
+        exp_values = np.exp(beta * (utilities - np.max(utilities)))
+        self.prob = exp_values/np.sum(exp_values)
+        # print("--------------------------")
+        # print("player_id: ")
+        # print(self.id)
+        # print("prob: ")
+        # print(self.prob.T[0])
+        # print("actions: ")
+        # print(actions)
+        idx_a = rng.choice(actions, size=1, p=self.prob.T[0])
+        # print("chosen_action")
+        # print(idx_a)
+        self.past_action = idx_a[0]
+        
+        return self.past_action
+    
     def update_modified_log_linear(self, beta, opponents_actions):
         
         if self.utilities is None or (self.past_opponents_actions != opponents_actions).any():
@@ -68,6 +94,9 @@ class Player:
             
             self.utilities = np.array([self.utility(i, opponents_actions) for i in range(self.no_actions)]).reshape(1, self.no_actions)
             self.past_opponents_actions = opponents_actions
+            
+            if self.min_payoff is not None:
+                self.utilities = (self.utilities - self.min_payoff)/(self.max_payoff - self.min_payoff)
         
         losses = self.ones - self.utilities
         

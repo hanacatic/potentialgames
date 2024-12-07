@@ -25,6 +25,9 @@ class Game:
         
         if isinstance(self.gameSetup, CongestionGame):
             self.objectives_history = np.zeros((self.max_iter, 1))
+            for i in range(self.gameSetup.no_players):
+                self.players[i].min_payoff = self.gameSetup.min_travel_times[i]
+                self.players[i].max_payoff = self.gameSetup.max_travel_times[i]
         
         self.opponents_idx_map = [ np.delete(np.arange(self.gameSetup.no_players), player_id) for player_id in range(self.gameSetup.no_players) ]
         self.player_idx_map = np.arange(0, self.gameSetup.no_players)  
@@ -51,6 +54,11 @@ class Game:
             self.initial_action_profile = initial_action_profile.copy()
             self.action_profile = initial_action_profile.copy()
         
+        for player_id in range(self.gameSetup.no_players):
+            
+            player = self.players[player_id]
+            player.past_action = self.action_profile[player_id].copy()            
+        
         if self.algorithm == "log_linear":
             print(beta)
             self.log_linear(beta)
@@ -65,6 +73,8 @@ class Game:
                 self.log_linear_fast(beta, scale_factor)
             else:
                 self.log_linear_fast_sparse(beta, scale_factor)
+        elif self.algorithm == "log_linear_binary":
+            self.log_linear_binary(beta)
         elif self.algorithm == "modified_log_linear":
             for i in self.player_idx_map:
                 self.players[i].set_modified_utility(self.gameSetup.modified_utility_functions[i])
@@ -155,6 +165,28 @@ class Game:
         if isinstance(self.gameSetup, CongestionGame):
             self.objectives_history[i] = self.gameSetup.objective(self.action_profile)
     
+    def log_linear_binary(self, beta):
+        
+        for i in range(self.max_iter):
+            
+            self.log_linear_binary_iteration(i, beta)
+    
+    def log_linear_binary_iteration(self, i, beta):
+        
+        player_id = rng.integers(0, len(self.players), 1) # randomly choose a player
+            
+        player = self.players[player_id][0] 
+        
+        opponents_actions = self.action_profile[self.opponents_idx_map[player_id[0]]] # extract the opponents actions from the action profile
+            
+        self.action_profile[player_id] = player.update_log_linear_binary(beta, opponents_actions) # update the players action
+            
+        self.potentials_history[i] = self.gameSetup.potential_function(self.action_profile) # compute the value of the potential function
+        
+        if isinstance(self.gameSetup, CongestionGame):
+            self.objectives_history[i] = self.gameSetup.objective(self.action_profile)
+        
+        
     def modified_log_linear(self, beta, alpha = 0.2):
         
         self.time_played = np.zeros(self.gameSetup.no_players)
