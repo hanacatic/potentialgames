@@ -22,9 +22,7 @@ class CongestionGame:
         self.opponents_idx_map = [ np.delete(np.arange(self.no_players), player_id) for player_id in range(self.no_players) ]
         
         self.load_precomputed_data(network)
-        
-        # self.delta = 1e-6
-                
+                        
         self.utility_functions = []
         self.modified_utility_functions = []
         
@@ -58,7 +56,7 @@ class CongestionGame:
         trimmed= [s.strip().lower() for s in net.columns]
         net.columns = trimmed
 
-        # And drop the silly first andlast columns
+        # And drop the silly first and last columns
         net.drop(['~', ';'], axis=1, inplace=True)
         
         self.net = net.to_numpy() # initial node, terminal node, capacity, length, free flow time, b, power, speed, toll, link type
@@ -70,7 +68,7 @@ class CongestionGame:
         self.edges = np.array([initial_nodes, terminal_nodes]).astype(int)
         self.capacities = self.net[:, 2] / 100 
         self.lengths = self.net[:, 3]
-        self.free_flows = self.net[:, 4] #/ 100
+        self.free_flows = self.net[:, 4]
         self.b = self.net[:, 5]
         self.powers = self.net[:, 6]
         
@@ -155,10 +153,8 @@ class CongestionGame:
                 potential = pickle.load(f)
                 self.max_potential = potential[0]
                 self.min_potential = potential[1]
-                # self.delta = potential[1]/self.max_potential
             with open(self.file_path_delta, 'rb') as f:
                 self.delta = pickle.load(f)/(self.max_potential - self.min_potential)
-                # self.delta = self.min_potential / self.max_potential
         else:
             self.estimate_travel_times()
         
@@ -194,6 +190,7 @@ class CongestionGame:
         
             actions = self.k_shortest_paths(str(self.agents[0,i]), str(self.agents[1,i]), self.no_actions, weight="weight")
             self.action_space_i = []                    
+            
             for j in range(len(actions)):
 
                 edges_vec = np.zeros((len(self.edges[0]), 1))
@@ -223,7 +220,10 @@ class CongestionGame:
         self.max_potential = 0
         self.min_potential = None
         self.second_min_potential = None
+        
+        print("Starting Travel Times estimation.")
         for i in range(10000):
+            
             if i % 100 == 0:
                 print("Currently on " + str(i) + "th iteration")
             
@@ -255,7 +255,9 @@ class CongestionGame:
         
         with open(self.file_path_potential, 'wb') as f:
             pickle.dump(np.array([self.max_potential, self.min_potential]), f, pickle.HIGHEST_PROTOCOL)
-    
+
+        print("     Done.")
+        
     def congestion(self, x):
         
         congestions = np.multiply(self.free_flows,(1 + np.multiply(self.b, np.power(np.divide(x.T, self.capacities)[0].T, self.powers))))
@@ -300,8 +302,6 @@ class CongestionGame:
 
         total_travel_time = self.travel_time(agent_id, action, opponents_actions)
         
-        # return -((-total_travel_time + self.min_potential)/(self.max_potential - self.min_potential))
-        # return  (-total_travel_time)/(self.max_potential - self.min_potential)
         return -total_travel_time
         
     def modified_utility_function(self, agent_id, action, opponents_actions):
@@ -316,10 +316,10 @@ class CongestionGame:
         potentials = 0
         
         for i in range(self.no_players):
+            
             x = x + self.action_space[i][profile[i]]
             congestions = self.congestion(x)
-            # print(self.action_space[i][profile[i]].shape)
-            # print(x.shape)
+    
             potentials = potentials + (congestions * (self.action_space[i][profile[i]] > 0))
         
         potential = np.sum(potentials)

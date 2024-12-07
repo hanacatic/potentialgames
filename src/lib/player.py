@@ -43,16 +43,8 @@ class Player:
         utilities = np.array([self.utilities, new_utility])
         exp_values = np.exp(beta * (utilities - np.max(utilities)))
         self.prob = exp_values/np.sum(exp_values)
-        # print("--------------------------")
-        # print("player_id: ")
-        # print(self.id)
-        # print("prob: ")
-        # print(self.prob.T[0])
-        # print("actions: ")
-        # print(actions)
+        
         idx_a = rng.choice(actions, size=1, p=self.prob.T[0])
-        # print("chosen_action")
-        # print(idx_a)
         self.past_action = idx_a[0]
         
         return self.past_action

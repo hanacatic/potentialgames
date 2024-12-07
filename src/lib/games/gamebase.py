@@ -60,7 +60,6 @@ class Game:
             player.past_action = self.action_profile[player_id].copy()            
         
         if self.algorithm == "log_linear":
-            print(beta)
             self.log_linear(beta)
         elif self.algorithm == "log_linear_t":
             print(beta)
@@ -185,8 +184,7 @@ class Game:
         
         if isinstance(self.gameSetup, CongestionGame):
             self.objectives_history[i] = self.gameSetup.objective(self.action_profile)
-        
-        
+              
     def modified_log_linear(self, beta, alpha = 0.2):
         
         self.time_played = np.zeros(self.gameSetup.no_players)
@@ -250,12 +248,12 @@ class Game:
     def alpha_best_response(self):
         
         improvement = True
+        
         for i in range(self.max_iter):
             
             if i % 20 == 0:
                 print(str(i) + "th iteration")
                         
-            
             chosen_player = 0
             chosen_player_action = self.action_profile[chosen_player]
             best_improvement = 0
@@ -277,8 +275,8 @@ class Game:
                 opponents_actions = self.action_profile[self.opponents_idx_map[player_id]] # extract the opponents actions from the action profile
 
                 current_payoff = player.utility(self.action_profile[player_id], opponents_actions)
-                best_action = player.best_response(opponents_actions) # update the players action
                 
+                best_action = player.best_response(opponents_actions) # update the players action
                 best_payoff  = player.utility(best_action, opponents_actions)
 
                 if best_payoff - current_payoff > best_improvement:
@@ -325,8 +323,8 @@ class Game:
                 
                 player = self.players[player_id]
                 
-                player.update_mw(opponents_actions, gamma_t = gamma_t)
-                                      
+                player.update_mw(opponents_actions, gamma_t = gamma_t)                    
+    
     def compute_beta(self, epsilon):
         
         A = self.gameSetup.no_actions
@@ -357,6 +355,7 @@ class Game:
         # return self.game.no_players*(self.game.no_players**self.game.no_actions/epsilon)**(1/max(epsilon, self.game.delta))
 
     def set_max_iter(self, epsilon):
+        
         self.max_iter = int(min(1e5, self.compute_t(epsilon)))
         
         self.action_profile_history = np.zeros((self.max_iter, self.gameSetup.no_players))
@@ -366,6 +365,7 @@ class Game:
         self.player_converged_history = np.zeros((self.max_iter, 1))
     
     def set_algorithm(self, algorithm):
+        
         self.algorithm = algorithm
         
     def reset_game(self):
