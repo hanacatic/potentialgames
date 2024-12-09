@@ -78,6 +78,8 @@ class Game:
             for i in self.player_idx_map:
                 self.players[i].set_modified_utility(self.gameSetup.modified_utility_functions[i])
             self.modified_log_linear(beta = beta)
+        elif self.algorithm == "exponential_weight_annealing":
+            self.exponential_weight_annealing()
         elif self.algorithm == "best_response":
             self.best_response()
         elif self.algorithm == "alpha_best_response":
@@ -87,7 +89,11 @@ class Game:
         
     def log_linear(self, beta):
                
+        print("Log linear learning")
         for i in range(0, self.max_iter): 
+            
+            if i % 100 == 0:
+                print(str(i) + "th iteration")
             
             self.log_linear_iteration(i, beta)
     
@@ -166,7 +172,12 @@ class Game:
     
     def log_linear_binary(self, beta):
         
+        print("Log linear binary")
+        
         for i in range(self.max_iter):
+            
+            if i % 100 == 0:
+                print(str(i) + "th iteration")
             
             self.log_linear_binary_iteration(i, beta)
     
@@ -296,6 +307,8 @@ class Game:
     
     def multiplicative_weight(self):
         
+        print("Multiplicative weight update")
+        
         gamma_t = np.sqrt(8*np.log(self.gameSetup.no_actions)/self.max_iter) 
         mixed_strategies = np.zeros([self.gameSetup.no_players, self.gameSetup.no_actions])
                       
@@ -325,6 +338,49 @@ class Game:
                 
                 player.update_mw(opponents_actions, gamma_t = gamma_t)                    
     
+    def exponential_weight_annealing(self, b = 0.6, a = 0.5, p = 1): #a = 0.5
+        
+        print("Exponential weight with annealing")
+        
+        gamma_n = 1
+        eps_n = 1 
+        mixed_strategies = np.zeros([self.gameSetup.no_players, self.gameSetup.no_actions])
+        
+        for i in range(self.max_iter):
+            
+            # gamma_n = 1/np.log(self.gameSetup.no_actions)/np.log(i+2)**b
+            gamma_n = np.sqrt(100*np.log(self.gameSetup.no_actions)/(i+2)**(2*b)) 
+
+            eps_n = 1/(np.log(self.gameSetup.no_actions)**a*(i+2)**a*np.log(i+2)**p)
+
+            if i % 20 == 0:
+                print(str(i) + "th iteration")
+                print(self.players[0].scores)
+                print(self.players[0].prob)
+                        
+            for player_id in range(self.gameSetup.no_players):
+                
+                player = self.players[player_id]
+                
+                mixed_strategies[player_id] = player.mixed_strategy()
+                
+                self.action_profile[player_id] = rng.choice(self.action_space[player_id], 1, p = mixed_strategies[player_id])
+            
+  
+            for player_id in range(self.gameSetup.no_players):
+                
+                opponents_actions = self.action_profile[self.opponents_idx_map[player_id]] # extract the opponents actions from the action profile
+                action = self.action_profile[player_id]
+                
+                player = self.players[player_id]
+                
+                player.update_ewa(action, opponents_actions, gamma_n = gamma_n, eps_n = eps_n)
+            
+            self.potentials_history[i] = self.gameSetup.potential_function(self.action_profile) # compute the value of the potential function
+            
+            if isinstance(self.gameSetup, CongestionGame):
+                self.objectives_history[i] = self.gameSetup.objective(self.action_profile)
+                
     def compute_beta(self, epsilon):
         
         A = self.gameSetup.no_actions

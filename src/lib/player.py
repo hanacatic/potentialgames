@@ -12,6 +12,7 @@ class Player:
         self.past_action = None
         self.action_space = np.arange(self.no_actions).reshape(1, self.no_actions)
         self.prob = 1/self.no_actions*np.ones([1, self.no_actions])
+        self.scores = 1/self.no_actions*np.ones([1, self.no_actions])
         self.initial_action = np.array([0])
         self.ones = np.ones(self.no_actions)
         self.past_opponents_actions = None
@@ -95,6 +96,26 @@ class Player:
         # self.prob = np.multiply( self.prob, 1 + gamma_t * (-losses))
         self.prob = np.multiply(self.prob, np.exp(np.multiply(gamma_t, -losses)))
         
+        self.prob = self.prob / np.sum(self.prob)
+    
+    def update_ewa(self, action, opponents_actions, gamma_n, eps_n):
+        
+        # print("self.prob")
+        # print(self.prob)
+        # print("self.prob[action]")
+        # print(self.prob[action])
+        v = np.zeros(self.no_actions)
+        v[action] = self.utility(action, opponents_actions)/self.prob[0][action]
+        
+        self.scores += gamma_n * v
+        
+        # print("score")
+        # print(self.scores)
+        
+        exp_values = np.exp((self.scores - np.max(self.scores)))
+        lambda_scores = exp_values/np.sum(exp_values)
+        
+        self.prob = eps_n*self.ones/self.no_actions + (1-eps_n)*lambda_scores
         self.prob = self.prob / np.sum(self.prob)
         
     def set_modified_utility(self, utility_modified):

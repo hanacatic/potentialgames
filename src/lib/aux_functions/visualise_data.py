@@ -5,9 +5,9 @@ from lib.aux_functions.plot import *
 
 def visualise_potential_history():
     
-    network = "SiouxFalls"
-    version = "no_actions_5"
-    root = os.path.join(os.path.dirname(os.path.abspath('.')),  "potentialgames_ws", "potentialgames", "src", "lib", "games", "data", network)
+    network = "SiouxFallsSymmetric"
+    version = "no_actions_4"
+    root = os.path.join(os.path.dirname(os.path.abspath('.')),  "potentialgames_ws", "potentialgames", "src", "lib", "games", "data", network, version)
     
     log_linear_potentials_path = os.path.join(root, "log_linear_potentials.pckl")
     mwu_potentials_path = os.path.join(root, "mwu_potentials.pckl")
@@ -35,7 +35,7 @@ def visualise_potential_history():
     eps = 0.1
     
     save = True
-    folder = 'WEEK 11'
+    folder = 'WEEK 12'
         
     mean_potential = np.zeros((4, max_iter))
     mean_potential[0] = np.mean(potentials_history_log_linear, 0)
@@ -48,9 +48,9 @@ def visualise_potential_history():
     std[1] = np.std(potentials_history_mwu, 0)
     std[2] = np.std(potentials_history_alpha_best, 0)
     
-    labels = ['Log linear learning', 'Multiplicative weight update', 'Alpha best response',  r'$\Phi(a^*) - \epsilon$']
+    labels = ['Log linear learning', 'HEDGE', 'Alpha best response',  r'$\Phi(a^*) - \epsilon$']
     
-    plot_lines_with_std(mean_potential, std, labels, plot_e_efficient = True, save = save, folder = folder, file_name="Comparison_5_actions")
+    plot_lines_with_std(mean_potential, std, labels, plot_e_efficient = True, save = save, folder = folder, file_name="Comparison_" + network + "_" + version)
     
     plt.show()
     list_labels = ['1', '2', '3', '4', '5', '..']
@@ -69,7 +69,8 @@ def visualise_potential_history():
     std[1] = np.std(objective_history_mwu, 0)
     std[2] = np.std(objective_history_alpha_best, 0)
     print(mean_objective)
-    plot_lines_with_std(mean_objective, std, labels, plot_e_efficient = False, save = save, folder = folder, file_name="Comparison_5_actions_average_congestion")
+    
+    plot_lines_with_std(mean_objective, std, labels, plot_e_efficient = False, save = save, title = "Average congestion", folder = folder, file_name="Comparison_congestion_" +  network + "_" + version, legend = "upper right")
     plt.show()
     
     # print(mean_objective[2])

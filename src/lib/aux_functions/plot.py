@@ -49,7 +49,7 @@ def plot_potential_with_std(mean_potential, std, title = 'Average potential', fi
     else:
         f.show()
         
-def plot_lines_with_std(lines_to_plot, std, list_labels, plot_e_efficient = False, title = 'Average potential', file_name = None, folder = None, save = False):
+def plot_lines_with_std(lines_to_plot, std, list_labels, plot_e_efficient = False, title = 'Average potential', file_name = None, folder = None, save = False, legend = "lower right"):
     
     f = plt.figure()
     f.clf()
@@ -69,7 +69,7 @@ def plot_lines_with_std(lines_to_plot, std, list_labels, plot_e_efficient = Fals
     plt.legend(fontsize=15)
     plt.title(title, fontsize=15)
     # plt.ylim(0, 1.1)
-    plt.legend(loc="lower right")
+    plt.legend(loc = legend)
     
     if save:
         plt.savefig('../' + folder + '/' + file_name + '.png')
