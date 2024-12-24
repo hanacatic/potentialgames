@@ -12,9 +12,13 @@ class Player:
         self.past_action = None
         self.action_space = np.arange(self.no_actions).reshape(1, self.no_actions)
         self.prob = 1/self.no_actions*np.ones([1, self.no_actions])
+        self.weights = 1/self.no_actions*np.ones([1, self.no_actions])
         self.scores = 1/self.no_actions*np.ones([1, self.no_actions])
         self.initial_action = np.array([0])
         self.ones = np.ones(self.no_actions)
+        self.rewards_estimate = np.zeros(self.no_actions)
+        self.min_payoff = None
+        self.max_payoff = None
         self.past_opponents_actions = None
         self.utilities = None
         
@@ -82,7 +86,7 @@ class Player:
         return self.prob
         
     def update_mw(self, opponents_actions, gamma_t = 0.5):
-        
+                
         if self.utilities is None or (self.past_opponents_actions != opponents_actions).any():
             
             self.utilities = np.array([self.utility(i, opponents_actions) for i in range(self.no_actions)]).reshape(1, self.no_actions)
@@ -100,23 +104,58 @@ class Player:
     
     def update_ewa(self, action, opponents_actions, gamma_n, eps_n):
         
-        # print("self.prob")
-        # print(self.prob)
-        # print("self.prob[action]")
-        # print(self.prob[action])
         v = np.zeros(self.no_actions)
-        v[action] = self.utility(action, opponents_actions)/self.prob[0][action]
+        v[action] = self.utility(action, opponents_actions)
         
+        if self.min_payoff is not None:
+            self.v[action] = (self.v[action] - self.min_payoff)/(self.max_payoff - self.min_payoff)
+        
+        v[action] /= self.prob[0][action]
         self.scores += gamma_n * v
-        
-        # print("score")
-        # print(self.scores)
-        
+
         exp_values = np.exp((self.scores - np.max(self.scores)))
         lambda_scores = exp_values/np.sum(exp_values)
         
         self.prob = eps_n*self.ones/self.no_actions + (1-eps_n)*lambda_scores
         self.prob = self.prob / np.sum(self.prob)
+        
+    def update_exp3p(self, action, opponents_actions, gamma, beta, eta):
+        
+        # implemented exp4 from paper (Auer et al. 2002)
+        v = np.zeros(self.no_actions)
+        v[action] = self.utility(action, opponents_actions)
+        
+        # print(v[action])
+        
+        if self.min_payoff is not None:
+            self.v[action] = (self.v[action] - self.min_payoff)/(self.max_payoff - self.min_payoff)
+
+        # v[action] = (1-v[action]) / self.prob[0][action]
+        # print(self.prob)
+        # print(self.prob[0][action])
+        v[action] = v[action]/self.prob[0][action]
+
+        # print(v)
+        
+        # print(self.rewards_estimate)
+        
+        self.rewards_estimate = self.rewards_estimate + beta*np.divide(self.ones, self.prob) + v
+
+        # self.rewards_estimate = self.rewards_estimate + beta*np.divide(self.ones, self.prob)*(v>0) + v
+       
+        temp = np.multiply(eta, self.rewards_estimate)
+        self.weights  = np.exp(temp - np.max(temp))
+        self.weights  = self.weights/np.sum(self.weights)
+        self.prob = (1-gamma)*self.weights + gamma/self.no_actions*self.ones
+        
+        self.prob = self.prob/np.sum(self.prob)
+        # print(self.prob)
+        
+        # self.rewards_estimate = self.rewards_estimate + eta*v
+        # exp_values = np.exp(self.rewards_estimate-np.max(self.rewards_estimate))
+        # print(exp_values)
+        # self.prob = exp_values/np.sum(exp_values)
+        # print()
         
     def set_modified_utility(self, utility_modified):
         

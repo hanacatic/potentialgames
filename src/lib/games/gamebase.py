@@ -31,6 +31,8 @@ class Game:
         
         self.opponents_idx_map = [ np.delete(np.arange(self.gameSetup.no_players), player_id) for player_id in range(self.gameSetup.no_players) ]
         self.player_idx_map = np.arange(0, self.gameSetup.no_players)  
+        
+        self.action_profile_histogram = np.zeros(self.gameSetup.no_actions**self.gameSetup.no_players)
                     
     def sample_initial_action_profile(self, mu):
         
@@ -80,6 +82,8 @@ class Game:
             self.modified_log_linear(beta = beta)
         elif self.algorithm == "exponential_weight_annealing":
             self.exponential_weight_annealing()
+        elif self.algorithm == "exp3p":
+            self.exp3p()
         elif self.algorithm == "best_response":
             self.best_response()
         elif self.algorithm == "alpha_best_response":
@@ -317,13 +321,7 @@ class Game:
             if i % 20 == 0:
                 print(str(i) + "th iteration")
                         
-            for player_id in range(self.gameSetup.no_players):
-                
-                player = self.players[player_id]
-                
-                mixed_strategies[player_id] = player.mixed_strategy()
-                
-                self.action_profile[player_id] = rng.choice(self.action_space[player_id], 1, p = mixed_strategies[player_id])
+            self.sample_from_mixed_strategy(mixed_strategies)
             
             self.potentials_history[i] = self.gameSetup.potential_function(self.action_profile) # compute the value of the potential function
             
@@ -336,9 +334,19 @@ class Game:
                 
                 player = self.players[player_id]
                 
-                player.update_mw(opponents_actions, gamma_t = gamma_t)                    
+                player.update_mw(opponents_actions, gamma_t = gamma_t)  
     
-    def exponential_weight_annealing(self, b = 0.6, a = 0.5, p = 1): #a = 0.5
+    def sample_from_mixed_strategy(self, mixed_strategies):
+        
+        for player_id in range(self.gameSetup.no_players):
+                
+            player = self.players[player_id]
+            
+            mixed_strategies[player_id] = player.mixed_strategy()
+                
+            self.action_profile[player_id] = rng.choice(self.action_space[player_id], 1, p = mixed_strategies[player_id])              
+    
+    def exponential_weight_annealing(self, b = 0.6, a = 0.25, p = 0.5): #b = 0.8, a = 0.7, p = 0.5): #a = 0.5
         
         print("Exponential weight with annealing")
         
@@ -349,23 +357,18 @@ class Game:
         for i in range(self.max_iter):
             
             # gamma_n = 1/np.log(self.gameSetup.no_actions)/np.log(i+2)**b
-            gamma_n = np.sqrt(100*np.log(self.gameSetup.no_actions)/(i+2)**(2*b)) 
-
-            eps_n = 1/(np.log(self.gameSetup.no_actions)**a*(i+2)**a*np.log(i+2)**p)
+            # gamma_n = np.sqrt(100*np.log(self.gameSetup.no_actions)/(i+2)**(2*b)) 
+            gamma_n = 1/(i+1)**b
+            # eps_n = 1/(np.log(self.gameSetup.no_actions)**a*(i+2)**a*np.log(i+2)**p)
+            eps_n = 1/(1+self.gameSetup.no_actions*(i+1)**a*np.log(i+2)**p)
 
             if i % 20 == 0:
                 print(str(i) + "th iteration")
                 print(self.players[0].scores)
                 print(self.players[0].prob)
                         
-            for player_id in range(self.gameSetup.no_players):
-                
-                player = self.players[player_id]
-                
-                mixed_strategies[player_id] = player.mixed_strategy()
-                
-                self.action_profile[player_id] = rng.choice(self.action_space[player_id], 1, p = mixed_strategies[player_id])
             
+            self.sample_from_mixed_strategy(mixed_strategies)
   
             for player_id in range(self.gameSetup.no_players):
                 
@@ -380,7 +383,46 @@ class Game:
             
             if isinstance(self.gameSetup, CongestionGame):
                 self.objectives_history[i] = self.gameSetup.objective(self.action_profile)
-                
+    
+    def exp3p(self):
+        
+        print("EXP3P")  
+          
+        A = self.gameSetup.no_actions
+
+        beta = np.sqrt(np.log(A)/(self.max_iter*A))
+        gamma = 1.05*np.sqrt(np.log(A)*A/self.max_iter)
+        eta = 0.95*np.sqrt(np.log(A)/(self.max_iter*A))
+        
+        mixed_strategies = np.zeros([self.gameSetup.no_players, self.gameSetup.no_actions])
+        self.gameSetup.formulate_potential_vec()
+        
+        for i in range(self.max_iter):
+
+            if i % 500 == 0:
+                print(str(i) + "th iteration")
+            
+            player_id = rng.integers(0, len(self.players), 1)[0] # randomly choose a player
+            
+            player = self.players[player_id] 
+            
+            mixed_strategies[player_id] = player.mixed_strategy()
+            
+            self.action_profile[player_id] = rng.choice(self.action_space[player_id], 1, p = mixed_strategies[player_id])              
+    
+            opponents_actions = self.action_profile[self.opponents_idx_map[player_id]] # extract the opponents actions from the action profile
+            action = self.action_profile[player_id]
+                                
+            player.update_exp3p(action, opponents_actions, gamma, beta, eta)
+            
+            action_profile_idx = np.sum([ self.action_profile[k]*self.gameSetup.no_actions**k for k in range(self.gameSetup.no_players)])
+            self.action_profile_histogram[action_profile_idx] += 1
+            rho = self.action_profile_histogram/(i+1)
+            self.potentials_history[i] = rho@self.gameSetup.potential # CCE
+            
+            if isinstance(self.gameSetup, CongestionGame):
+                self.objectives_history[i] = self.gameSetup.objective(self.action_profile)   
+        
     def compute_beta(self, epsilon):
         
         A = self.gameSetup.no_actions

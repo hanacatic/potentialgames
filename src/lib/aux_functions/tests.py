@@ -684,7 +684,7 @@ def test_exponential_weight_annealing():
             
     gameSetup = IdenticalInterestGame(action_space, no_players, firstNE, secondNE, delta, payoff_matrix = payoff_matrix)
     
-    game = Game(gameSetup, algorithm = "exponential_weight_annealing",  max_iter = 10000, mu=mu)
+    game = Game(gameSetup, algorithm = "exponential_weight_annealing",  max_iter = 250, mu=mu)
     game.set_initial_action_profile(secondNE)
 
     game.set_initial_action_profile(np.array([1,4]))
@@ -696,4 +696,36 @@ def test_exponential_weight_annealing():
     potentials_history = game.potentials_history
     
     plot_potential(potentials_history)
+    plt.show()
+
+def test_exp3p():
+
+    # action_space = [0, 1, 2, 3, 4, 5 ]#, 6, 7, 8, 9, 10, 11, 12, 13, 14, 15, 16, 17, 18, 19, 20, 21]
+    action_space = np.arange(0,6)
+    no_players = 2
+    
+    firstNE = np.array([1,1])
+    secondNE = np.array([4,4])
+    initial_action_profile = np.array([4, 5])
+    delta = 0.25
+    # payoff_matrix = generate_two_plateau_diagonal_payoff_matrix(delta = delta, no_actions = len(action_space), trench = 0.4)
+    payoff_matrix = generate_two_plateau_payoff_matrix(delta = delta, no_actions = len(action_space))
+
+            
+    gameSetup = IdenticalInterestGame(action_space, no_players, firstNE, secondNE, delta, payoff_matrix = payoff_matrix)
+    
+    game = Game(gameSetup, algorithm = "exp3p",  max_iter = 100000, mu=mu)
+
+    game.set_initial_action_profile(initial_action_profile)
+
+    potentials_history = np.zeros((1, game.max_iter))
+    beta_t = game.compute_beta(1e-1)
+    
+    for i in range(1):
+        game.play(beta = beta_t)
+        potentials_history[i] = np.transpose(game.potentials_history)
+    
+    mean_pot = np.mean(potentials_history, 0)
+    plot_payoff(payoff_matrix)
+    plot_potential(mean_pot)
     plt.show()

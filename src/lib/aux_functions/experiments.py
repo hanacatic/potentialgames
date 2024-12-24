@@ -1344,3 +1344,69 @@ def log_linear_binary_experiment(eps = 1e-1, n_exp = 10, max_iter = 3000):
     plt.show()
     plt.plot(objectives_history_binary)
     plt.show()
+
+def exp3p_experiment(eps = 1e-1, n_exp = 10, max_iter = 3000):
+    
+    save = True
+    folder = 'WEEK 12'
+    
+    network = "SiouxFalls"
+    gameSetup = CongestionGame()
+    
+    game = Game(gameSetup, algorithm = "log_linear", max_iter = max_iter, mu = mu_congestion)
+    game_binary= Game(gameSetup, algorithm = "log_linear_binary", max_iter = max_iter, mu = mu_congestion)
+    
+    print(game.gameSetup.delta)
+    beta_t = game.compute_beta(eps)
+    t = game.compute_t(eps)
+    
+    initial_action_profile = np.array([3]*game.gameSetup.no_players) 
+#np.array([4]*gameSetup.no_players)
+    
+    potentials_history = np.zeros((n_exp, max_iter))
+    objectives_history = np.zeros((n_exp, max_iter))
+    potentials_history_binary = np.zeros((n_exp, max_iter))
+    objectives_history_binary = np.zeros((n_exp, max_iter))
+    
+    for i in range(n_exp):   
+        print("Experiment no: " + str(i+1))
+        game.play(initial_action_profile = initial_action_profile, beta = beta_t)
+        potentials_history[i] = np.transpose(game.potentials_history)
+        objectives_history[i] = np.transpose(game.objectives_history)
+        game_binary.play(initial_action_profile = initial_action_profile, beta = beta_t)
+        potentials_history_binary[i] = np.transpose(game_binary.potentials_history)
+        objectives_history_binary[i] = np.transpose(game_binary.objectives_history)
+    
+    mean_potential = np.zeros((3, max_iter))
+    mean_potential[0] = np.mean(potentials_history, 0)
+    mean_potential[1] = np.mean(potentials_history_binary, 0)
+    mean_potential[2] = (1-eps) * np.ones((1, max_iter))
+    
+    std = np.zeros((2,max_iter))
+    std[0] = np.std(potentials_history, 0)
+    std[1] = np.std(potentials_history_binary, 0)
+    
+    labels = ['Log linear learning', 'Log linear binary learning',  r'$\Phi(a^*) - \epsilon$']
+    
+    root = os.path.join(os.path.dirname(os.path.abspath('.')),  "potentialgames_ws", "potentialgames", "src", "lib", "games", "data", network, "binary")
+    
+    log_linear_potentials_path = os.path.join(root, "log_linear_potentials.pckl")
+    log_linear_binary_potentials_path = os.path.join(root, "log_linear_binary_potentials.pckl")
+    log_linear_objective_path = os.path.join(root, "log_linear_objective.pckl")
+    log_linear_binary_objective_path = os.path.join(root, "log_linear_binary_objective.pckl")
+
+    with open(log_linear_potentials_path, 'wb') as f:
+        pickle.dump(potentials_history, f, pickle.HIGHEST_PROTOCOL)
+    with open(log_linear_binary_potentials_path, 'wb') as f:
+        pickle.dump(potentials_history_binary, f, pickle.HIGHEST_PROTOCOL)
+        
+    with open(log_linear_objective_path, 'wb') as f:
+        pickle.dump(objectives_history, f, pickle.HIGHEST_PROTOCOL)
+    with open(log_linear_binary_objective_path, 'wb') as f:
+        pickle.dump(objectives_history_binary, f, pickle.HIGHEST_PROTOCOL)
+
+    plot_lines_with_std(mean_potential, std, labels, plot_e_efficient = True, save = save, folder = folder, file_name="Comparison_binary")
+    
+    plt.show()
+    plt.plot(objectives_history_binary)
+    plt.show()
