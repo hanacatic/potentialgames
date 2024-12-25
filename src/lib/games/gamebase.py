@@ -14,7 +14,7 @@ class Game:
         self.algorithm = algorithm
         self.max_iter = int(max_iter)
         
-        self.players = np.array([ Player(i, self.gameSetup.action_space[i], gameSetup.utility_functions[i]) for i in range(0, self.gameSetup.no_players)], dtype = object)
+        self.players = np.array([ Player(i, self.gameSetup.action_space[i], gameSetup.utility_functions[i], gameSetup.noisy_utility) for i in range(0, self.gameSetup.no_players)], dtype = object)
         self.action_space = [np.arange(len(self.gameSetup.action_space[player_id])) for player_id in range(self.gameSetup.no_players)]
 
         self.action_profile = [0] * self.gameSetup.no_players # np.random.randint(0, self.gameSetup.no_actions, self.gameSetup.no_players) # discrete uniform distribution

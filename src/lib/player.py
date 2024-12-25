@@ -4,11 +4,13 @@ rng = np.random.default_rng()
 
 class Player:
     
-    def __init__(self, player_id, action_space, utility):
+    def __init__(self, player_id, action_space, utility, noisy_utility = False):
         
+        print(action_space)
         self.id = player_id
         self.no_actions = len(action_space) # size of the actions space
         self.utility = utility # utility function
+        self.noisy_utility = noisy_utility
         self.past_action = None
         self.action_space = np.arange(self.no_actions).reshape(1, self.no_actions)
         self.prob = 1/self.no_actions*np.ones([1, self.no_actions])
@@ -25,7 +27,11 @@ class Player:
     def update_log_linear(self, beta, opponents_actions): # choose a new action only based on the opponents action, in this case they will be the same as the actions in the previous step
         
         if self.utilities is None or all(self.past_opponents_actions != opponents_actions):
-            self.utilities = np.array([self.utility(i, opponents_actions) for i in range(self.no_actions)]).reshape(1, self.no_actions)
+            if self.noisy_utility:
+                eta = 1.0/2.0/beta
+            else:
+                eta = 0
+            self.utilities = np.array([self.utility(i, opponents_actions, eta) for i in range(self.no_actions)]).reshape(1, self.no_actions)
             exp_values = np.exp(beta * (self.utilities - np.max(self.utilities)))
             self.prob = exp_values/np.sum(exp_values)
             self.past_opponents_actions = opponents_actions
@@ -35,7 +41,7 @@ class Player:
         self.past_action = idx_a
         
         return idx_a
-    
+        
     def update_log_linear_binary(self, beta, opponents_actions):
         
         new_action = rng.integers(0, self.no_actions, 1).astype(int)[0]
@@ -108,7 +114,7 @@ class Player:
         v[action] = self.utility(action, opponents_actions)
         
         if self.min_payoff is not None:
-            self.v[action] = (self.v[action] - self.min_payoff)/(self.max_payoff - self.min_payoff)
+            v[action] = (v[action] - self.min_payoff)/(self.max_payoff - self.min_payoff)
         
         v[action] /= self.prob[0][action]
         self.scores += gamma_n * v
@@ -124,24 +130,13 @@ class Player:
         # implemented exp4 from paper (Auer et al. 2002)
         v = np.zeros(self.no_actions)
         v[action] = self.utility(action, opponents_actions)
-        
-        # print(v[action])
-        
+                
         if self.min_payoff is not None:
-            self.v[action] = (self.v[action] - self.min_payoff)/(self.max_payoff - self.min_payoff)
+            v[action] = (v[action] - self.min_payoff)/(self.max_payoff - self.min_payoff)
 
-        # v[action] = (1-v[action]) / self.prob[0][action]
-        # print(self.prob)
-        # print(self.prob[0][action])
         v[action] = v[action]/self.prob[0][action]
-
-        # print(v)
-        
-        # print(self.rewards_estimate)
-        
+                
         self.rewards_estimate = self.rewards_estimate + beta*np.divide(self.ones, self.prob) + v
-
-        # self.rewards_estimate = self.rewards_estimate + beta*np.divide(self.ones, self.prob)*(v>0) + v
        
         temp = np.multiply(eta, self.rewards_estimate)
         self.weights  = np.exp(temp - np.max(temp))
@@ -149,13 +144,6 @@ class Player:
         self.prob = (1-gamma)*self.weights + gamma/self.no_actions*self.ones
         
         self.prob = self.prob/np.sum(self.prob)
-        # print(self.prob)
-        
-        # self.rewards_estimate = self.rewards_estimate + eta*v
-        # exp_values = np.exp(self.rewards_estimate-np.max(self.rewards_estimate))
-        # print(exp_values)
-        # self.prob = exp_values/np.sum(exp_values)
-        # print()
         
     def set_modified_utility(self, utility_modified):
         

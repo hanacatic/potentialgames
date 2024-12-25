@@ -3,6 +3,8 @@ from lib.aux_functions.helpers import *
 from scipy.sparse import lil_matrix, csr_matrix
 from functools import partial
 
+rng = np.random.default_rng()
+
 class IdenticalInterestGame:
     """
         Class representing the Identical Interest Matrix game.
@@ -10,7 +12,7 @@ class IdenticalInterestGame:
         Includes information on the number of players and actions, utility functions and potential function.
     """
     
-    def __init__(self, action_space, no_players, firstNE, secondNE, delta, type = "Asymmetrical", payoff_matrix = None): 
+    def __init__(self, action_space, no_players, firstNE, secondNE, delta, type = "Asymmetrical", noisy_utility = True, payoff_matrix = None): 
         """
             Identical Interest game constructor. 
         Args:
@@ -31,6 +33,7 @@ class IdenticalInterestGame:
         self.secondNE = secondNE
         self.delta = delta
         self.type = type
+        self.noisy_utility = noisy_utility
         self.action_profile_template = [0]*self.no_players
         self.potential_vec = np.zeros((self.no_action_profiles, 1))
 
@@ -191,14 +194,14 @@ class IdenticalInterestGame:
         
         return self.payoff_player_1[tuple(action_profile)]
     
-    def utility_function(self, player_id, player_action, opponents_action):
+    def utility_function(self, player_id, player_action, opponents_action, eta = 0):
         """
             Compute utility of an action given opponents actions.
         Args:
             player_id (int): player id.
             player_action (int): player action.
             opponents_action (N-1d np.array): opponents actions.
-
+            eta (double): noise bound
         Returns:
             double: utility of action given opponents actions.
         """
@@ -210,8 +213,8 @@ class IdenticalInterestGame:
         else:
             self.action_profile_template[player_id] = player_action
             self.action_profile_template[not player_id] = opponents_action
-        
-        return self.potential_function(self.action_profile_template)
+    
+        return min([1], max(self.potential_function(self.action_profile_template) + rng.uniform(-eta, eta, 1), [0]))
         
     def formulate_potential_vec(self):
         """

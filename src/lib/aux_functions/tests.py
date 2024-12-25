@@ -67,17 +67,17 @@ def test_log_linear():
     firstNE = np.array([1,1])
     secondNE = np.array([4,4])
     
-    delta = 0.1
+    delta = 0.25
     # payoff_matrix = generate_two_plateau_diagonal_payoff_matrix(delta = delta, no_actions = len(action_space), trench = 0.1)
     payoff_matrix = generate_two_plateau_payoff_matrix(delta = delta, no_actions = len(action_space))
 
             
     gameSetup = IdenticalInterestGame(action_space, no_players, firstNE, secondNE, delta, payoff_matrix = payoff_matrix)
     
-    game = Game(gameSetup, algorithm = "exponential_weight_annealing",  max_iter = 20, mu=mu)
+    game = Game(gameSetup, algorithm = "log_linear",  max_iter = 2000, mu=mu)
     game.set_initial_action_profile(secondNE)
 
-    game.set_initial_action_profile(np.array([1,4]))
+    # game.set_initial_action_profile(np.array([1,4]))
 
     potentials_history = np.zeros((1, game.max_iter))
     beta_t = game.compute_beta(1e-1)
@@ -581,8 +581,9 @@ def test_congestion_game():
     # plt.pause(1)
     # plt.close()
         
-    game = Game(gameSetup, algorithm = "log_linear", max_iter = 2000, mu = mu_congestion)
-    
+    # game = Game(gameSetup, algorithm = "log_linear", max_iter = 2000, mu = mu_congestion)    
+    game = Game(gameSetup, algorithm = "exponential_weight_annealing", max_iter = 10000, mu = mu_congestion)
+
     print(game.gameSetup.delta)
     beta_t = game.compute_beta(0.1)
     print(beta_t)
@@ -684,7 +685,7 @@ def test_exponential_weight_annealing():
             
     gameSetup = IdenticalInterestGame(action_space, no_players, firstNE, secondNE, delta, payoff_matrix = payoff_matrix)
     
-    game = Game(gameSetup, algorithm = "exponential_weight_annealing",  max_iter = 250, mu=mu)
+    game = Game(gameSetup, algorithm = "exponential_weight_annealing",  max_iter = 100000, mu=mu)
     game.set_initial_action_profile(secondNE)
 
     game.set_initial_action_profile(np.array([1,4]))
