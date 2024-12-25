@@ -4,8 +4,24 @@ from scipy.sparse import lil_matrix, csr_matrix
 from functools import partial
 
 class IdenticalInterestGame:
+    """
+        Class representing the Identical Interest Matrix game.
+        
+        Includes information on the number of players and actions, utility functions and potential function.
+    """
     
     def __init__(self, action_space, no_players, firstNE, secondNE, delta, type = "Asymmetrical", payoff_matrix = None): 
+        """
+            Identical Interest game constructor. 
+        Args:
+            action_space (np.array): action space, assumed to be identical for all players
+            no_players (_type_): number of players in the game.
+            firstNE (_type_): coordinates of the largest Nash equilibrium.
+            secondNE (_type_): coordinates of the second largest Nash equilibrium.
+            delta (_type_): the difference of potential between the first NE and second NE.
+            type (str, optional): type of game. Defaults to "Asymmetrical".
+            payoff_matrix (_type_, optional): payoff matrix. Defaults to None.
+        """
         
         self.no_players = no_players
         self.no_actions = len(action_space)
@@ -16,30 +32,39 @@ class IdenticalInterestGame:
         self.delta = delta
         self.type = type
         self.action_profile_template = [0]*self.no_players
+        self.potential_vec = np.zeros((self.no_action_profiles, 1))
+
         self.opponents_idx_map = [ np.delete(np.arange(self.no_players), player_id) for player_id in range(self.no_players) ]
 
+        # If payoff matrix has not been defined then generate a random payoff matrix
         if payoff_matrix is None:
             self.generate_payoff_matrix()
         else:
             self.set_payoff_matrix(payoff_matrix)
 
+        # Array of player utility functions, formulated based on a general utility function
         self.utility_functions = []
-        
         for i in range(0, self.no_players):
             self.utility_functions.append(partial(self.utility_function, i))
-            # self.utility_functions.append(lambda player_action, opponents_action: self.utility_function(i, player_action, opponents_action))
     
     def formulate_transition_matrix(self, beta): 
-                 
-        self.potential = np.zeros((self.no_action_profiles, 1))
-        
+        """
+        Generate transition matrix for the game with given rationality.
+
+        Args:
+            beta (double): player rationality. Assumed that all players have the same rationality.
+
+        Returns:
+            np.array(A^N x A^N): transition matrix.
+        """
+                         
         P = np.zeros([self.no_action_profiles, self.no_action_profiles])     
 
         for idx in range(self.no_action_profiles):
             
             profile = np.unravel_index(idx, (self.no_actions,)*(self.no_players))
 
-            self.potential[idx] = self.potential_function(profile)
+            self.potential_vec[idx] = self.potential_function(profile)
                         
             for player_id in range(self.no_players):
                 
@@ -60,6 +85,14 @@ class IdenticalInterestGame:
         return self.P
          
     def formulate_transition_matrix_sparse(self, beta):
+        """
+            Generate a sparse transition matrix for the game with given rationality.
+        Args:
+            beta (double): player rationality. Assumed that all players have the same rationality.
+
+        Returns:
+            csr_matrix: sprase transition matrix
+        """
             
         P_row, P_col, P_data = [], [], []
 
@@ -102,6 +135,10 @@ class IdenticalInterestGame:
            
     def generate_payoff_matrix(self):
         
+        """
+            Generate random payoff matrix.
+        """
+        
         self.payoff_player_1 = np.random.uniform(0.0, 1 - self.delta, size = [self.no_actions] * self.no_players)
         
         self.payoff_player_1[tuple(self.firstNE)] = 1
@@ -112,6 +149,12 @@ class IdenticalInterestGame:
     
     def reset_payoff_matrix(self, delta = None):
         
+        """
+            Generate a new random payoff matrix for the game.
+        Args:
+            delta (_type_, optional): the difference of potential between the first NE and second NE. Defaults to None.
+        """
+
         if delta:
             self.delta = delta
             
@@ -119,16 +162,46 @@ class IdenticalInterestGame:
      
     def set_payoff_matrix(self, payoff):
         
+        """
+            Set new payoff matrix.
+        Args:
+            payoff(AxAx...A): payoff matrix.
+        """
+        
+        # Get dimensions of the payoff matrix and update N, A and action space accordingly
+        self.no_players = payoff.ndim
+        self.no_actions = len(payoff)
+        self.action_space = np.arange(self.no_actions)
+        self.action_space = [self.action_space]*self.no_players
         self.payoff_player_1 = payoff
         
+        # Make the payoff matrix symmetric
         if self.type == "Symmetrical":
             self.payoff_player_1 = make_symmetric_nd(self.payoff_player_1)
 
     def potential_function(self, action_profile):
+        """
+            Compute value of potential function at a given joint action profile.
+        Args:
+            action_profile (Nd np.array): joint action profile.
+
+        Returns:
+            double: value of the potential function.
+        """
         
         return self.payoff_player_1[tuple(action_profile)]
     
     def utility_function(self, player_id, player_action, opponents_action):
+        """
+            Compute utility of an action given opponents actions.
+        Args:
+            player_id (int): player id.
+            player_action (int): player action.
+            opponents_action (N-1d np.array): opponents actions.
+
+        Returns:
+            double: utility of action given opponents actions.
+        """
 
         if self.no_players > 2:
             self.action_profile_template[:player_id] = opponents_action[:player_id]
@@ -141,9 +214,13 @@ class IdenticalInterestGame:
         return self.potential_function(self.action_profile_template)
         
     def formulate_potential_vec(self):
+        """
+            Formulate sparse vector of potential function values for all joint action profiles.
+            Feasible when the total number of joint action profiles is reasonable.
+        """
         
-        self.potential = lil_matrix((self.no_action_profiles, 1))
+        self.potential_vec = lil_matrix((self.no_action_profiles, 1))
         
         for idx in np.arange(self.no_action_profiles):
             element = np.unravel_index(idx, (self.no_actions,)*(self.no_players))
-            self.potential[idx] = self.potential_function(element)
+            self.potential_vec[idx] = self.potential_function(element)
