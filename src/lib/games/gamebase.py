@@ -312,7 +312,8 @@ class Game:
         
         gamma_t = np.sqrt(8*np.log(self.gameSetup.no_actions)/self.max_iter) 
         mixed_strategies = np.zeros([self.gameSetup.no_players, self.gameSetup.no_actions])
-                      
+        
+        past_exp_potential = 0            
         for i in range(self.max_iter):            
             
             if i % 20 == 0:
@@ -320,7 +321,8 @@ class Game:
                         
             self.sample_from_mixed_strategy(mixed_strategies)
             
-            self.potentials_history[i] = self.gameSetup.potential_function(self.action_profile) # compute the value of the potential function
+            self.potentials_history[i] = (past_exp_potential*i + self.gameSetup.potential_function(self.action_profile))/(i+1) # compute the value of the potential function
+            past_exp_potential = self.potentials_history[i]
             
             if isinstance(self.gameSetup, CongestionGame):
                 self.objectives_history[i] = self.gameSetup.objective(self.action_profile)
