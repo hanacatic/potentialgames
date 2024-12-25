@@ -30,10 +30,8 @@ class Game:
                 self.players[i].max_payoff = self.gameSetup.max_travel_times[i]
         
         self.opponents_idx_map = [ np.delete(np.arange(self.gameSetup.no_players), player_id) for player_id in range(self.gameSetup.no_players) ]
-        self.player_idx_map = np.arange(0, self.gameSetup.no_players)  
-        
-        self.action_profile_histogram = np.zeros(self.gameSetup.no_actions**self.gameSetup.no_players)
-                    
+        self.player_idx_map = np.arange(0, self.gameSetup.no_players)                      
+
     def sample_initial_action_profile(self, mu):
         
         self.initial_action_profile = rejection_sampling(mu, self.action_profile, self.action_space, M = 0.5, iterations = 1000)
@@ -67,9 +65,8 @@ class Game:
             print(beta)
             self.log_linear_t(beta)
         elif self.algorithm == "log_linear_tatarenko":
-                self.log_linear_tatarenko()
+            self.log_linear_tatarenko()
         elif self.algorithm == "log_linear_fast":
-            # self.set_mu_matrix(mu_matrix)
             if self.gameSetup.no_players == 2:
                 self.log_linear_fast(beta, scale_factor)
             else:
@@ -135,7 +132,7 @@ class Game:
             
             mu0 = mu
             
-            self.expected_value[i] = mu @ self.gameSetup.potential
+            self.expected_value[i] = mu @ self.gameSetup.potential_vec
         
         self.expected_value = self.expected_value
         self.stationary = mu
@@ -154,8 +151,8 @@ class Game:
                         
             mu0 = mu
             
-            self.expected_value[i] = mu @ self.gameSetup.potential
-        
+            self.expected_value[i] = mu @ self.gameSetup.potential_vec
+
         self.expected_value = self.expected_value.todense()
         self.stationary = mu.todense()
                            
@@ -353,7 +350,11 @@ class Game:
         gamma_n = 1
         eps_n = 1 
         mixed_strategies = np.zeros([self.gameSetup.no_players, self.gameSetup.no_actions])
-        
+                
+
+        past_exp_potential = 0
+
+
         for i in range(self.max_iter):
             
             # gamma_n = 1/np.log(self.gameSetup.no_actions)/np.log(i+2)**b
@@ -362,12 +363,12 @@ class Game:
             # eps_n = 1/(np.log(self.gameSetup.no_actions)**a*(i+2)**a*np.log(i+2)**p)
             eps_n = 1/(1+self.gameSetup.no_actions*(i+1)**a*np.log(i+2)**p)
 
-            if i % 20 == 0:
+
+            if i % 500 == 0:
+
                 print(str(i) + "th iteration")
-                print(self.players[0].scores)
-                print(self.players[0].prob)
-                        
             
+
             self.sample_from_mixed_strategy(mixed_strategies)
   
             for player_id in range(self.gameSetup.no_players):
@@ -379,8 +380,12 @@ class Game:
                 
                 player.update_ewa(action, opponents_actions, gamma_n = gamma_n, eps_n = eps_n)
             
-            self.potentials_history[i] = self.gameSetup.potential_function(self.action_profile) # compute the value of the potential function
-            
+
+            self.potentials_history[i] =  (past_exp_potential*i + self.gameSetup.potential_function(self.action_profile))/(i+1) #rho@self.gameSetup.potential #self.gameSetup.potential_function(self.action_profile) # compute the value of the potential function
+
+            past_exp_potential = self.potentials_history[i]
+
+
             if isinstance(self.gameSetup, CongestionGame):
                 self.objectives_history[i] = self.gameSetup.objective(self.action_profile)
     
@@ -395,8 +400,11 @@ class Game:
         eta = 0.95*np.sqrt(np.log(A)/(self.max_iter*A))
         
         mixed_strategies = np.zeros([self.gameSetup.no_players, self.gameSetup.no_actions])
-        self.gameSetup.formulate_potential_vec()
+
+
+        past_exp_potential = 0
         
+
         for i in range(self.max_iter):
 
             if i % 500 == 0:
@@ -415,11 +423,12 @@ class Game:
                                 
             player.update_exp3p(action, opponents_actions, gamma, beta, eta)
             
-            action_profile_idx = np.sum([ self.action_profile[k]*self.gameSetup.no_actions**k for k in range(self.gameSetup.no_players)])
-            self.action_profile_histogram[action_profile_idx] += 1
-            rho = self.action_profile_histogram/(i+1)
-            self.potentials_history[i] = rho@self.gameSetup.potential # CCE
+
+            self.potentials_history[i] = (past_exp_potential * i + self.gameSetup.potential_function(self.action_profile))/(i+1) #rho@self.gameSetup.potential # CCE
+
+            past_exp_potential = self.potentials_history[i]
             
+
             if isinstance(self.gameSetup, CongestionGame):
                 self.objectives_history[i] = self.gameSetup.objective(self.action_profile)   
         
