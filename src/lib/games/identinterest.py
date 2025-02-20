@@ -22,6 +22,7 @@ class IdenticalInterestGame:
             secondNE (_type_): coordinates of the second largest Nash equilibrium.
             delta (_type_): the difference of potential between the first NE and second NE.
             type (str, optional): type of game. Defaults to "Asymmetrical".
+            noisy_utility (bool, optional): Use noisy utilities. Defaults to False.
             payoff_matrix (_type_, optional): payoff matrix. Defaults to None.
         """
         
