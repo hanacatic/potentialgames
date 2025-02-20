@@ -46,7 +46,7 @@ class Game:
         
         self.mu_matrix = mu_matrix
 
-    def play(self, initial_action_profile = None, beta = None, scale_factor = 1):
+    def play(self, initial_action_profile = None, beta = None, scale_factor = 1, gamma = 0):
         
         if initial_action_profile is None:
             self.action_profile = self.initial_action_profile.copy()
@@ -60,7 +60,7 @@ class Game:
             player.past_action = self.action_profile[player_id].copy()            
         
         if self.algorithm == "log_linear":
-            self.log_linear(beta)
+            self.log_linear(beta, gamma)
         elif self.algorithm == "log_linear_t":
             print(beta)
             self.log_linear_t(beta)
@@ -88,34 +88,51 @@ class Game:
         elif self.algorithm == "multiplicative_weight":
             self.multiplicative_weight()
         
-    def log_linear(self, beta):
-               
+    def log_linear(self, beta, gamma = 0):
+        
+        if beta is None:
+            raise Exception("Sorry, you have not provided rationality!")
+
         print("Log linear learning")
+        if self.gameSetup.noisy_utility:
+            eta = 1/2.0/beta
+        else:
+            eta = 0
+                    
         for i in range(0, self.max_iter): 
             
-            if i % 100 == 0:
+            if i % 500 == 0:
                 print(str(i) + "th iteration")
             
-            self.log_linear_iteration(i, beta)
+            self.log_linear_iteration(i, beta, eta, gamma)
     
     def log_linear_t(self, beta_t):
+        
+        if self.gameSetup.noisy_utility:
+            eta = 1/2.0/beta_t
+        else:
+            eta = 0
 
         for i in range(self.max_iter): 
             
-            # beta = beta_t*(1/self.gameSetup.no_players *np.log(1+i)/(1 + 1/self.gameSetup.no_players * np.log(i+1)))
-            beta = beta_t*(np.log(1/self.gameSetup.no_players)*np.log(1+i)/(1 + np.log(1/self.gameSetup.no_players)* np.log(i+1)))
+            # beta = beta_t*(1/self.gameSetup.no_actions *np.log10(i+self.gameSetup.no_actions)/(1 + 1/self.gameSetup.no_actions * np.log10(i+self.gameSetup.no_actions)))
+            beta = beta_t*(1/self.gameSetup.no_actions *np.log(i + self.gameSetup.no_actions)/(1 + 1/self.gameSetup.no_actions * np.log(i+self.gameSetup.no_actions)))
 
-            self.log_linear_iteration(i, beta)
+            # beta = beta_t*(np.log(1+i)/(1 + np.log(i+1)))
+
+            # beta = beta_t*(np.log(1/self.gameSetup.no_players)*np.log(1+i)/(1 + np.log(1/self.gameSetup.no_players)* np.log(i+1)))
+            # print(beta)
+            self.log_linear_iteration(i, beta, eta)
             
     def log_linear_tatarenko(self):
 
         for i in range(self.max_iter): 
 
-            # beta = np.log(i+1)*(self.gameSetup.no_players**2+1)/self.gameSetup.no_players
+            beta = np.log(i+1)*(self.gameSetup.no_players**2+1)/self.gameSetup.no_players
                         
-            beta = min((i+1), 5000) # Tatarenko
+            # beta = min((i+1), 5000) # Tatarenko
   
-            self.log_linear_iteration(i, beta)
+            self.log_linear_iteration(i, beta, 0)
     
     def log_linear_fast(self, beta, scale_factor):
         
@@ -156,7 +173,7 @@ class Game:
         self.expected_value = self.expected_value.todense()
         self.stationary = mu.todense()
                            
-    def log_linear_iteration(self, i, beta):
+    def log_linear_iteration(self, i, beta, eta, gamma = 0):
         
         player_id = rng.integers(0, len(self.players), 1) # randomly choose a player
             
@@ -164,7 +181,7 @@ class Game:
         
         opponents_actions = self.action_profile[self.opponents_idx_map[player_id[0]]] # extract the opponents actions from the action profile
             
-        self.action_profile[player_id] = player.update_log_linear(beta, opponents_actions) # update the players action
+        self.action_profile[player_id] = player.update_log_linear(beta, opponents_actions, eta, gamma) # update the players action
             
         self.potentials_history[i] = self.gameSetup.potential_function(self.action_profile) # compute the value of the potential function
         
@@ -261,6 +278,10 @@ class Game:
         
         improvement = True
         
+        for player_id in range(self.gameSetup.no_players):
+            player = self.players[player_id]
+            player.reset()
+        
         for i in range(self.max_iter):
             
             if i % 20 == 0:
@@ -313,27 +334,51 @@ class Game:
         gamma_t = np.sqrt(8*np.log(self.gameSetup.no_actions)/self.max_iter) 
         mixed_strategies = np.zeros([self.gameSetup.no_players, self.gameSetup.no_actions])
         
+        for player_id in range(self.gameSetup.no_players):
+            player = self.players[player_id]
+            player.reset()
+            
         past_exp_potential = 0            
         for i in range(self.max_iter):            
-            
             if i % 20 == 0:
                 print(str(i) + "th iteration")
                         
-            self.sample_from_mixed_strategy(mixed_strategies)
+            # self.sample_from_mixed_strategy(mixed_strategies)
             
-            self.potentials_history[i] = (past_exp_potential*i + self.gameSetup.potential_function(self.action_profile))/(i+1) # compute the value of the potential function
+            # self.potentials_history[i] = (past_exp_potential*i + self.gameSetup.potential_function(self.action_profile))/(i+1) # compute the value of the potential function
+            # past_exp_potential = self.potentials_history[i]
+            
+            # if isinstance(self.gameSetup, CongestionGame):
+            #     self.objectives_history[i] = self.gameSetup.objective(self.action_profile)
+                
+            # for player_id in range(self.gameSetup.no_players):
+                
+            #     opponents_actions = self.action_profile[self.opponents_idx_map[player_id]] # extract the opponents actions from the action profile
+                
+            #     player = self.players[player_id]
+                        # player.update_mw(opponents_actions, gamma_t = gamma_t)  
+
+            player_id = rng.integers(0, len(self.players), 1)[0] # randomly choose a player
+            
+            player = self.players[player_id] 
+            
+            mixed_strategies[player_id] = player.mixed_strategy()
+            
+            self.action_profile[player_id] = rng.choice(self.action_space[player_id], 1, p = mixed_strategies[player_id])              
+    
+            opponents_actions = self.action_profile[self.opponents_idx_map[player_id]] # extract the opponents actions from the action profile
+            action = self.action_profile[player_id]
+            
+            player.update_mw(opponents_actions, gamma_t = gamma_t)  
+            
+            self.potentials_history[i] =  (past_exp_potential*i + self.gameSetup.potential_function(self.action_profile))/(i+1) #rho@self.gameSetup.potential #self.gameSetup.potential_function(self.action_profile) # compute the value of the potential function
+
             past_exp_potential = self.potentials_history[i]
             
             if isinstance(self.gameSetup, CongestionGame):
                 self.objectives_history[i] = self.gameSetup.objective(self.action_profile)
-                
-            for player_id in range(self.gameSetup.no_players):
-                
-                opponents_actions = self.action_profile[self.opponents_idx_map[player_id]] # extract the opponents actions from the action profile
-                
-                player = self.players[player_id]
-                
-                player.update_mw(opponents_actions, gamma_t = gamma_t)  
+    
+
     
     def sample_from_mixed_strategy(self, mixed_strategies):
         
@@ -342,6 +387,9 @@ class Game:
             player = self.players[player_id]
             
             mixed_strategies[player_id] = player.mixed_strategy()
+            if np.isnan(mixed_strategies[player_id]).any():
+                print(player.max_payoff-player.min_payoff)
+                print(player_id)
                 
             self.action_profile[player_id] = rng.choice(self.action_space[player_id], 1, p = mixed_strategies[player_id])              
     
@@ -355,6 +403,10 @@ class Game:
                 
 
         past_exp_potential = 0
+        
+        for player_id in range(self.gameSetup.no_players):
+            player = self.players[player_id]
+            player.reset()
 
 
         for i in range(self.max_iter):
@@ -363,7 +415,7 @@ class Game:
             # gamma_n = np.sqrt(100*np.log(self.gameSetup.no_actions)/(i+2)**(2*b)) 
             gamma_n = 1/(i+1)**b
             # eps_n = 1/(np.log(self.gameSetup.no_actions)**a*(i+2)**a*np.log(i+2)**p)
-            eps_n = 1/(1+self.gameSetup.no_actions*(i+1)**a*np.log(i+2)**p)
+            eps_n = 1/(1+(i+1)**a*np.log(i+2)**p)
 
 
             if i % 500 == 0:
@@ -371,16 +423,27 @@ class Game:
                 print(str(i) + "th iteration")
             
 
-            self.sample_from_mixed_strategy(mixed_strategies)
+            # self.sample_from_mixed_strategy(mixed_strategies)
   
-            for player_id in range(self.gameSetup.no_players):
+            # for player_id in range(self.gameSetup.no_players):
                 
-                opponents_actions = self.action_profile[self.opponents_idx_map[player_id]] # extract the opponents actions from the action profile
-                action = self.action_profile[player_id]
+            #     opponents_actions = self.action_profile[self.opponents_idx_map[player_id]] # extract the opponents actions from the action profile
+            #     action = self.action_profile[player_id]
                 
-                player = self.players[player_id]
-                
-                player.update_ewa(action, opponents_actions, gamma_n = gamma_n, eps_n = eps_n)
+            #     player = self.players[player_id]
+            
+            player_id = rng.integers(0, len(self.players), 1)[0] # randomly choose a player
+            
+            player = self.players[player_id] 
+            
+            mixed_strategies[player_id] = player.mixed_strategy()
+            
+            self.action_profile[player_id] = rng.choice(self.action_space[player_id], 1, p = mixed_strategies[player_id])              
+    
+            opponents_actions = self.action_profile[self.opponents_idx_map[player_id]] # extract the opponents actions from the action profile
+            action = self.action_profile[player_id]
+              
+            player.update_ewa(action, opponents_actions, gamma_n = gamma_n, eps_n = eps_n)
             
 
             self.potentials_history[i] =  (past_exp_potential*i + self.gameSetup.potential_function(self.action_profile))/(i+1) #rho@self.gameSetup.potential #self.gameSetup.potential_function(self.action_profile) # compute the value of the potential function
@@ -403,7 +466,10 @@ class Game:
         
         mixed_strategies = np.zeros([self.gameSetup.no_players, self.gameSetup.no_actions])
 
-
+        for player_id in range(self.gameSetup.no_players):
+            player = self.players[player_id]
+            player.reset()
+            
         past_exp_potential = 0
         
 
@@ -443,7 +509,10 @@ class Game:
         # return 1/max(epsilon/2, delta)*np.log(A**N*(1-epsilon/2)*(4/(epsilon*A**N*(epsilon/2)) - 1/(A**N*(epsilon/2))))
         # if self.gameSetup.type == "Asymmetrical":
         # return 1/max(epsilon, delta)*np.log(A**N/epsilon)
-
+        
+        # if self.gameSetup.noisy_utility:
+        # return 1/max(epsilon, delta)*np.log(1/epsilon)
+        
         return 1/max(epsilon, delta)*(N*np.log(A) - np.log(epsilon))
         # print("Symmetrical in compute beta")
         # return  1/max(epsilon, delta)*np.log(N**A/epsilon)
@@ -458,6 +527,9 @@ class Game:
         # return 25*N**2*A**5*np.exp(4*beta)/16/np.pi**2*(np.log(np.log(A**N)) + np.log(beta) + 2*np.log(4/epsilon))
         
         # return N**2*A**5*(A**N/epsilon)**(1/max(epsilon, delta))
+        
+        if self.gameSetup.noisy_utility:
+            return np.log(N**1.5*A**3) + N + beta*(1+1/beta)*(N+3) * np.log(-2*np.log(epsilon))
         
         return np.log(N**2*A**5) + (1/max(epsilon, delta))*N*np.log(A/epsilon)
 
@@ -477,6 +549,11 @@ class Game:
         
         self.algorithm = algorithm
         
-    def reset_game(self):
+    def reset_game(self, delta = None, payoff_matrix = None):
+        
+        if delta is None:
+            delta = self.gameSetup.delta
+        if payoff_matrix is not None:
+            self.gameSetup.set_payoff_matrix(delta, payoff_matrix)
 
         [self.players[i].reset_player(self.gameSetup.no_actions, self.gameSetup.utility_functions[i]) for i in range(0, self.gameSetup.no_players)]

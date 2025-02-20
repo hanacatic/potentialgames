@@ -12,7 +12,7 @@ class IdenticalInterestGame:
         Includes information on the number of players and actions, utility functions and potential function.
     """
     
-    def __init__(self, action_space, no_players, firstNE, secondNE, delta, type = "Asymmetrical", noisy_utility = True, payoff_matrix = None): 
+    def __init__(self, action_space, no_players, firstNE, secondNE, delta, type = "Asymmetrical", noisy_utility = False, payoff_matrix = None): 
         """
             Identical Interest game constructor. 
         Args:
@@ -43,7 +43,7 @@ class IdenticalInterestGame:
         if payoff_matrix is None:
             self.generate_payoff_matrix()
         else:
-            self.set_payoff_matrix(payoff_matrix)
+            self.set_payoff_matrix(delta, payoff_matrix)
 
         # Array of player utility functions, formulated based on a general utility function
         self.utility_functions = []
@@ -118,16 +118,16 @@ class IdenticalInterestGame:
                 stride = strides[player_id]
                 idx = opponents_actions @ strides[self.opponents_idx_map[player_id]]
                 
-                print(idx + np.multiply(action_space, stride))
+                # print(idx + np.multiply(action_space, stride))
                 
                 for j, prob in enumerate(p):
                     P_row.extend(idx + np.multiply(action_space, stride))
                     P_col.extend([idx + j * stride]*self.no_actions)
-                    P_data.extend([prob / self.no_players]*self.no_actions)   
+                    P_data.extend([prob / self.no_players]*self.no_actions)
                       
             i += 1 
-            
-        P_data = np.concatenate(P_data).tolist()
+        # print(P_data)
+        P_data = P_data #.tolist()
         
         P = csr_matrix((P_data, (P_row, P_col)), shape=(self.no_action_profiles, self.no_action_profiles))
         P.sum_duplicates()
@@ -163,7 +163,7 @@ class IdenticalInterestGame:
             
         self.generate_payoff_matrix()
      
-    def set_payoff_matrix(self, payoff):
+    def set_payoff_matrix(self, delta, payoff):
         
         """
             Set new payoff matrix.
@@ -172,12 +172,15 @@ class IdenticalInterestGame:
         """
         
         # Get dimensions of the payoff matrix and update N, A and action space accordingly
-        self.no_players = payoff.ndim
-        self.no_actions = len(payoff)
-        self.action_space = np.arange(self.no_actions)
-        self.action_space = [self.action_space]*self.no_players
-        self.payoff_player_1 = payoff
+        # self.no_players = payoff.ndim
+        # self.no_actions = len(payoff)
+        # self.action_space = np.arange(self.no_actions)
+        # self.action_space = [self.action_space]*self.no_players
+        self.payoff_player_1 = payoff.copy()
+        self.delta = delta
         
+        # print(payoff.shape)
+        # print(self.payoff_player_1.shape)
         # Make the payoff matrix symmetric
         if self.type == "Symmetrical":
             self.payoff_player_1 = make_symmetric_nd(self.payoff_player_1)
@@ -191,10 +194,9 @@ class IdenticalInterestGame:
         Returns:
             double: value of the potential function.
         """
-        
         return self.payoff_player_1[tuple(action_profile)]
     
-    def utility_function(self, player_id, player_action, opponents_action, eta = 0):
+    def utility_function(self, player_id, player_action, opponents_action):
         """
             Compute utility of an action given opponents actions.
         Args:
@@ -214,8 +216,15 @@ class IdenticalInterestGame:
             self.action_profile_template[player_id] = player_action
             self.action_profile_template[not player_id] = opponents_action
     
-        return min([1], max(self.potential_function(self.action_profile_template) + rng.uniform(-eta, eta, 1), [0]))
-        
+        # return min([1], max(self.potential_function(self.action_profile_template) + rng.uniform(-eta, eta, 1), [0]))
+        # util = self.potential_function(self.action_profile_template) + rng.uniform(-eta, eta, 1)
+        # print("--------------------")
+        # print("player id: " + str(player_id))
+        # print("player_action: " + str(player_action))
+        # print(self.potential_function(self.action_profile_template))
+        # print(util)
+        return self.potential_function(self.action_profile_template)
+    
     def formulate_potential_vec(self):
         """
             Formulate sparse vector of potential function values for all joint action profiles.

@@ -4,6 +4,78 @@ from lib.player import *
 from lib.games.trafficrouting import CongestionGame
 import matplotlib.pyplot as plt
 
+def test_generate_payoff_matrix():
+    
+    action_space = [0, 1, 2, 3, 4, 5]
+    no_players = 2
+    
+    firstNE = np.array([1,1])
+    secondNE = np.array([4,4])
+    
+    delta = 0.25
+    trench = 0.1
+    # payoff_matrix = generate_two_plateau_diagonal_payoff_matrix(delta = delta, no_actions = len(action_space), trench = 0.1)
+    payoff_matrix = generate_one_plateau_payoff_matrix(delta = delta, no_actions = len(action_space))
+    
+    plot_payoff(payoff_matrix)
+    plt.show()
+    
+    payoff_matrix = generate_two_plateau_payoff_matrix(delta = delta, no_actions = len(action_space))
+    
+    plot_payoff(payoff_matrix)
+    plt.show()
+    
+    payoff_matrix = generate_two_plateau_diagonal_payoff_matrix(delta, len(action_space), trench)
+    
+    plot_payoff(payoff_matrix)
+    plt.show()
+
+def test_compute_beta(delta, eps):
+    
+    action_space = [0, 1, 2, 3, 4, 5]
+    no_players = 2
+    
+    firstNE = np.array([1,1])
+    secondNE = np.array([4,4])
+    
+    delta = 0.25
+    payoff_matrix = generate_two_plateau_payoff_matrix(delta = delta, no_actions = len(action_space))
+            
+    gameSetup = IdenticalInterestGame(action_space, no_players, firstNE, secondNE, delta, payoff_matrix = payoff_matrix)
+    
+    game = Game(gameSetup, algorithm = "log_linear",  max_iter = 10000, mu=mu)
+    
+    print(game.compute_beta(eps))
+    print(game.compute_t(eps))
+   
+def test_beta_t():
+        
+    action_space = [0, 1, 2, 3, 4, 5]
+    no_players = 2
+    
+    firstNE = np.array([1,1])
+    secondNE = np.array([4,4])
+    
+    delta = 0.25
+    eps = 0.1
+    
+    payoff_matrix = generate_two_plateau_payoff_matrix(delta = delta, no_actions = len(action_space))
+            
+    gameSetup = IdenticalInterestGame(action_space, no_players, firstNE, secondNE, delta, payoff_matrix = payoff_matrix)
+    
+    game = Game(gameSetup, algorithm = "log_linear",  max_iter = 200000, mu=mu)
+    
+    beta_t = game.compute_beta(eps)
+    print(beta_t)
+    print(game.compute_t(eps))
+    
+    beta = np.zeros((1, game.max_iter))
+    for i in range(game.max_iter):
+        beta[0,i] = beta_t*(1/game.gameSetup.no_actions *np.log(i + game.gameSetup.no_actions)/(1 + 1/game.gameSetup.no_actions * np.log(i+game.gameSetup.no_actions)))
+
+    plt.plot(beta[0])
+    plt.show()
+     
 def test_custom_game():
     
     action_space = [0, 1, 2, 3, 4, 5, 6, 7, 8, 9]
@@ -74,7 +146,7 @@ def test_log_linear():
             
     gameSetup = IdenticalInterestGame(action_space, no_players, firstNE, secondNE, delta, payoff_matrix = payoff_matrix)
     
-    game = Game(gameSetup, algorithm = "log_linear",  max_iter = 2000, mu=mu)
+    game = Game(gameSetup, algorithm = "log_linear",  max_iter = 10000, mu=mu)
     game.set_initial_action_profile(secondNE)
 
     # game.set_initial_action_profile(np.array([1,4]))
@@ -82,9 +154,11 @@ def test_log_linear():
     potentials_history = np.zeros((1, game.max_iter))
     beta_t = game.compute_beta(1e-1)
     
-    game.play(beta = beta_t)
+    print(beta_t)
+    print(game.compute_t(1e-1))
+    game.play(beta = beta_t) # gamma = 0.0005
     potentials_history = game.potentials_history
-    
+    plot_payoff(payoff_matrix)
     plot_potential(potentials_history)
     plt.show()
 
@@ -293,17 +367,19 @@ def test_two_plateau_diagonal_game():
     scale_factor = 1000
     
     payoff_matrix = generate_two_plateau_diagonal_payoff_matrix(delta, len(action_space), trench)
+    # payoff_matrix = generate_two_plateau_payoff_matrix(delta = delta, no_actions = len(action_space))
+
     # plot_payoff(payoff_matrix)
     # plt.show()
     gameSetup = IdenticalInterestGame(action_space, no_players, firstNE, secondNE, delta = delta, payoff_matrix = payoff_matrix)
 
-    # mu_matrix = np.zeros([1, len(action_space)**2])
-    # mu_matrix[0, 15] = 1
+    mu_matrix = np.zeros([1, len(action_space)**2])
+    mu_matrix[0, 15] = 1
     
-    mu_matrix = np.ones([1, len(action_space)**2])
-    mu_matrix /= np.sum(mu_matrix)
+    # mu_matrix = np.ones([1, len(action_space)**2])
+    # mu_matrix /= np.sum(mu_matrix)
     
-    game = Game(gameSetup, algorithm = "log_linear_fast", max_iter = 1e6, mu=mu)
+    game = Game(gameSetup, algorithm = "log_linear_fast", max_iter = 1e3, mu=mu)
     beta_t = game.compute_beta(0.1)
     
     game.set_mu_matrix(mu_matrix)
@@ -581,8 +657,8 @@ def test_congestion_game():
     # plt.pause(1)
     # plt.close()
         
-    # game = Game(gameSetup, algorithm = "log_linear", max_iter = 2000, mu = mu_congestion)    
-    game = Game(gameSetup, algorithm = "exponential_weight_annealing", max_iter = 10000, mu = mu_congestion)
+    game = Game(gameSetup, algorithm = "multiplicative_weight", max_iter = 2000, mu = mu_congestion)    
+    # game = Game(gameSetup, algorithm = "exponential_weight_annealing", max_iter = 10000, mu = mu_congestion)
 
     print(game.gameSetup.delta)
     beta_t = game.compute_beta(0.1)
@@ -603,7 +679,7 @@ def test_congestion_game():
     #                           0 0 0 0 0 0 0 0 1 0 3 0 2 1 0 3 0 0 0 0 2 1 1 1 1 0 0 0 0 0 0 0 2 0 3 0 0
     #                           0 0 2 2 0 1 0 0 0 0] #np.array([0]*game.gameSetup.no_players)
     print(game.gameSetup.potential_function(initial_action_profile))
-    game.play(initial_action_profile = initial_action_profile, beta = beta_t)
+    game.play(initial_action_profile = initial_action_profile, beta = beta_t, gamma = 0)
     
     plot_potential(game.potentials_history)
     
@@ -719,10 +795,10 @@ def test_exp3p():
 
     game.set_initial_action_profile(initial_action_profile)
 
-    potentials_history = np.zeros((1, game.max_iter))
+    potentials_history = np.zeros((10, game.max_iter))
     beta_t = game.compute_beta(1e-1)
     
-    for i in range(1):
+    for i in range(10):
         game.play(beta = beta_t)
         potentials_history[i] = np.transpose(game.potentials_history)
     

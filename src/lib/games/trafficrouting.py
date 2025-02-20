@@ -10,11 +10,12 @@ rng = np.random.default_rng()
 
 class CongestionGame:
     
-    def __init__(self, network = "SiouxFalls", no_actions = 5, modified = False, modified_no_players = None):
+    def __init__(self, network = "SiouxFalls", no_actions = 5, noisy_utility = False, modified = False, modified_no_players = None):
         
         self.no_actions = no_actions
         self.modified = modified
         self.modified_no_players = modified_no_players
+        self.noisy_utility = noisy_utility
         
         self.load_from_tntp(network)
         self.build_network()
@@ -274,7 +275,7 @@ class CongestionGame:
 
         congestions = self.congestion(x)
                 
-        return (self.action_space[agent_id][action]>0).T @ congestions
+        return (self.action_space[agent_id][action]).T @ congestions
     
     def travel_time_modified(self, agent_id, action, opponents_actions):
         

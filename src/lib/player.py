@@ -4,13 +4,13 @@ rng = np.random.default_rng()
 
 class Player:
     
-    def __init__(self, player_id, action_space, utility, noisy_utility = False):
+    def __init__(self, player_id, action_space, utility, noisy_utility = False, fixed_share = False):
         
-        print(action_space)
         self.id = player_id
         self.no_actions = len(action_space) # size of the actions space
         self.utility = utility # utility function
         self.noisy_utility = noisy_utility
+        self.fixed_share = fixed_share
         self.past_action = None
         self.action_space = np.arange(self.no_actions).reshape(1, self.no_actions)
         self.prob = 1/self.no_actions*np.ones([1, self.no_actions])
@@ -24,18 +24,24 @@ class Player:
         self.past_opponents_actions = None
         self.utilities = None
         
-    def update_log_linear(self, beta, opponents_actions): # choose a new action only based on the opponents action, in this case they will be the same as the actions in the previous step
+    def update_log_linear(self, beta, opponents_actions, eta, gamma = 0): # choose a new action only based on the opponents action, in this case they will be the same as the actions in the previous step
         
-        if self.utilities is None or all(self.past_opponents_actions != opponents_actions):
-            if self.noisy_utility:
-                eta = 1.0/2.0/beta
-            else:
-                eta = 0
-            self.utilities = np.array([self.utility(i, opponents_actions, eta) for i in range(self.no_actions)]).reshape(1, self.no_actions)
+        if eta <= 0 and self.noisy_utility:
+            raise Exception("Sorry, you are using noisy utility, but haven't provided the bounds!")
+
+        if self.utilities is None or (self.past_opponents_actions != opponents_actions).any():
+            self.utilities = np.array([self.utility(i, opponents_actions) for i in range(self.no_actions)]).reshape(1, self.no_actions)
+            
+            if self.min_payoff is not None:
+                self.utilities = (self.utilities - self.min_payoff)/(self.max_payoff - self.min_payoff)
+            
+            self.utilities +=  rng.uniform(-eta, eta, 1)
+        
             exp_values = np.exp(beta * (self.utilities - np.max(self.utilities)))
             self.prob = exp_values/np.sum(exp_values)
+            self.prob = gamma/self.no_actions + (1-gamma)*self.prob
             self.past_opponents_actions = opponents_actions
-        
+
         idx_a = rng.choice(self.action_space[0], size=1, p=self.prob[0])
 
         self.past_action = idx_a
@@ -47,7 +53,7 @@ class Player:
         new_action = rng.integers(0, self.no_actions, 1).astype(int)[0]
         new_utility = self.utility(new_action, opponents_actions)
         
-        if self.utilities is None or all(self.past_opponents_actions != opponents_actions):
+        if self.utilities is None or (self.past_opponents_actions != opponents_actions).any():
             self.utilities = self.utility(self.past_action, opponents_actions)
         
         actions = [self.past_action, new_action]
@@ -148,6 +154,18 @@ class Player:
     def set_modified_utility(self, utility_modified):
         
         self.utility_modified = utility_modified
+    
+    def reset(self):
+        
+        self.past_action = None
+        self.prob = 1/self.no_actions*np.ones([1, self.no_actions])
+        self.weights = 1/self.no_actions*np.ones([1, self.no_actions])
+        self.scores = 1/self.no_actions*np.ones([1, self.no_actions])
+        self.initial_action = np.array([0])
+        self.ones = np.ones(self.no_actions)
+        self.rewards_estimate = np.zeros(self.no_actions)
+        self.past_opponents_actions = None
+        self.utilities = None
         
     def reset_player(self, no_actions, utility):
 

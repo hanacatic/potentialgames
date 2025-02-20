@@ -1,4 +1,4 @@
-# Finite time convergence to ε-efficient Nash Equilibirum in potential games
+# Finding ε-efficient Nash Equilibirum in potential games
 
 This repository is part of a Semester project with SYCAMORE (Systems Control and Multiagent Optimization Research) Laboratory at EPFL. It contains implementaions of log-linear learning and its modifications as part of validation of alogrithm proposed in [[1]](#1).
 
