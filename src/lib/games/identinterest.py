@@ -117,17 +117,14 @@ class IdenticalInterestGame:
                 
                 stride = strides[player_id]
                 idx = opponents_actions @ strides[self.opponents_idx_map[player_id]]
-                
-                # print(idx + np.multiply(action_space, stride))
-                
+                                
                 for j, prob in enumerate(p):
                     P_row.extend(idx + np.multiply(action_space, stride))
                     P_col.extend([idx + j * stride]*self.no_actions)
                     P_data.extend([prob / self.no_players]*self.no_actions)
                       
             i += 1 
-        # print(P_data)
-        P_data = P_data #.tolist()
+        P_data = P_data 
         
         P = csr_matrix((P_data, (P_row, P_col)), shape=(self.no_action_profiles, self.no_action_profiles))
         P.sum_duplicates()
@@ -137,7 +134,6 @@ class IdenticalInterestGame:
         return self.P
            
     def generate_payoff_matrix(self):
-        
         """
             Generate random payoff matrix.
         """
@@ -151,7 +147,6 @@ class IdenticalInterestGame:
             self.payoff_player_1 = make_symmetric_nd(self.payoff_player_1)
     
     def reset_payoff_matrix(self, delta = None):
-        
         """
             Generate a new random payoff matrix for the game.
         Args:
@@ -164,7 +159,6 @@ class IdenticalInterestGame:
         self.generate_payoff_matrix()
      
     def set_payoff_matrix(self, delta, payoff):
-        
         """
             Set new payoff matrix.
         Args:
@@ -172,15 +166,10 @@ class IdenticalInterestGame:
         """
         
         # Get dimensions of the payoff matrix and update N, A and action space accordingly
-        # self.no_players = payoff.ndim
-        # self.no_actions = len(payoff)
-        # self.action_space = np.arange(self.no_actions)
-        # self.action_space = [self.action_space]*self.no_players
+
         self.payoff_player_1 = payoff.copy()
         self.delta = delta
         
-        # print(payoff.shape)
-        # print(self.payoff_player_1.shape)
         # Make the payoff matrix symmetric
         if self.type == "Symmetrical":
             self.payoff_player_1 = make_symmetric_nd(self.payoff_player_1)
@@ -216,13 +205,6 @@ class IdenticalInterestGame:
             self.action_profile_template[player_id] = player_action
             self.action_profile_template[not player_id] = opponents_action
     
-        # return min([1], max(self.potential_function(self.action_profile_template) + rng.uniform(-eta, eta, 1), [0]))
-        # util = self.potential_function(self.action_profile_template) + rng.uniform(-eta, eta, 1)
-        # print("--------------------")
-        # print("player id: " + str(player_id))
-        # print("player_action: " + str(player_action))
-        # print(self.potential_function(self.action_profile_template))
-        # print(util)
         return self.potential_function(self.action_profile_template)
     
     def formulate_potential_vec(self):
