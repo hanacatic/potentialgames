@@ -66,6 +66,7 @@ def test_beta_t():
     game = Game(gameSetup, algorithm = "log_linear",  max_iter = 200000, mu=mu)
     
     beta_t = game.compute_beta(eps)
+    
     print(beta_t)
     print(game.compute_t(eps))
     
@@ -391,7 +392,7 @@ def test_two_plateau_diagonal_game():
     print(game.stationary)
     
     stationary = np.reshape(game.stationary,(-1, game.gameSetup.no_actions))
-    save = True
+    save = False
     folder = "WEEK 7"
     setup = "two_plateau_diagonal_no_actions_" + str(len(action_space)) + "delta_" + str(delta) + "_trench_" + str(trench) + "_scaling_factor_" + str(scale_factor)
     plot_payoff(payoff_matrix, save = save, folder = folder, file_name = "Payoff_matrix_" + setup) 
