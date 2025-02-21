@@ -1,6 +1,6 @@
 # Finding ε-efficient Nash Equilibirum in potential games
 
-This repository is part of a Semester project with SYCAMORE (Systems Control and Multiagent Optimization Research) Laboratory at EPFL. It contains implementaions of log-linear learning and its modifications as part of validation of alogrithm proposed in [[1]](#1).
+This repository is part of a Semester project with SYCAMORE (Systems Control and Multiagent Optimization Research) Laboratory at EPFL. It contains implementations of log-linear learning and its modifications as part of validation of alogrithm proposed in [[1]](#1).
 
 ## Dependencies
 The project was tested on Windows 11. There are no known issues with other Operating Systems. It is written in Python 
