@@ -6,26 +6,28 @@ import matplotlib.pyplot as plt
 
 def test_generate_payoff_matrix():
     
-    action_space = [0, 1, 2, 3, 4, 5]
+    no_actions = 10
+    
+    action_space = np.arange(no_actions) # [0, 1, 2, 3, 4, 5]
     no_players = 2
     
-    firstNE = np.array([1,1])
-    secondNE = np.array([4,4])
+    firstNE = np.array([1, 1])
+    secondNE = np.array([no_actions - 2, no_actions - 2])
     
-    delta = 0.25
+    delta = 0.075
     trench = 0.1
-    # payoff_matrix = generate_two_plateau_diagonal_payoff_matrix(delta = delta, no_actions = len(action_space), trench = 0.1)
-    payoff_matrix = generate_one_plateau_payoff_matrix(delta = delta, no_actions = len(action_space))
+    
+    payoff_matrix = generate_one_plateau_payoff_matrix(delta = delta, no_actions = no_actions)
     
     plot_payoff(payoff_matrix)
     plt.show()
     
-    payoff_matrix = generate_two_plateau_payoff_matrix(delta = delta, no_actions = len(action_space))
+    payoff_matrix = generate_two_plateau_payoff_matrix(delta = delta, no_actions = no_actions)
     
-    plot_payoff(payoff_matrix)
+    plot_payoff(payoff_matrix, save = True, folder = 'Paper/Test', file_name = 'test')
     plt.show()
     
-    payoff_matrix = generate_two_plateau_diagonal_payoff_matrix(delta, len(action_space), trench)
+    payoff_matrix = generate_two_plateau_diagonal_payoff_matrix(delta, no_actions, trench)
     
     plot_payoff(payoff_matrix)
     plt.show()
@@ -134,17 +136,18 @@ def test_custom_game():
     
 def test_log_linear():
 
-    action_space = [0, 1, 2, 3, 4, 5]
+    no_actions = 10
+    action_space = np.arange(no_actions)
     no_players = 2
     
     firstNE = np.array([1,1])
-    secondNE = np.array([4,4])
+    secondNE = np.array([no_actions - 2, no_actions - 2])
     
-    delta = 0.25
+    delta = 0.15
+    
     # payoff_matrix = generate_two_plateau_diagonal_payoff_matrix(delta = delta, no_actions = len(action_space), trench = 0.1)
     payoff_matrix = generate_two_plateau_payoff_matrix(delta = delta, no_actions = len(action_space))
 
-            
     gameSetup = IdenticalInterestGame(action_space, no_players, firstNE, secondNE, delta, payoff_matrix = payoff_matrix)
     
     game = Game(gameSetup, algorithm = "log_linear",  max_iter = 10000, mu=mu)
@@ -163,6 +166,38 @@ def test_log_linear():
     plot_potential(potentials_history)
     plt.show()
 
+def test_log_linear_fast():
+    
+    no_actions = 10
+    action_space = np.arange(no_actions)
+    no_players = 2
+    
+    firstNE = np.array([1,1])
+    secondNE = np.array([no_actions - 2, no_actions - 2])
+    
+    delta = 0.075
+    eps = 0.05
+    
+    # payoff_matrix = generate_two_plateau_diagonal_payoff_matrix(delta = delta, no_actions = len(action_space), trench = 0.1)
+    payoff_matrix = generate_two_plateau_payoff_matrix(delta = delta, no_actions = len(action_space))
+    
+    gameSetup = IdenticalInterestGame(action_space, no_players, firstNE, secondNE, delta, payoff_matrix = payoff_matrix)
+    
+    game = Game(gameSetup, algorithm = "log_linear_fast",  max_iter = 10000, mu=mu)
+    game.set_initial_action_profile(secondNE)
+
+    mu_matrix = np.ones([1, len(action_space)**no_players])
+    mu_matrix /= np.sum(mu_matrix)
+    
+    game.set_mu_matrix(mu_matrix)
+    
+    beta = game.compute_beta(eps)
+    
+    game.play(beta = beta)
+    
+    plot_potential(game.expected_value, save = False, folder = 'Paper/Test', file_name = 'test_potential')
+    plt.show()
+    
 def test_log_linear_t(delta = 0.25):
     action_space = [0, 1, 2, 3, 4, 5]
     no_players = 2
