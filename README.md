@@ -11,6 +11,7 @@ The project was tested on Windows 11. There are no known issues with other Opera
 * scipy
 * networkx
 * [Transportation Networks](https://github.com/bstabler/TransportationNetworks)
+* [SciencePlots](https://github.com/garrettj403/SciencePlots)
 
 Recommended:
 * Cython (For this C/C++ compiler is required)
