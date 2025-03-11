@@ -5,3 +5,4 @@ __pycache__
 *.pyd
 logs/
 build/
+_old/
