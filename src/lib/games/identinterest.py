@@ -133,6 +133,54 @@ class IdenticalInterestGame:
 
         self.formulate_potential_vec()
         return self.P
+
+    def formulate_transition_matrix_binary(self, beta): 
+        """
+        Generate transition matrix for the binary log linear game with given rationality.
+
+        Args:
+            beta (double): player rationality. Assumed that all players have the same rationality.
+
+        Returns:
+            np.array(A^N x A^N): transition matrix.
+        """
+                         
+        P = np.zeros([self.no_action_profiles, self.no_action_profiles])     
+
+        for idx in range(self.no_action_profiles):
+            
+            profile = np.unravel_index(idx, (self.no_actions,)*(self.no_players))
+
+            self.potential_vec[idx] = self.potential_function(profile)
+                        
+            for player_id in range(self.no_players):
+                
+                opponents_actions = profile[self.opponents_idx_map[player_id][0]] # extract the opponents actions from the action profile
+                player_action = profile[player_id]
+                
+                player_utility = self.utility_functions[player_id](player_action, opponents_actions)
+                
+                i = idx
+
+                for a in range(self.no_actions):
+                    
+                    a_utility = self.utility_functions[player_id](a, opponents_actions)
+                    utilities = np.array([player_utility, a_utility])
+                    
+                    exp_values = np.exp(beta * utilities)
+                    
+                    p = exp_values/np.sum(exp_values)
+                    
+                    p = 1/self.no_players/self.no_actions*p
+                
+                    j = idx + (a - player_action)*self.no_actions**(self.no_players - 1 - player_id)
+                    
+                    P[idx, i] += p[0]
+                    P[idx, j] += p[1]
+                    
+        self.P = P
+                
+        return self.P
            
     def generate_payoff_matrix(self):
         """

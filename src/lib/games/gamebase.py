@@ -4,7 +4,7 @@ from lib.games.trafficrouting import CongestionGame
 from lib.aux_functions.helpers import *
 from scipy.sparse import csr_matrix, csc_array
 
-rng = np.random.default_rng()
+rng = np.random.default_rng(seed = 2)
 
 class Game:
     """
@@ -33,8 +33,10 @@ class Game:
         self.action_space = [np.arange(len(self.gameSetup.action_space[player_id])) for player_id in range(self.gameSetup.no_players)]
 
         # initial joint action profile
-        self.action_profile = [0] * self.gameSetup.no_players 
-        self.action_profile = self.sample_initial_action_profile(mu)
+        self.action_profile = [0] * self.gameSetup.no_players
+        
+        if mu is not None: 
+            self.action_profile = self.sample_initial_action_profile(mu)
         
         # initialise properties required by the algorithms
         self.expected_value = None
@@ -125,6 +127,8 @@ class Game:
                 self.log_linear_fast_sparse(beta, scale_factor)
         elif self.algorithm == "log_linear_binary":
             self.log_linear_binary(beta)
+        elif self.algorithm == "log_linear_binary_fast":
+            self.log_linear_binary_fast(beta, scale_factor)
         elif self.algorithm == "modified_log_linear":
             for i in self.player_idx_map:
                 self.players[i].set_modified_utility(self.gameSetup.modified_utility_functions[i])
@@ -324,7 +328,36 @@ class Game:
         
         if isinstance(self.gameSetup, CongestionGame):
             self.objectives_history[i] = self.gameSetup.objective(self.action_profile)
-              
+            
+    def log_linear_binary_fast(self, beta, scale_factor):
+        """
+            Binary log-linear learning utilising the Markov Chain approach.
+            
+        Args:
+            beta (double): Player rationality.
+            scale_factor (int): Scaling factor.
+        """
+        
+        # Transition matrix of the Markov chain induced by log-linear learning for the game.
+        P = self.gameSetup.formulate_transition_matrix_binary(beta)
+        mu0 = self.mu_matrix.copy()
+        
+        self.expected_value = np.zeros((int(self.max_iter), 1))
+        
+        # Transition matrix models scale_factor steps at once
+        P = np.linalg.matrix_power(P, scale_factor)
+        
+        # Main loop
+        for i in range(self.max_iter):
+            
+            mu = mu0 @ P
+            mu0 = mu
+            
+            self.expected_value[i] = mu @ self.gameSetup.potential_vec
+        
+        self.expected_value = self.expected_value
+        self.stationary = mu
+                
     def modified_log_linear(self, beta):
         """
             Modified log-linear learning leveraging symmetry of the game.
