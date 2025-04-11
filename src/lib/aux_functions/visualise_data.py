@@ -178,44 +178,52 @@ def visualise_betas_data():
     #     plot_lines(potentials_history_mwu[i*10+mask], list_labels=list_labels)
     #     plt.show()
  
-def visualise_deltas_data():
+def visualise_deltas_data(folder_name, file_name, iter = 10, save = False, save_folder = None, save_file_name = None):
     
-    root = os.path.join(os.path.dirname(os.path.abspath('.')),  "potentialgames_ws", "potentialgames", "src", "lib", "games", "data", "IdenticalInterest", "TwoPlateau", "secondNE", "deltas")
+    root = os.path.join(os.path.dirname(os.path.abspath('.')),  "potentialgames_ws", "potentialgames", "src", "lib", "games", "data", "IdenticalInterest", folder_name)
     
-    potentials_path = os.path.join(root, "log_linear_potentials.pckl")
+    potentials_path = os.path.join(root, file_name)
     
     with open(potentials_path, 'rb') as f:
         potentials_history = pickle.load(f)
     
     potentials_history = np.array(potentials_history)
-    potentials_history = np.einsum('ijk->jik', potentials_history)
+    print(potentials_history.shape)
+    # potentials_history = np.einsum('ijk->jik', potentials_history)
         
     max_iter = len(potentials_history[0][0])
-    iter = 1000
 
-    eps = 0.1
+    eps = 0.05
     
-    mean_potential = np.zeros((len(potentials_history), max_iter))
+    mean_potential = np.zeros((len(potentials_history)+1, max_iter))
     std = np.zeros((len(potentials_history),max_iter))
 
+    conv_idx = np.zeros(len(potentials_history)+1)
+    
     for i in range(len(potentials_history)):
         mean_potential[i] = np.mean(potentials_history[i], 0)
         std[i] = np.std(potentials_history[i], 0)
         print(mean_potential[i].shape)
     
-    labels = [ r'$\Delta = 0.9$', r'$\Delta = 0.75$', r'$\Delta = 0.5$', r'$\Delta = 0.25$', r'$\Delta = 0.1$', r'$\Phi(a^*) - \epsilon$']
+        conv_idx[i+1] = np.argwhere(mean_potential[i] > 1 - eps)[0]
     
+    mean_potential[len(potentials_history)] = np.ones(max_iter)*(1-eps)
+    conv_idx[0] = 1 - eps
     
-    plot_lines(mean_potential, labels, iter, plot_e_efficient = True, title = "Expected potential")
+    print(conv_idx)
+    
+    labels = [ r'$\Delta = 0.15$', r'$\Delta = 0.1$', r'$\Delta = 0.075$', r'$\Phi(a^*) - \epsilon$']
+    
+    plot_lines(mean_potential, labels, iter, plot_e_efficient = True)
 
-    plot_lines_with_std(mean_potential, std,  labels, iter, plot_e_efficient = True, title = "Expected potential")
+    plot_lines_with_std(mean_potential, std,  labels, iter, save = save, folder = save_folder, file_name = save_file_name, plot_e_efficient = True, conv_idx = conv_idx, title = "Expected potential")
     plt.show()
     
-def visualise_eps_data():
+def visualise_eps_data(folder_name, file_name, iter = 10, save = False, save_folder_name = None, save_file_name = None):
     
-    root = os.path.join(os.path.dirname(os.path.abspath('.')),  "potentialgames_ws", "potentialgames", "src", "lib", "games", "data", "IdenticalInterest", "TwoPlateau", "trench", "eps")
+    root = os.path.join(os.path.dirname(os.path.abspath('.')),  "potentialgames_ws", "potentialgames", "src", "lib", "games", "data", "IdenticalInterest", folder_name)
     
-    potentials_path = os.path.join(root, "log_linear_potentials.pckl")
+    potentials_path = os.path.join(root, file_name)
     
     with open(potentials_path, 'rb') as f:
         potentials_history = pickle.load(f)
@@ -223,30 +231,31 @@ def visualise_eps_data():
     potentials_history = np.array(potentials_history)
     
     print(potentials_history.shape)
-    potentials_history = np.einsum('ijkh->jkih', potentials_history)
-    print(potentials_history.shape)
+    # potentials_history = np.einsum('ijkh->jkih', potentials_history)
+    # print(potentials_history.shape)
 
-    max_iter = len(potentials_history[0][0][0])
-    iter = 1000
-    eps = 0.1
+    max_iter = len(potentials_history[0][0])
+    eps = [0.1, 0.05, 0.025, 0.01]
         
-    mean_potential = np.zeros((len(potentials_history), len(potentials_history[0]), max_iter))
+    mean_potential = np.zeros((len(potentials_history), max_iter))
     std = np.zeros(mean_potential.shape)
     print(mean_potential.shape)
+    
+    conv_idx = np.zeros(len(potentials_history)*2)
+
     for i in range(len(potentials_history)):
-        for j in range(len(potentials_history[0])):
-            mean_potential[i][j] = np.mean(potentials_history[i][j], 0)
-            std[i][j] = np.std(potentials_history[i][j], 0)
+        mean_potential[i] = np.mean(potentials_history[i], 0)
+        std[i] = np.std(potentials_history[i], 0)
+        
+        conv_idx[2*i] = np.argwhere(mean_potential[i] > 1 - eps[i])[0]
+
+        conv_idx[2*i+1] = 1 - eps[i]
     
+    labels = [ r'$\epsilon = 0.1$', r'$\epsilon = 0.05$', r'$\epsilon = 0.025$', r'$\epsilon = 0.01$']
     
-    labels = [ r'$\epsilon = 0.2$', r'$\epsilon = 0.1$', r'$\epsilon = 0.05$', r'$\epsilon = 0.01$', r'$\epsilon = 0.001$']
-    
-    print(potentials_history[0, :, 1, 0:10])
-    print(mean_potential[0,:,0:10])
-    for i in range(len(mean_potential)):
-        plot_lines_eps_exp(mean_potential[i], labels, iter, title = "Expected potential")
-        plot_lines_eps_exp_with_std(mean_potential[i], std[i], labels, iter, title = "Expected potential")
-        plt.show()
+    # plot_lines_eps_exp(mean_potential[i], labels, iter, title = "Expected potential")
+    plot_lines_eps_exp_with_std(mean_potential, std, labels, iter, conv_idx = conv_idx, title = "Expected potential", save = save, folder = save_folder_name, file_name=save_file_name)
+    plt.show()
 
 def visualise_no_actions_data():
     
@@ -293,7 +302,7 @@ def visualise_no_players_data():
         potentials_history = pickle.load(f)
     
     max_iter = len(potentials_history[0][0])
-    iter = max_iter
+    iter = 600000
 
     eps = 0.1
     
@@ -459,6 +468,56 @@ def visualise_lll_binary():
     plt.show()
     plot_lines_with_std(mean_potential, std,  labels, iter, plot_e_efficient = True, title = "Average potential")
     plt.show()
+
+def visualise_coverage(read_folder, read_file_name_1, read_file_name_2, save, save_folder_name, save_file_name_1, save_file_name_2):
+    root = os.path.join(os.path.dirname(os.path.abspath('.')),  "potentialgames_ws", "potentialgames", "src", "lib", "games", "data", read_folder)
+    
+    potentials_path = os.path.join(root, read_file_name_1)
+    potentials_modified_path = os.path.join(root, read_file_name_2)
+
+    potential_max = [0.18046063406926463,]
+    potential_min = [0.009239810259469239]
+
+    with open(potentials_path, 'rb') as f:
+        potentials_history = pickle.load(f)
+    with open(potentials_modified_path, 'rb') as f:
+        potentials_history_modified = pickle.load(f) 
+        
+    max_iter = len(potentials_history[0][0])
+    iter = 2000
+
+    eps = 0.05
+    
+    mean_potential = np.zeros((len(potentials_history), max_iter))
+    mean_potential_modified = np.zeros((len(potentials_history), max_iter))
+    std = np.zeros((len(potentials_history),max_iter))
+    std_modified = np.zeros((len(potentials_history), max_iter))
+    
+    print(potentials_history.shape)
+    print(mean_potential.shape)
+    for i in range(len(potentials_history)):
+        mean_potential[i] = np.mean(potentials_history[i], 0)
+        std[i] = np.std(potentials_history[i], 0)
+        mean_potential_modified[i] = np.mean(potentials_history_modified[i], 0)
+        std_modified[i] = np.std(potentials_history_modified[i], 0)
+        
+    # # std[0] = np.std(potentials_history, 0)
+    # # std[1] = np.std(potentials_history_binary, 0)
+
+    # # labels = ['Log linear learning', 'Log linear binary learning', r'$\Phi(a^*) - \epsilon$']
+    # # labels = [ r'$U_i(a_i, a_{-i})$', r'$U_i(a_i, a_{-i}) + \xi_i(a_i, a_{-i})$', r'$\Phi(a^*) - \epsilon$']
+    # labels = [ 'Log linear learning', 'Fixed-share log linear learning', r'$\Phi(a^*) - \epsilon$']
+    labels = ['N=50','N=100', 'N=200', 'N=300', 'N=400', 'N=500']
+    
+    plot_lines(mean_potential, labels, iter, plot_e_efficient = True, title = "Average potential")
+    # plot_potential(potentials_history[4][0])
+    plt.show()
+    plot_lines_with_std(mean_potential, std,  labels, iter,  title = "Expected potential value", save = save, folder = save_folder_name, file_name=save_file_name_1)
+    plt.show(block = False)
+    plt.pause(10)
+    plot_lines_with_std(mean_potential_modified, std_modified,  labels, iter, title = "Expected potential value", save = save, folder = save_folder_name, file_name=save_file_name_2)
+    plt.show(block = False)
+    plt.pause(10)
 
 def visualise_exp3():
     

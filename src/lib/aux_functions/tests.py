@@ -2,11 +2,12 @@ from lib.aux_functions.experiments import *
 from lib.games import *
 from lib.player import *
 from lib.games.trafficrouting import CongestionGame
+from lib.games.coverage import CoverageGame
 import matplotlib.pyplot as plt
 
 def test_generate_payoff_matrix():
     
-    no_actions = 10
+    no_actions = 6
     
     action_space = np.arange(no_actions) # [0, 1, 2, 3, 4, 5]
     no_players = 2
@@ -17,20 +18,20 @@ def test_generate_payoff_matrix():
     delta = 0.075
     trench = 0.1
     
-    payoff_matrix = generate_one_plateau_payoff_matrix(delta = delta, no_actions = no_actions)
+    # payoff_matrix = generate_one_plateau_payoff_matrix(delta = delta, no_actions = no_actions)
     
-    plot_payoff(payoff_matrix)
-    plt.show()
+    # plot_payoff(payoff_matrix)
+    # plt.show()
     
     payoff_matrix = generate_two_plateau_payoff_matrix(delta = delta, no_actions = no_actions)
     
     plot_payoff(payoff_matrix, save = True, folder = 'Paper/Test', file_name = 'test')
     plt.show()
     
-    payoff_matrix = generate_two_plateau_diagonal_payoff_matrix(delta, no_actions, trench)
+    # payoff_matrix = generate_two_plateau_diagonal_payoff_matrix(delta, no_actions, trench)
     
-    plot_payoff(payoff_matrix)
-    plt.show()
+    # plot_payoff(payoff_matrix)
+    # plt.show()
 
 def test_compute_beta(delta, eps):
     
@@ -140,26 +141,27 @@ def test_log_linear():
     action_space = np.arange(no_actions)
     no_players = 2
     
-    firstNE = np.array([1,1])
-    secondNE = np.array([no_actions - 2, no_actions - 2])
+    firstNE = np.array([0,0])
+    secondNE = np.array([no_actions - 1, no_actions - 1])
     
-    delta = 0.15
+    delta = 0.075
+    eps = 0.05
     
     # payoff_matrix = generate_two_plateau_diagonal_payoff_matrix(delta = delta, no_actions = len(action_space), trench = 0.1)
     payoff_matrix = generate_two_plateau_payoff_matrix(delta = delta, no_actions = len(action_space))
 
-    gameSetup = IdenticalInterestGame(action_space, no_players, firstNE, secondNE, delta, payoff_matrix = payoff_matrix)
+    gameSetup = IdenticalInterestGame(action_space, no_players, firstNE, secondNE, delta, noisy_utility=True, payoff_matrix = payoff_matrix)
     
-    game = Game(gameSetup, algorithm = "log_linear",  max_iter = 10000, mu=mu)
+    game = Game(gameSetup, algorithm = "log_linear",  max_iter = 100000, mu=mu)
     game.set_initial_action_profile(secondNE)
 
     # game.set_initial_action_profile(np.array([1,4]))
 
     potentials_history = np.zeros((1, game.max_iter))
-    beta_t = game.compute_beta(1e-1)
+    beta_t = game.compute_beta(eps)
     
     print(beta_t)
-    print(game.compute_t(1e-1))
+    print(game.compute_t(eps))
     game.play(beta = beta_t) # gamma = 0.0005
     potentials_history = game.potentials_history
     plot_payoff(payoff_matrix)
@@ -175,7 +177,7 @@ def test_log_linear_fast():
     firstNE = np.array([1,1])
     secondNE = np.array([no_actions - 2, no_actions - 2])
     
-    delta = 0.075
+    delta = 0.15
     eps = 0.05
     
     # payoff_matrix = generate_two_plateau_diagonal_payoff_matrix(delta = delta, no_actions = len(action_space), trench = 0.1)
@@ -199,6 +201,7 @@ def test_log_linear_fast():
     plt.show()
     
 def test_log_linear_t(delta = 0.25):
+    
     action_space = [0, 1, 2, 3, 4, 5]
     no_players = 2
     
@@ -441,42 +444,65 @@ def test_two_plateau_diagonal_game():
 
 def test_transition_matrix():
     
-    action_space = [0, 1, 2, 3]
-    no_actions = len(action_space)
+    no_actions = 4
+    action_space = np.arange(no_actions)
     no_players = 2
     
-    firstNE = np.array([1,1])
-    secondNE = np.array([3,3])
+    firstNE = np.array([0,0])
+    secondNE = np.array([-1,-1])
     
     delta = 0.25
-    payoff_matrix = generate_two_plateau_payoff_matrix_multi(delta, no_actions, no_players)
+    payoff_matrix = generate_two_plateau_payoff_matrix(delta, no_actions)
+    
+    plot_payoff(payoff_matrix)
     
     print("payoff_matrix_generated")    
     gameSetup = IdenticalInterestGame(action_space, no_players, firstNE, secondNE, delta = delta, payoff_matrix = payoff_matrix)
 
     mu_matrix = np.zeros([1, len(action_space)**2])
-    mu_matrix[0, 15] = 1
+    # mu_matrix[0, 15] = 1
+    mu_matrix[0, 3] = 1
     
     # mu_matrix = np.ones([1, len(action_space)**2])
     # mu_matrix /= np.sum(mu_matrix)
-    game = Game(gameSetup, algorithm = "log_linear_fast", max_iter = 1e6, mu=mu)
+    game = Game(gameSetup, algorithm = "log_linear_fast", max_iter = 1000, mu=mu)
     beta_t = game.compute_beta(0.1)
     
-    transition_matrix_sparse = gameSetup.formulate_transition_matrix_sparse(beta_t)
+    transition_matrix_binary = gameSetup.formulate_transition_matrix_binary(beta_t)
     print("transition_matrix_formulated")
-    # game.set_mu_matrix(mu_matrix)
-    # game.play(beta = beta_t)
+    game.set_mu_matrix(mu_matrix)
+    game.play(beta = beta_t)
     
     # print("Stationary distribution: ")
     # print(game.stationary)
     
-    # stationary = np.reshape(game.stationary,(-1, game.gameSetup.no_actions))
+    stationary = np.reshape(game.stationary,(-1, game.gameSetup.no_actions))
     
-    # plot_payoff(game.gameSetup.P, title = "Transition matrix")
-    # plot_payoff(stationary, title = "Stationary distribution")
-    # plot_potential(game.expected_value)
+    plot_payoff(game.gameSetup.P, title = "Transition matrix")
+    plot_payoff(stationary, title = "Stationary distribution")
+    plot_potential(game.expected_value)
     
-    # plt.show(block = False)
+    plt.show(block = False)
+    # plt.pause(60)
+    # plt.close()
+    game = Game(gameSetup, algorithm = "log_linear_binary_fast", max_iter = 1000, mu=mu)
+    beta_t = game.compute_beta(0.1)
+    
+    transition_matrix_binary = gameSetup.formulate_transition_matrix_binary(beta_t)
+    print("transition_matrix_formulated")
+    game.set_mu_matrix(mu_matrix)
+    game.play(beta = beta_t)
+    
+    # print("Stationary distribution: ")
+    # print(game.stationary)
+    
+    stationary = np.reshape(game.stationary,(-1, game.gameSetup.no_actions))
+    
+    plot_payoff(game.gameSetup.P, title = "Transition matrix")
+    plot_payoff(stationary, title = "Stationary distribution")
+    plot_potential(game.expected_value)
+    
+    plt.show()
     # plt.pause(60)
     # plt.close()
    
@@ -681,46 +707,49 @@ def mu_congestion(profile):
 
 def test_congestion_game():
     
-    # gameSetup = CongestionGame("SiouxFallsSymmetric", 4, modified = True, modified_no_players=4)
-    gameSetup = CongestionGame()
+    # gameSetup = CongestionGame("SiouxFalls", 5)
+
+    gameSetup = CongestionGame("SiouxFallsSymmetric", 20, modified = True, modified_no_players=50)
+    # gameSetup = CongestionGame()
 
     
-    gameSetup.travel_time(0, 0, np.zeros((gameSetup.no_players - 1)).astype(int))
+    # gameSetup.travel_time(0, 0, np.zeros((gameSetup.no_players - 1)).astype(int))
     
-    # plot_network(gameSetup.network)
+    plot_network(gameSetup.network)
     
-    # plt.show(block = False)
+    plt.show()
     # plt.pause(1)
-    # plt.close()
+    plt.close()
         
-    game = Game(gameSetup, algorithm = "multiplicative_weight", max_iter = 2000, mu = mu_congestion)    
-    # game = Game(gameSetup, algorithm = "exponential_weight_annealing", max_iter = 10000, mu = mu_congestion)
-
-    print(game.gameSetup.delta)
-    beta_t = game.compute_beta(0.1)
-    print(beta_t)
-    initial_action_profile =  np.array([3]*game.gameSetup.no_players) #rng.integers(0, 5, size = game.gameSetup.no_players)
-    #                           1 2 2 0 0 0 0 0 0 1 1 2 0 0 0 0 0 2 3 0 4 0 1 0 1 0 0 0 4 0 0 0 0 0 0 3 1
-    #                           0 4 4 4 0 0 2 1 0 0 1 0 0 0 3 0 0 0 0 0 0 2 0 0 3 2 0 0 0 0 0 0 1 0 0 0 0 
-    #                           0 1 0 0 0 0 3 0 0 0 2 0 0 0 0 1 0 0 4 3 3 0 0 1 3 3 0 4 0 1 0 0 0 1 0 0 0 
-    #                           0 2 0 0 2 1 0 0 0 0 2 3 0 0 1 3 0 2 0 0 0 0 0 2 0 0 3 0 0 0 0 1 0 0 0 1 1
-    #                           2 0 0 1 1 1 2 0 0 2 3 0 1 0 0 0 1 3 2 0 0 1 0 0 0 1 0 1 1 0 0 0 1 2 0 2 1 
-    #                           0 0 0 1 3 0 0 0 0 0 1 0 1 2 2 3 0 2 0 0 0 0 0 0 0 2 0 3 1 0 0 0 1 3 0 1 0
-    #                           0 0 0 0 0 0 0 0 0 0 0 2 0 0 1 4 0 0 0 3 0 0 2 4 0 0 1 0 0 0 3 0 3 0 0 4 2
-    #                           2 1 0 0 1 0 4 0 4 0 3 2 1 0 0 3 4 3 0 0 4 1 3 0 0 0 3 1 0 2 3 1 0 0 0 0 0
-    #                           0 1 1 1 0 0 1 0 0 2 0 0 2 2 2 3 0 0 0 0 1 1 1 1 0 4 4 3 2 1 0 1 1 1 1 1 0
-    #                           0 0 0 0 3 0 3 0 0 2 0 4 0 0 0 1 0 1 1 2 0 1 0 0 1 0 0 0 0 3 2 3 2 2 1 2 1
-    #                           1 0 3 0 0 0 1 0 0 0 1 0 1 2 2 0 0 3 0 0 0 4 2 1 0 0 2 0 0 0 0 0 0 0 0 0 0
-    #                           0 0 0 0 3 0 0 4 0 0 0 0 1 1 0 0 0 0 1 0 1 0 0 0 3 2 0 0 0 0 2 0 0 0 0 1 0
-    #                           0 0 0 0 0 0 0 0 1 0 3 0 2 1 0 3 0 0 0 0 2 1 1 1 1 0 0 0 0 0 0 0 2 0 3 0 0
-    #                           0 0 2 2 0 1 0 0 0 0] #np.array([0]*game.gameSetup.no_players)
-    print(game.gameSetup.potential_function(initial_action_profile))
+    game = Game(gameSetup, algorithm = "log_linear", max_iter = 10000, mu = mu_congestion)    
+    # # game = Game(gameSetup, algorithm = "exponential_weight_annealing", max_iter = 10000, mu = mu_congestion)
+    # game.gameSetup.compute_strategies()
+    # print(game.action_space)
+    # print(game.gameSetup.delta)
+    beta_t = game.compute_beta(0.05)
+    # print(beta_t)
+    initial_action_profile =  np.array([4]*game.gameSetup.no_players) #rng.integers(0, 5, size = game.gameSetup.no_players)
+    # #                           1 2 2 0 0 0 0 0 0 1 1 2 0 0 0 0 0 2 3 0 4 0 1 0 1 0 0 0 4 0 0 0 0 0 0 3 1
+    # #                           0 4 4 4 0 0 2 1 0 0 1 0 0 0 3 0 0 0 0 0 0 2 0 0 3 2 0 0 0 0 0 0 1 0 0 0 0 
+    # #                           0 1 0 0 0 0 3 0 0 0 2 0 0 0 0 1 0 0 4 3 3 0 0 1 3 3 0 4 0 1 0 0 0 1 0 0 0 
+    # #                           0 2 0 0 2 1 0 0 0 0 2 3 0 0 1 3 0 2 0 0 0 0 0 2 0 0 3 0 0 0 0 1 0 0 0 1 1
+    # #                           2 0 0 1 1 1 2 0 0 2 3 0 1 0 0 0 1 3 2 0 0 1 0 0 0 1 0 1 1 0 0 0 1 2 0 2 1 
+    # #                           0 0 0 1 3 0 0 0 0 0 1 0 1 2 2 3 0 2 0 0 0 0 0 0 0 2 0 3 1 0 0 0 1 3 0 1 0
+    # #                           0 0 0 0 0 0 0 0 0 0 0 2 0 0 1 4 0 0 0 3 0 0 2 4 0 0 1 0 0 0 3 0 3 0 0 4 2
+    # #                           2 1 0 0 1 0 4 0 4 0 3 2 1 0 0 3 4 3 0 0 4 1 3 0 0 0 3 1 0 2 3 1 0 0 0 0 0
+    # #                           0 1 1 1 0 0 1 0 0 2 0 0 2 2 2 3 0 0 0 0 1 1 1 1 0 4 4 3 2 1 0 1 1 1 1 1 0
+    # #                           0 0 0 0 3 0 3 0 0 2 0 4 0 0 0 1 0 1 1 2 0 1 0 0 1 0 0 0 0 3 2 3 2 2 1 2 1
+    # #                           1 0 3 0 0 0 1 0 0 0 1 0 1 2 2 0 0 3 0 0 0 4 2 1 0 0 2 0 0 0 0 0 0 0 0 0 0
+    # #                           0 0 0 0 3 0 0 4 0 0 0 0 1 1 0 0 0 0 1 0 1 0 0 0 3 2 0 0 0 0 2 0 0 0 0 1 0
+    # #                           0 0 0 0 0 0 0 0 1 0 3 0 2 1 0 3 0 0 0 0 2 1 1 1 1 0 0 0 0 0 0 0 2 0 3 0 0
+    # #                           0 0 2 2 0 1 0 0 0 0] #np.array([0]*game.gameSetup.no_players)
+    # print(game.gameSetup.potential_function(initial_action_profile))
     game.play(initial_action_profile = initial_action_profile, beta = beta_t, gamma = 0)
     
     plot_potential(game.potentials_history)
     
     print(game.action_profile)
-    # print(game.gameSetup.objective(game.action_profile))
+    print(game.gameSetup.objective(game.action_profile))
     plt.grid()
     plt.show()
     plt.close()
@@ -729,7 +758,45 @@ def test_congestion_game():
     plt.grid()
     plt.show()
     plt.close()
+
+def test_coverage_game():
+    
+    gameSetup = CoverageGame(no_resources = 10, no_players = 500,  resource_values = [0.05, 0.15, 0.14, 0.1, 0.01, 0.1, 0.11, 0.2, 0.09, 0.05])#[1, 0.7, 0.5, 0.2, 0.2])#rng.uniform(0, 1, 5))
+    
+    # print(gameSetup.success_probability(1, 1, 3))
+    
+    # print(gameSetup.utility_function(1, 3, [0]))
+    
+    # print(gameSetup.potential_function([1, 2, 4, 7, 7]))
+    
+    game = Game(gameSetup, algorithm = "log_linear", max_iter = 5000)    
+    game.gameSetup.delta = 0.012
+    beta_t = game.compute_beta(0.01)
+    # print(beta_t)
+    initial_action_profile =  np.array([0]*game.gameSetup.no_players) #rng.integers(0, 5, size = game.gameSetup.no_players)
+    print(gameSetup.potential_function(initial_action_profile))
+    game.play(initial_action_profile = initial_action_profile, beta = beta_t, gamma = 0)
+    
+    # plot_potential(game.potentials_history)
+    plt.plot(game.potentials_history)
+    print(game.action_profile)
+    plt.grid()
+    plt.show()
+    plt.close()
+    
+def test_success_probability():
+    
+    gameSetup = CoverageGame(no_resources = 10, no_players = 2, resource_values = [0.05, 0.15, 0.14, 0.1, 0.01, 0.1, 0.11, 0.2, 0.09, 0.05])#[1, 0.7, 0.5, 0.2, 0.2])#rng.uniform(0, 1, 5))resource_values = rng.uniform(0, 1, 10))
+    print(gameSetup.resource_values)
+    payoff = np.zeros((gameSetup.no_actions, gameSetup.no_actions))
+    for i in range(gameSetup.no_actions):
+        for j in range(gameSetup.no_actions):
+            payoff[i, j] = gameSetup.potential_function([i, j])
+            
         
+    plot_payoff(payoff)
+    plt.show()
+
 def test_modified_log_linear():
     gameSetup = CongestionGame("SiouxFallsSymmetric", 10, modified = True, modified_no_players=200)
     

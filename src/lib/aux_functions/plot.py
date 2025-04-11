@@ -2,6 +2,9 @@ import matplotlib.pyplot as plt
 import matplotlib.cm as cm
 import scienceplots
 import networkx as nx 
+import numpy as np
+
+plt.rcParams.update({'figure.dpi': '100'})
 
 def plot_payoff(payoff, title = "Payoff matrix", folder = None, save = False, file_name = "Payoff matrix"):
     
@@ -61,9 +64,10 @@ def plot_lines(lines_to_plot, list_labels, iter = None, plot_e_efficient = False
             
         fig, ax = plt.subplots()
         
+        t = np.arange(iter)
         for idx, element in enumerate(lines_to_plot):
             if idx < len(list_labels) - 1:
-                ax.plot(element[0:iter], label = list_labels[idx])
+                ax.plot(t[::100], element[0:iter:100], label = list_labels[idx], markevery=10000)
             elif plot_e_efficient:
                 ax.plot(element[0:iter], 'k--', label =  list_labels[idx])
             
@@ -72,39 +76,59 @@ def plot_lines(lines_to_plot, list_labels, iter = None, plot_e_efficient = False
         ax.legend(fontsize = 'x-small', loc="lower right", frameon = True)
 
         if save:
-            fig.savefig('../' + folder + '/' + file_name + '.png', dpi = 300)
-            fig.savefig('../' + folder + '/' + file_name + '.svg', dpi = 300)
+            fig.savefig('../' + folder + '/' + file_name + '.png', dpi = 600)
+            fig.savefig('../' + folder + '/' + file_name + '.svg', dpi = 600)
         else:
             fig.show()
    
-def plot_lines_with_std(lines_to_plot, std, list_labels, iter = None, plot_e_efficient = False, title = 'Average potential', file_name = None, folder = None, save = False, legend = "lower right"):
+def plot_lines_with_std(lines_to_plot, std, list_labels, iter = None, plot_e_efficient = False, conv_idx = None, title = 'Average potential', file_name = None, folder = None, save = False, legend = "lower right"):
     
-    with plt.style.context(["science"]):
+    with plt.style.context(["ieee"]):
 
         if iter is None:
             iter = len(lines_to_plot[0])
             
         fig, ax = plt.subplots()
         
+        # colours = ['#1f77b4', 'forestgreen', 'orange']
+        colormap = cm.get_cmap("plasma") # The various colormaps can be found here: https://matplotlib.org/3.1.0/tutorials/colors/colormaps.html
+
+        t = np.arange(iter)
+        step = 1
+        N = len(lines_to_plot)
         for idx, element in enumerate(lines_to_plot):
             element = element[0:iter]
             if plot_e_efficient == False or (idx < len(lines_to_plot) - 1 and plot_e_efficient):
                 one_std = std[idx][0:iter]
-                line, = ax.plot(element, label = list_labels[idx])
-                line_colour = line.get_color()
-                ax.fill_between(range(0, len(element)), element - one_std, element + one_std,
-        alpha=0.2, edgecolor=line_colour, facecolor=line_colour, linewidth=4, antialiased=True)
+                line, = ax.plot(t[::step], element[::step], label = list_labels[idx], zorder = 2)
+                # line_colour = line.get_color()
+                # line_colour = colours[idx]
+                line_colour = colormap(idx/N) # This function takes a number between 0 and 1 and returns a color.
+                line.set_color(line_colour)
+                ax.fill_between(t[::step], (element - one_std)[::step], (element + one_std)[::step],
+        alpha=0.2, edgecolor=line_colour, facecolor=line_colour, linewidth=4, antialiased=True, zorder=2)
+                if not conv_idx is None:
+                    ax.scatter(conv_idx[idx+1], conv_idx[0], marker='*', s=35, color=line_colour, edgecolors=line_colour, zorder = 2)  # Star markers
             elif plot_e_efficient:
                 print(idx)
-                ax.plot(element, 'k--', label =  list_labels[idx])
-            
-        ax.set_xlabel('T')
-        ax.set_ylabel('Expected potential value')
+                ax.plot(element, 'k--', label =  list_labels[idx], zorder = 1)
+        
+
+        # ax.set_xlabel('T')
+        # ax.set_ylabel('Expected potential value')
+        
+        ax.set_xlabel('T', fontsize = 6)
+        ax.set_title('Expected potential value', fontsize = 7)
+        ax.tick_params(axis='both', labelsize=6, length = 2)  
+        ax.xaxis.get_offset_text().set_fontsize(6)
+        ax.set_xlim([0, iter])
+        ax.set_ylim(0, 1.05)
+
         ax.legend(fontsize = 'x-small', loc = legend, frameon = True)
         
         if save:
-            fig.savefig('../' + folder + '/' + file_name + '.png', dpi = 300)
-            fig.savefig('../' + folder + '/' + file_name + '.svg', dpi = 300)
+            fig.savefig('../' + folder + '/' + file_name + '.png', dpi = 600)
+            fig.savefig('../' + folder + '/' + file_name + '.svg', dpi = 600)
         else:
             fig.show()
         
@@ -141,43 +165,52 @@ def plot_lines_eps_exp(lines_to_plot, list_labels, iter = None, plot_e_efficient
         else:
             fig.show()
 
-def plot_lines_eps_exp_with_std(lines_to_plot, std, list_labels, iter = None, plot_e_efficient = False, title = 'Average potential', file_name = None, folder = None, save = False):
+def plot_lines_eps_exp_with_std(lines_to_plot, std, list_labels, iter = None, plot_e_efficient = False, conv_idx = None, title = 'Average potential', file_name = None, folder = None, save = False):
     
-    with plt.style.context(["science"]):
+    with plt.style.context(["ieee"]):
 
         if iter is None:
             iter = len(lines_to_plot[0])
             
         fig, ax = plt.subplots()
+        step = 100
+        t = np.arange(iter)
 
-    
-        for idx in range(0, int(len(lines_to_plot)/2)):
-            ax.plot(lines_to_plot[idx ][0:iter], label = list_labels[idx])
-            ax.plot(lines_to_plot[idx + int(len(lines_to_plot)/2)][0:iter], 'k--')
+
+        for idx in range(0, len(lines_to_plot)):
+            ax.plot(t[::step], lines_to_plot[idx ][0:iter:step], label = list_labels[idx])
+            # ax.plot(lines_to_plot[idx + int(len(lines_to_plot)/2)][0:iter], 'k--')
             
         colormap = cm.get_cmap("plasma") # The various colormaps can be found here: https://matplotlib.org/3.1.0/tutorials/colors/colormaps.html
         # ax = plt.gca()
         lines = ax.lines
+
         N = len(lines)
-        for n in range(0, N, 2): # For each two-lines made via `plt.plot(...)`:
-            one_std = std[int(n/2)][0:iter]
-            element = lines_to_plot[int(n/2)][0:iter]
+        for n in range(0, N): # For each two-lines made via `plt.plot(...)`:
+            one_std = std[n][0:iter:step]
+            element = lines_to_plot[n][0:iter:step]
             random_color = colormap(n/N) # This function takes a number between 0 and 1 and returns a color.
             lines[n].set_color(random_color)
-            lines[n+1].set_color(random_color)
-            ax.fill_between(range(0, len(element)), element - one_std, element + one_std,
+            ax.fill_between(t[::step], element - one_std, element + one_std,
                             alpha=0.2, edgecolor=random_color, facecolor=random_color, linewidth=4, antialiased=True)
 
-            
+            if not conv_idx is None:
+                ax.scatter(conv_idx[2*n], conv_idx[2*n+1], marker='*', s=35, color=random_color, zorder = 3)  # Star markers
+
             
         # plt.xlabel('Potential', fontsize=15)
-        ax.set_xlabel('T')
-        ax.legend(fontsize='x-small', loc="lower right")
-        ax.ylim(0.6, 1.1)
+        ax.set_xlabel('T', fontsize = 6)
+        ax.set_title('Expected potential value', fontsize = 7)
+        ax.tick_params(axis='both', labelsize=6, length = 2)  
+        ax.xaxis.get_offset_text().set_fontsize(6)
+
+        ax.legend(fontsize='x-small', loc="lower right", frameon = True)
         
+        ax.set_ylim(0.8, 1.05)
+        ax.set_xlim(0, iter)
         if save:
-            fig.savefig('../' + folder + '/' + file_name + '.png', dpi = 300)
-            fig.savefig('../' + folder + '/' + file_name + '.svg', dpi = 300)
+            fig.savefig('../' + folder + '/' + file_name + '.png', dpi = 600)
+            fig.savefig('../' + folder + '/' + file_name + '.svg', dpi = 600)
         else:
             fig.show()
           

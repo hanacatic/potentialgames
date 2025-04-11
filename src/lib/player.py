@@ -64,16 +64,25 @@ class Player:
             if self.min_payoff is not None:
                 self.utilities = (self.utilities - self.min_payoff)/(self.max_payoff - self.min_payoff)
             
-            self.utilities +=  rng.uniform(-eta, eta, 1)
-            
+            self.utilities +=  rng.uniform(-eta, eta, self.no_actions)
+
+            # print(self.utilities)
+            # print(self.utilities - np.max(self.utilities))        
+            # print(beta)    
             # compute strategy        
             exp_values = np.exp(beta * (self.utilities - np.max(self.utilities)))
             self.prob = exp_values/np.sum(exp_values)
+            
+            # print(self.prob)
             self.prob = gamma/self.no_actions + (1-gamma)*self.prob
             self.past_opponents_actions = opponents_actions
+            
+            # print(self.prob)
 
         idx_a = rng.choice(self.action_space[0], size=1, p=self.prob[0]) # sample action from strategy
-
+        
+        # print(idx_a)
+        # print("----------------------------")
         self.past_action = idx_a
         
         return idx_a

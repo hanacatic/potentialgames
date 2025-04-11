@@ -236,7 +236,8 @@ class CongestionGame:
         # Main loop
         for i in range(self.no_players):
             
-            actions = self.k_shortest_paths(str(self.agents[0,i]), str(self.agents[1,i]), self.no_actions, weight="weight") # Compute k shortest path
+            actions = self.k_shortest_paths(str(self.agents[0,i]), str(self.agents[1,i]), 50+self.no_actions, weight="weight") # Compute k shortest path
+            actions = actions[-self.no_actions:]
             self.action_space_i = []                    
             
             # Find the edges belonging to the path
@@ -253,7 +254,7 @@ class CongestionGame:
                 self.action_space_i.append(demand_vec)
                     
             self.action_space.append(self.action_space_i)
-            
+                            
         with open(self.file_path_strategies, 'wb') as f:
             pickle.dump(self.action_space, f, pickle.HIGHEST_PROTOCOL)
                     

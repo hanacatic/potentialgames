@@ -3,11 +3,9 @@ from lib.games.gamebase import *
 from lib.games.identinterest import *
 from lib.games.trafficrouting import *
 from lib.aux_functions.plot import *
-
+from lib.games.coverage import *
 import sparse 
 
-RATIONALITY = 100
-EPS = 0.5e-1
 plot = False
 
 def mu(action_profile):
@@ -260,29 +258,39 @@ def generate_two_value_payoff_matrix(delta = 0.25, no_actions = 6, no_players = 
 
 def generate_two_plateau_payoff_matrix(delta = 0.25, no_actions = 6):
         
-    firstNE = np.array([1,1])
-    secondNE = np.array([no_actions-2, no_actions-2])
+    A = no_actions
+    firstNE = np.array([1, 1])
+    secondNE = np.array([A - 2, A - 2])
 
     b = 1 - delta 
        
-    payoff = (rng.random(size=np.array([no_actions, no_actions])) * 0.25 + 0.75) * 0.7 * (1-delta) # 0.25
+    payoff = (rng.random(size=np.array([no_actions, no_actions])) * 0.275 + 0.625 - delta) 
 
-    # payoff_firstNE = (rng.random(size=np.array([5, 5]))*0.6 + 0.4) * 0.75 * b
-    payoff_firstNE= (rng.random(size=np.array([3, 3]))*0.1 + 0.9) * b
+    payoff_firstNE= (rng.random(size=np.array([3, 3]))*0.15 + 0.85 - delta) 
     
-    # payoff_secondNE = (rng.random(size=np.array([5, 5]))*0.65 + 0.35) * 0.5 * (1 - delta)
-    payoff_secondNE = (rng.random(size=np.array([3, 3]))*0.15 + 0.85) * (1-delta)
-
+    payoff_secondNE = (rng.random(size=np.array([3, 3]))*0.15 + 0.85 - delta)
+    
     payoff[0:3,0:3] = payoff_firstNE
-    payoff[-3::,-3::] = payoff_secondNE
+    
+    payoff[-3::, -3::] = payoff_secondNE
     
     payoff[firstNE[0], firstNE[1]] = 1
-    # payoff[secondNE[0], secondNE[1]] = 1 - delta
-    # payoff[firstNE[0]+1, firstNE[1]+1] = 1 - delta
-
+    payoff[secondNE[0], secondNE[1]] = 1 - delta
     
     return payoff
 
+def load_game(folder, no_game):
+    root = os.path.join(os.path.dirname(os.path.abspath('.')),  "potentialgames_ws", "potentialgames", "src", "lib", "games", "data", "IdenticalInterest", "games", folder)
+    
+    game_path = os.path.join(root, f"game_{no_game}.pckl")
+    
+    print("Loading game: " + str(no_game) + " in folder " + folder)
+
+    with open(game_path, 'rb') as f:
+        payoff_matrix = pickle.load(f)
+    
+    return payoff_matrix
+    
 def generate_two_plateau_diagonal_payoff_matrix(delta = 0.25, no_actions = 6, trench = 0):
     
     no_players = 2
@@ -943,7 +951,7 @@ def custom_game_no_actions_experiments(k = [6, 8, 12, 18], delta = 0.25, eps = 1
  
 def custom_game_no_players_experiments(N = [2, 4, 6], delta = 0.25, eps = 1e-1, max_iter = 100000):
     
-    action_space = np.arange(0, 4)
+    action_space = np.arange(0, 10)
     no_actions = len(action_space)
     no_players = N
     payoff_matrices = []
@@ -962,7 +970,7 @@ def custom_game_no_players_experiments(N = [2, 4, 6], delta = 0.25, eps = 1e-1, 
         
         mu_matrix = np.ones([1, no_actions**no_players])
         mu_matrix /= np.sum(mu_matrix)
-        games.append(Game(gameSetups[idx], algorithm = "log_linear_fast", max_iter = max_iter, mu=mu))
+        games.append(Game(gameSetups[idx], algorithm = "log_linear", max_iter = max_iter, mu=mu))
         games[idx].set_mu_matrix(mu_matrix)
         games[idx].set_initial_action_profile(np.array([no_actions-2]*no_players))
         
@@ -975,7 +983,7 @@ def custom_game_no_players_experiments(N = [2, 4, 6], delta = 0.25, eps = 1e-1, 
 
         games[idx].play(beta = beta)
             
-        expected_values[idx] = np.transpose(games[idx].expected_value) #potentials_history) 
+        expected_values[idx] = np.transpose(games[idx].potentials_history) 
         
         # plot_potential(expected_values[idx])                    
     
@@ -1211,9 +1219,11 @@ def custom_game_no_players_sim_experiments(N = [6, 8, 10], delta = 0.25, eps = 1
     
     plt.show()
 
-def traffic_routing_experiments(eps = 1e-1, n_exp = 10, max_iter = 2000):
+def traffic_routing_experiments(eps = 0.05, n_exp = 10, max_iter = 10000):
     
-    gameSetup = CongestionGame()
+    # gameSetup = CongestionGame()
+    gameSetup = CongestionGame("SiouxFallsSymmetric", 10, modified = True, modified_no_players=70)
+
     
     game = Game(gameSetup, algorithm = "log_linear", max_iter = max_iter, mu = mu_congestion)
     
@@ -1222,7 +1232,7 @@ def traffic_routing_experiments(eps = 1e-1, n_exp = 10, max_iter = 2000):
     t = game.compute_t(eps)
     print(beta_t)
     print(t)
-    initial_action_profile = np.array([4]*game.gameSetup.no_players) # [0 0 0 0 0 0 2 0 0 0 0 0 0 3 0 0 0 4 0 0 1 0 0 0 0 1 0 0 0 0 3 1 1 0 0 1 3 
+    initial_action_profile = np.array([9]*game.gameSetup.no_players) # [0 0 0 0 0 0 2 0 0 0 0 0 0 3 0 0 0 4 0 0 1 0 0 0 0 1 0 0 0 0 3 1 1 0 0 1 3 
     #                           1 2 2 0 0 0 0 0 0 1 1 2 0 0 0 0 0 2 3 0 4 0 1 0 1 0 0 0 4 0 0 0 0 0 0 3 1
     #                           0 4 4 4 0 0 2 1 0 0 1 0 0 0 3 0 0 0 0 0 0 2 0 0 3 2 0 0 0 0 0 0 1 0 0 0 0 
     #                           0 1 0 0 0 0 3 0 0 0 2 0 0 0 0 1 0 0 4 3 3 0 0 1 3 3 0 4 0 1 0 0 0 1 0 0 0 
@@ -1252,7 +1262,6 @@ def traffic_routing_experiments(eps = 1e-1, n_exp = 10, max_iter = 2000):
     plot_potential(mean_potential)
     plot_potential_with_std(mean_potential, std)
     plt.show()
-    
     
 def traffic_routing_alg_comparison_experiments(eps = 0.05, n_exp = 10, max_iter = 4000):
     
@@ -1649,7 +1658,7 @@ def beta_experiments_fast_with_std(delta = 0.25, eps = 0.1, n_exp = 50, max_iter
     # plot_lines_with_std(mean_potential, std, labels)
     # plt.show()
 
-def delta_experiments_fast_with_std(eps = 0.1, n_exp = 50, max_iter = 300000): 
+def delta_experiments_fast_with_std(eps = 0.1, n_exp = 5, max_iter = 300000): 
     
     action_space = np.arange(0, 6)
     no_actions = len(action_space)
@@ -1967,6 +1976,67 @@ def identical_interest_binary_experiment(delta = 0.25, eps = 1e-1, n_exp = 100, 
     plot_potential(np.mean(potential_history_binary, 0))
     plt.show()
 
+def identical_interest_binary_experiment(delta = 0.25, eps = 1e-1, n_exp = 100, max_iter = 5000):
+    
+    action_space = np.arange(0, 6)
+    no_actions = len(action_space)
+    no_players = 2
+    
+    firstNE = np.array([1,1])
+    secondNE = np.array([no_actions - 2, no_actions - 2])
+
+    trench = 0.2
+    
+    initial_action_profile = secondNE
+    payoff_matrix = generate_two_plateau_diagonal_payoff_matrix(delta, no_actions = no_actions, trench = trench)
+
+    gameSetup = IdenticalInterestGame(action_space, no_players, firstNE, secondNE, delta = delta, payoff_matrix = payoff_matrix)
+
+    game = Game(gameSetup, algorithm = "log_linear", max_iter = max_iter, mu=mu)
+    game_binary = Game(gameSetup, algorithm = "log_linear_binary", max_iter = max_iter, mu = mu)
+    
+    game.set_initial_action_profile(initial_action_profile)
+    game_binary.set_initial_action_profile(initial_action_profile)
+        
+    potential_history = np.zeros((n_exp, max_iter))
+    potential_history_binary = np.zeros((n_exp, max_iter))
+    
+    beta_t = game.compute_beta(eps)
+    
+    for i in range(n_exp):
+        payoff_matrix = generate_two_plateau_payoff_matrix(delta, no_actions = no_actions)
+
+        game.reset_game(payoff_matrix = payoff_matrix)
+        game_binary.reset_game(payoff_matrix = payoff_matrix)
+        
+        game.play(beta = beta_t)
+        game_binary.play(beta = beta_t)
+        potential_history[i] = np.transpose(game.potentials_history)
+        potential_history_binary[i] = np.transpose(game_binary.potentials_history)
+        
+        plt.close('all')
+
+    plot_potential(np.mean(potential_history, 0))
+    plt.show()
+    plot_potential(np.mean(potential_history_binary, 0))
+    plt.show()
+
+    root = os.path.join(os.path.dirname(os.path.abspath('.')),  "potentialgames_ws", "potentialgames", "src", "lib", "games", "data", "IdenticalInterest", "TwoPlateau", "secondNE", "comparison", "binary")
+    
+    potentials_path = os.path.join(root, "log_linear_potentials.pckl")
+    potentials_binary_path = os.path.join(root, "log_linear_binary_potentials.pckl")
+
+    with open(potentials_path, 'wb') as f:
+        pickle.dump(potential_history, f, pickle.HIGHEST_PROTOCOL)
+    
+    with open(potentials_binary_path, 'wb') as f:
+        pickle.dump(potential_history_binary, f, pickle.HIGHEST_PROTOCOL)
+        
+    plot_potential(np.mean(potential_history, 0))
+    plt.show()  
+    plot_potential(np.mean(potential_history_binary, 0))
+    plt.show()
+
 def identical_interest_exp3p_experiment(delta = 0.25, eps = 1e-1, n_exp = 50, max_iter = 200000):
     
     action_space = np.arange(0, 6)
@@ -2158,3 +2228,305 @@ def identical_interest_noisy_beta_experiment(gammas = [0.2, 0.1, 0.05, 0.01, 0.0
     # plt.show()  
     # plot_potential(np.mean(potential_history_binary, 0))
     # plt.show()
+    
+def deltaExperiments(algorithm = "log_linear_fast", no_actions = 10, no_players = 2, deltas = [0.15, 0.1, 0.075], noisy_utility = False, eps = 0.05, max_iter = 1000000, n_exp = 30): 
+    
+    print("Delta experiments for algorithm: " + algorithm)
+    
+    action_space = np.arange(0, no_actions)
+    
+    firstNE = np.array([1,1])
+    secondNE = np.array([no_actions - 2, no_actions - 2])
+
+    gameSetup = IdenticalInterestGame(action_space, no_players, firstNE, secondNE, noisy_utility = noisy_utility, delta = deltas[0])
+    game = Game(gameSetup, algorithm = algorithm, max_iter = max_iter)
+    
+    initial_action_profile = secondNE
+    game.set_initial_action_profile(initial_action_profile)
+    
+    # indicator initial joint action profile distribution
+    mu_matrix = np.zeros([1, len(action_space)**no_players])
+    mu_matrix[0, initial_action_profile[0]*game.gameSetup.no_actions + initial_action_profile[1]] = 1
+    
+    # uniform initial joint action profile distribution
+    # mu_matrix = np.ones([1, no_actions**no_players])/no_actions**no_players
+    
+    payoff_matrix = []
+    
+    if "fast" in algorithm:
+        game.set_mu_matrix(mu_matrix)
+            
+        potential_history = np.zeros((len(deltas), n_exp, max_iter))
+    else:
+        potentials = np.zeros((10, max_iter))
+        potential_history = np.zeros((len(deltas), n_exp, max_iter))
+        
+    mean_potential_history = np.zeros((len(deltas), max_iter))
+    std = np.zeros((len(deltas), max_iter))
+    
+    if noisy_utility:
+        betas = np.zeros(len(deltas))
+        for i, delta in enumerate(deltas):
+            game.reset_game(delta = delta)
+            betas[i] = game.compute_beta(eps)
+        
+        eta = 1/2.0/np.max(betas)
+        game.gameSetup.eta = eta
+    
+    for idx, delta in enumerate(deltas):
+        
+        print("Currently testing delta: " + str(delta))
+        
+        folder = "delta_" + str(int(delta*1000)).zfill(4)
+        for i in range(n_exp):
+            if i % 10 == 0:
+                print("     Experiment No. " + str(i+1))
+            try:
+                payoff_matrix = load_game(folder, i) 
+            except:
+                payoff_matrix = save_two_player_game(no_actions, delta, i)
+            # generate_two_plateau_payoff_matrix(delta = delta, no_actions = no_actions)
+            # game.gameSetup.set_payoff_matrix(delta, payoff_matrix)
+            game.reset_game(delta = delta, payoff_matrix = payoff_matrix)
+            
+            if "fast" in algorithm:
+
+                beta = game.compute_beta(eps)
+                game.play(beta = beta)
+                
+                potential_history[idx][i] = np.transpose(game.expected_value) 
+            else:
+                for j in range(10):
+                    beta = game.compute_beta(eps)
+                    game.play(beta = beta)
+                
+                    potentials[j] = np.transpose(game.potentials_history) 
+                
+                potential_history[idx][i] = np.mean(potentials, 0) 
+
+    
+        mean_potential_history[idx] = np.mean(potential_history[idx], 0)
+        
+        index = np.argwhere(mean_potential_history[idx] > 1 - eps)
+        print(index)
+        std[idx] = np.std(potential_history[idx], 0)
+    
+    plot_lines_with_std(mean_potential_history, std, ["150", "100", "075"])
+    plt.show(block = False)
+    
+    # potential_history = []
+    # for i in range(n_exp):
+    #     potential_history.append(delta_experiments_fast(game, eps=eps))
+    #     plt.close('all')
+    
+    # # mean_potential = np.mean(potential_history, 0)
+    
+    # # std = np.zeros((len(mean_potential), max_iter))
+    # # for i in range(len(mean_potential)):
+    # #     std[i] = np.std(potential_history[0], 0)
+    
+    if noisy_utility:
+        algorithm = algorithm + "_noisy"
+    
+    # # labels = [ r'$\Delta = 0.9$', r'$\Delta = 0.75$', r'$\Delta = 0.5$', r'$\Delta = 0.25$', r'$\Delta = 0.1$', r'$\Phi(a^*) - \epsilon$']
+
+    root = os.path.join(os.path.dirname(os.path.abspath('.')),  "potentialgames_ws", "potentialgames", "src", "lib", "games", "data", "IdenticalInterest", "deltaExperiment")
+    
+    potentials_path = os.path.join(root, algorithm + "_potentials.pckl")
+    
+    with open(potentials_path, 'wb') as f:
+        pickle.dump(potential_history, f, pickle.HIGHEST_PROTOCOL)
+
+
+def epsExperiments(algorithm = "log_linear_fast", no_actions = 10, no_players = 2, delta = 0.1, epsilons = [0.1, 0.05, 0.025, 0.01], noisy_utility = False, max_iter = 3000000, n_exp = 30): 
+    
+    print("Epsilon experiments for algorithm: " + algorithm)
+    action_space = np.arange(0, no_actions)
+    
+    firstNE = np.array([1,1])
+    secondNE = np.array([no_actions - 2, no_actions - 2])
+
+    gameSetup = IdenticalInterestGame(action_space, no_players, firstNE, secondNE, noisy_utility = noisy_utility, delta = delta)
+    game = Game(gameSetup, algorithm = algorithm, max_iter = max_iter)
+    
+    initial_action_profile = secondNE
+    game.set_initial_action_profile(initial_action_profile)
+    
+    # indicator initial joint action profile distribution
+    mu_matrix = np.zeros([1, len(action_space)**no_players])
+    mu_matrix[0, initial_action_profile[0]*game.gameSetup.no_actions + initial_action_profile[1]] = 1
+    
+    # uniform initial joint action profile distribution
+    # mu_matrix = np.ones([1, no_actions**no_players])/no_actions**no_players
+    
+    if "fast" in algorithm:
+        game.set_mu_matrix(mu_matrix)
+        potential_history = np.zeros((len(epsilons), n_exp, max_iter))
+    else:
+        potentials = np.zeros((10, max_iter))
+        potential_history = np.zeros((len(epsilons), n_exp, max_iter))
+
+    mean_potential_history = np.zeros((len(epsilons), max_iter))
+    std = np.zeros((len(epsilons), max_iter))
+    
+    folder = "delta_" + str(int(delta*1000)).zfill(4)
+    
+    if noisy_utility:
+        betas = np.zeros(len(epsilons))
+        for i, eps in enumerate(epsilons):
+            betas[i] = game.compute_beta(eps)
+        
+        eta = 1/2.0/np.max(betas)
+        game.gameSetup.eta = eta
+
+    for i in range(n_exp):
+        if i % 10 == 0:
+            print("     Experiment No. " + str(i+1))
+        try:
+            payoff_matrix = load_game(folder, i) 
+        except:
+            payoff_matrix = save_two_player_game(no_actions, delta, i)
+        # game.gameSetup.set_payoff_matrix(delta, payoff_matrix)
+        game.reset_game(delta = delta, payoff_matrix = payoff_matrix)
+
+        for idx, eps in enumerate(epsilons):
+            
+            print("Currently testing eps: " + str(eps))
+            
+            if "fast" in algorithm:
+
+                beta = game.compute_beta(eps)
+                game.play(beta = beta)
+                
+                potential_history[idx][i] = np.transpose(game.expected_value) 
+            else:
+                for j in range(10):
+                    beta = game.compute_beta(eps)
+                    game.play(beta = beta)
+                
+                    potentials[j] = np.transpose(game.potentials_history) 
+                
+                potential_history[idx][i] = np.mean(potentials, 0) 
+                    
+        
+    for idx, eps in enumerate(epsilons):
+        
+        mean_potential_history[idx] = np.mean(potential_history[idx], 0)
+        index = np.argwhere(mean_potential_history[idx] > 1 - eps)
+        print(index)
+        std[idx] = np.std(potential_history[idx], 0)
+    
+    # plot_lines_with_std(mean_potential_history, std, ["01", "005", "0025", '0001'])
+    # plt.show(block = False)
+    
+    # potential_history = []
+    # for i in range(n_exp):
+    #     potential_history.append(delta_experiments_fast(game, eps=eps))
+    #     plt.close('all')
+    
+    # # mean_potential = np.mean(potential_history, 0)
+    
+    # # std = np.zeros((len(mean_potential), max_iter))
+    # # for i in range(len(mean_potential)):
+    # #     std[i] = np.std(potential_history[0], 0)
+    
+    # # labels = [ r'$\Delta = 0.9$', r'$\Delta = 0.75$', r'$\Delta = 0.5$', r'$\Delta = 0.25$', r'$\Delta = 0.1$', r'$\Phi(a^*) - \epsilon$']
+
+    root = os.path.join(os.path.dirname(os.path.abspath('.')),  "potentialgames_ws", "potentialgames", "src", "lib", "games", "data", "IdenticalInterest", "epsExperiment")
+    
+    if noisy_utility:
+        algorithm = algorithm + "_noisy"
+        
+    potentials_path = os.path.join(root, algorithm + "_potentials.pckl")
+
+    with open(potentials_path, 'wb') as f:
+        pickle.dump(potential_history, f, pickle.HIGHEST_PROTOCOL)
+        
+
+def coverageExperiments(no_players = [100, 200, 300, 400, 500], eps = 0.05, max_iter = 10000, n_exp = 100): # [50, 100, 200, 300, 400, 500]
+    
+    potential_history_ll = np.zeros((len(no_players), n_exp, max_iter))
+    potential_history_mll = np.zeros((len(no_players), n_exp, max_iter))
+
+    for j, n in enumerate(no_players):
+        gameSetup = CoverageGame(no_resources = 10, no_players = n,  resource_values = [0.05, 0.15, 0.14, 0.1, 0.01, 0.1, 0.11, 0.2, 0.09, 0.05])#[1, 0.7, 0.5, 0.2, 0.2])#rng.uniform(0, 1, 5))
+        gameSetup_m = CoverageGame(no_resources = 10, no_players = n,  resource_values = [0.05, 0.15, 0.14, 0.1, 0.01, 0.1, 0.11, 0.2, 0.09, 0.05], symmetric = True)#[1, 0.7, 0.5, 0.2, 0.2])#rng.uniform(0, 1, 5))
+        game_ll = Game(gameSetup, algorithm = "log_linear", max_iter = max_iter)    
+        game_mll = Game(gameSetup_m, algorithm = "modified_log_linear", max_iter = max_iter)    
+
+        initial_action_profile =  np.array([0]*n) #rng.integers(0, 5, size = game.gameSetup.no_players)
+        beta_t = game_ll.compute_beta(eps)
+        
+        for i in range(n_exp):
+            game_ll.reset_game()
+            game_ll.play(initial_action_profile = initial_action_profile, beta = beta_t, gamma = 0)
+
+            game_mll.reset_game()
+            game_mll.play(initial_action_profile = initial_action_profile, beta = beta_t, gamma = 0)
+
+            potential_history_ll[j][i] = np.transpose(game_ll.potentials_history)
+            potential_history_mll[j][i] = np.transpose(game_mll.potentials_history)
+
+    root = os.path.join(os.path.dirname(os.path.abspath('.')),  "potentialgames_ws", "potentialgames", "src", "lib", "games", "data", "CoverageProblem")
+        
+    potentials_ll_path = os.path.join(root, game_ll.algorithm + "_potentials.pckl")
+    potentials_mll_path = os.path.join(root, game_mll.algorithm + "_potentials.pckl")
+    
+    print(potential_history_ll)
+    
+    with open(potentials_ll_path, 'wb') as f:
+        pickle.dump(potential_history_ll, f, pickle.HIGHEST_PROTOCOL)
+    with open(potentials_mll_path, 'wb') as f:
+        pickle.dump(potential_history_mll, f, pickle.HIGHEST_PROTOCOL)
+
+def temp(no_players = [100, 200, 300, 400, 500], eps = 0.05, max_iter = 10000, n_exp = 100): # [50, 100, 200, 300, 400, 500]
+    
+    potential_history_ll = np.zeros((len(no_players), n_exp, max_iter))
+    potential_history_mll = np.zeros((len(no_players), n_exp, max_iter))
+
+    for j, n in enumerate(no_players):
+        gameSetup = CoverageGame(no_resources = 10, no_players = n,  resource_values = [0.05, 0.15, 0.14, 0.1, 0.01, 0.1, 0.11, 0.2, 0.09, 0.05])#[1, 0.7, 0.5, 0.2, 0.2])#rng.uniform(0, 1, 5))
+        gameSetup_m = CoverageGame(no_resources = 10, no_players = n,  resource_values = [0.05, 0.15, 0.14, 0.1, 0.01, 0.1, 0.11, 0.2, 0.09, 0.05], symmetric = True)#[1, 0.7, 0.5, 0.2, 0.2])#rng.uniform(0, 1, 5))
+        game_ll = Game(gameSetup, algorithm = "log_linear", max_iter = max_iter)    
+        game_mll = Game(gameSetup, algorithm = "modified_log_linear", max_iter = max_iter) 
+        
+        print("Asymmetric" + str(n))
+        print(game_ll.gameSetup.max_potential)
+        print(game_ll.gameSetup.min_potential)
+        print("Symmetric" + str(n))
+        print(game_mll.gameSetup.max_potential)
+        print(game_mll.gameSetup.min_potential)
+        
+        
+        
+def save_two_player_game(no_actions, delta, no_game):
+    
+    payoff_matrix = generate_two_plateau_payoff_matrix(delta = delta, no_actions = no_actions)
+    
+    root = os.path.join(os.path.dirname(os.path.abspath('.')),  "potentialgames_ws", "potentialgames", "src", "lib", "games", "data", "IdenticalInterest", "games", "delta_" + str(int(delta*1000)).zfill(4))
+        
+    game_path = os.path.join(root, "game_" + str(no_game) + ".pckl")
+    
+    print(game_path)
+    
+    with open(game_path, 'wb') as f:
+        pickle.dump(payoff_matrix, f, pickle.HIGHEST_PROTOCOL)
+
+    return payoff_matrix
+
+
+def runExperiments():
+    
+    # deltaExperiments(max_iter = 2000000)
+    
+    # epsExperiments(max_iter = 3000000)
+    
+    # deltaExperiments(algorithm = "log_linear_binary_fast", max_iter = 2000000)    
+    
+    # epsExperiments(algorithm = "log_linear_binary_fast", max_iter = 3000000)
+    
+    # deltaExperiments(algorithm = "log_linear", noisy_utility = True, max_iter = 1000000)
+    
+    epsExperiments(algorithm = "log_linear", noisy_utility = True, max_iter = 2000000, n_exp = 5)    
+
+    # coverageExperiments(n_exp = 10)

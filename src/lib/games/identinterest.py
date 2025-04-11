@@ -12,7 +12,7 @@ class IdenticalInterestGame:
         Includes information on the number of players and actions, utility functions and potential function.
     """
     
-    def __init__(self, action_space, no_players, firstNE, secondNE, delta, type = "Asymmetrical", noisy_utility = False, payoff_matrix = None): 
+    def __init__(self, action_space, no_players, firstNE, secondNE, delta, type = "Asymmetrical", noisy_utility = False, eta = None, payoff_matrix = None): 
         """
             Identical Interest game constructor. 
         Args:
@@ -23,6 +23,7 @@ class IdenticalInterestGame:
             delta (_type_): the difference of potential between the first NE and second NE.
             type (str, optional): type of game. Defaults to "Asymmetrical".
             noisy_utility (bool, optional): Use noisy utilities. Defaults to False.
+            eta (double, optional): Noise range. Defaults to None.
             payoff_matrix (_type_, optional): payoff matrix. Defaults to None.
         """
         
@@ -35,6 +36,14 @@ class IdenticalInterestGame:
         self.delta = delta
         self.type = type
         self.noisy_utility = noisy_utility
+        
+        if self.noisy_utility:
+            self.eta = eta
+        elif eta is not None:
+            raise Exception("Sorry, the eta is not null, but the noisy utility mode is not enabled!")
+        else:
+            self.eta = 0
+        
         self.action_profile_template = [0]*self.no_players
         self.potential_vec = np.zeros((self.no_action_profiles, 1))
 

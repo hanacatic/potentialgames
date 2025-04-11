@@ -162,17 +162,17 @@ class Game:
         print("Log linear learning")
         
         # Noisy utility 
-        if self.gameSetup.noisy_utility:
-            eta = 1/2.0/beta
-        else:
-            eta = 0
+        if self.gameSetup.noisy_utility and self.gameSetup.eta is None:
+            self.gameSetup.eta = 1/2.0/beta
                     
+        print(self.gameSetup.eta)
+        
         for i in range(0, self.max_iter): 
             
-            if i % 500 == 0:
+            if i % 50000 == 0:
                 print(str(i) + "th iteration")
             
-            self.log_linear_iteration(i, beta, eta, gamma)
+            self.log_linear_iteration(i, beta, gamma)
     
     def log_linear_t(self, beta_t):
         """
@@ -182,17 +182,16 @@ class Game:
             beta_t (double): Player rationality.
         """
         
-        if self.gameSetup.noisy_utility:
-            eta = 1/2.0/beta_t
-        else:
-            eta = 0
+        # Noisy utility 
+        if self.gameSetup.noisy_utility and self.gameSetup.eta is None:
+                self.gameSetup.eta = 1/2.0/beta
 
         for i in range(self.max_iter): 
             
             # Proposed time-varying rationality
             beta = beta_t*(1/self.gameSetup.no_actions *np.log(i + self.gameSetup.no_actions)/(1 + 1/self.gameSetup.no_actions * np.log(i+self.gameSetup.no_actions)))
 
-            self.log_linear_iteration(i, beta, eta)
+            self.log_linear_iteration(i, beta)
             
     def log_linear_tatarenko(self):
         """
@@ -266,14 +265,13 @@ class Game:
         self.expected_value = self.expected_value.todense()
         self.stationary = mu.todense()
                            
-    def log_linear_iteration(self, i, beta, eta, gamma = 0):
+    def log_linear_iteration(self, i, beta, gamma = 0):
         """
             A single iteration of log-linear learning.
             
         Args:
             i (int): No. iteration.
             beta (double): Player rationality.
-            eta (double): Utility noise.
             gamma (int, optional): Exploration factor. Defaults to 0.
         """
         
@@ -283,7 +281,7 @@ class Game:
         
         opponents_actions = self.action_profile[self.opponents_idx_map[player_id[0]]] # extract the opponents actions from the action profile
             
-        self.action_profile[player_id] = player.update_log_linear(beta, opponents_actions, eta, gamma) # update the players action
+        self.action_profile[player_id] = player.update_log_linear(beta, opponents_actions, self.gameSetup.eta, gamma) # update the players action
             
         self.potentials_history[i] = self.gameSetup.potential_function(self.action_profile) # compute the value of the potential function
         
@@ -386,6 +384,7 @@ class Game:
         """
         
         # determine the probability that the player is going to change change his action based on the action they played in the previous round
+        # implemented based on section 3.1 in Dynamics in Congestion Games, D. Shah and J. Shin
         player_clock = [1/self.gameSetup.no_players*self.phi[self.action_profile[i]] for i in range(self.gameSetup.no_players)]
         player_clock = player_clock/np.sum(player_clock)
                 
