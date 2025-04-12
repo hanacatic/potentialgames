@@ -9,7 +9,7 @@ import sys
 if __name__ == '__main__':
     
     # temp()
-    # runExperiments()
+    runExperiments()
     # test_log_linear()
     
     # test_success_probability()
@@ -26,7 +26,7 @@ if __name__ == '__main__':
 
     # visualise_eps_data("epsExperiment", "log_linear_fast_potentials.pckl", 2000000, True, "Paper/Experiments", "epsExperimentFinal")
     # visualise_eps_data("epsExperiment", "log_linear_binary_fast_potentials.pckl", 2000000, True, "Paper/Experiments", "epsExperimentBinaryFinal")
-    visualise_eps_data("epsExperimentShort", "log_linear_noisy_potentials.pckl", 2000000, True, "Paper/Experiments", "epsExperimentNoisyFinal")
+    # visualise_eps_data("epsExperiment", "log_linear_noisy_potentials.pckl", 2000000, True, "Paper/Experiments", "epsExperimentNoisyFinal")
     # test_log_linear_fast()
     # save_two_player_game(10, 0.075, 30)
     # save_two_player_game(10, 0.1, 30)
