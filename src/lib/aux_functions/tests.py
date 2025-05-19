@@ -1,9 +1,10 @@
 from lib.aux_functions.experiments import *
 from lib.games import *
-from lib.player import *
-from lib.games.trafficrouting import CongestionGame
+from mechanism.player import *
 from lib.games.coverage import CoverageGame
 import matplotlib.pyplot as plt
+
+# TODO clean up tests
 
 def test_generate_payoff_matrix():
     
@@ -152,7 +153,7 @@ def test_log_linear():
 
     gameSetup = IdenticalInterestGame(action_space, no_players, firstNE, secondNE, delta, noisy_utility=True, payoff_matrix = payoff_matrix)
     
-    game = Game(gameSetup, algorithm = "log_linear",  max_iter = 100000, mu=mu)
+    game = Game(gameSetup, algorithm = "log_linear",  max_iter = 100000)
     game.set_initial_action_profile(secondNE)
 
     # game.set_initial_action_profile(np.array([1,4]))
@@ -700,65 +701,6 @@ def test_multipleplayers():
     plt.close()
     # plt.show()
  
-def mu_congestion(profile):
-    if (profile == np.zeros(len(profile))).all():
-        return 1
-    return 0
-
-def test_congestion_game():
-    
-    # gameSetup = CongestionGame("SiouxFalls", 5)
-
-    gameSetup = CongestionGame("SiouxFallsSymmetric", 20, modified = True, modified_no_players=50)
-    # gameSetup = CongestionGame()
-
-    
-    # gameSetup.travel_time(0, 0, np.zeros((gameSetup.no_players - 1)).astype(int))
-    
-    plot_network(gameSetup.network)
-    
-    plt.show()
-    # plt.pause(1)
-    plt.close()
-        
-    game = Game(gameSetup, algorithm = "log_linear", max_iter = 10000, mu = mu_congestion)    
-    # # game = Game(gameSetup, algorithm = "exponential_weight_annealing", max_iter = 10000, mu = mu_congestion)
-    # game.gameSetup.compute_strategies()
-    # print(game.action_space)
-    # print(game.gameSetup.delta)
-    beta_t = game.compute_beta(0.05)
-    # print(beta_t)
-    initial_action_profile =  np.array([4]*game.gameSetup.no_players) #rng.integers(0, 5, size = game.gameSetup.no_players)
-    # #                           1 2 2 0 0 0 0 0 0 1 1 2 0 0 0 0 0 2 3 0 4 0 1 0 1 0 0 0 4 0 0 0 0 0 0 3 1
-    # #                           0 4 4 4 0 0 2 1 0 0 1 0 0 0 3 0 0 0 0 0 0 2 0 0 3 2 0 0 0 0 0 0 1 0 0 0 0 
-    # #                           0 1 0 0 0 0 3 0 0 0 2 0 0 0 0 1 0 0 4 3 3 0 0 1 3 3 0 4 0 1 0 0 0 1 0 0 0 
-    # #                           0 2 0 0 2 1 0 0 0 0 2 3 0 0 1 3 0 2 0 0 0 0 0 2 0 0 3 0 0 0 0 1 0 0 0 1 1
-    # #                           2 0 0 1 1 1 2 0 0 2 3 0 1 0 0 0 1 3 2 0 0 1 0 0 0 1 0 1 1 0 0 0 1 2 0 2 1 
-    # #                           0 0 0 1 3 0 0 0 0 0 1 0 1 2 2 3 0 2 0 0 0 0 0 0 0 2 0 3 1 0 0 0 1 3 0 1 0
-    # #                           0 0 0 0 0 0 0 0 0 0 0 2 0 0 1 4 0 0 0 3 0 0 2 4 0 0 1 0 0 0 3 0 3 0 0 4 2
-    # #                           2 1 0 0 1 0 4 0 4 0 3 2 1 0 0 3 4 3 0 0 4 1 3 0 0 0 3 1 0 2 3 1 0 0 0 0 0
-    # #                           0 1 1 1 0 0 1 0 0 2 0 0 2 2 2 3 0 0 0 0 1 1 1 1 0 4 4 3 2 1 0 1 1 1 1 1 0
-    # #                           0 0 0 0 3 0 3 0 0 2 0 4 0 0 0 1 0 1 1 2 0 1 0 0 1 0 0 0 0 3 2 3 2 2 1 2 1
-    # #                           1 0 3 0 0 0 1 0 0 0 1 0 1 2 2 0 0 3 0 0 0 4 2 1 0 0 2 0 0 0 0 0 0 0 0 0 0
-    # #                           0 0 0 0 3 0 0 4 0 0 0 0 1 1 0 0 0 0 1 0 1 0 0 0 3 2 0 0 0 0 2 0 0 0 0 1 0
-    # #                           0 0 0 0 0 0 0 0 1 0 3 0 2 1 0 3 0 0 0 0 2 1 1 1 1 0 0 0 0 0 0 0 2 0 3 0 0
-    # #                           0 0 2 2 0 1 0 0 0 0] #np.array([0]*game.gameSetup.no_players)
-    # print(game.gameSetup.potential_function(initial_action_profile))
-    game.play(initial_action_profile = initial_action_profile, beta = beta_t, gamma = 0)
-    
-    plot_potential(game.potentials_history)
-    
-    print(game.action_profile)
-    print(game.gameSetup.objective(game.action_profile))
-    plt.grid()
-    plt.show()
-    plt.close()
-    
-    plt.plot(game.objectives_history)
-    plt.grid()
-    plt.show()
-    plt.close()
-
 def test_coverage_game():
     
     gameSetup = CoverageGame(no_resources = 10, no_players = 500,  resource_values = [0.05, 0.15, 0.14, 0.1, 0.01, 0.1, 0.11, 0.2, 0.09, 0.05])#[1, 0.7, 0.5, 0.2, 0.2])#rng.uniform(0, 1, 5))

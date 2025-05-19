@@ -475,9 +475,6 @@ def visualise_coverage(read_folder, read_file_name_1, read_file_name_2, save, sa
     potentials_path = os.path.join(root, read_file_name_1)
     potentials_modified_path = os.path.join(root, read_file_name_2)
 
-    potential_max = [0.18046063406926463,]
-    potential_min = [0.009239810259469239]
-
     with open(potentials_path, 'rb') as f:
         potentials_history = pickle.load(f)
     with open(potentials_modified_path, 'rb') as f:
@@ -488,10 +485,14 @@ def visualise_coverage(read_folder, read_file_name_1, read_file_name_2, save, sa
 
     eps = 0.05
     
-    mean_potential = np.zeros((len(potentials_history), max_iter))
-    mean_potential_modified = np.zeros((len(potentials_history), max_iter))
+    print(len(potentials_history[0]))
+    
+    mean_potential = np.zeros((len(potentials_history)+1, max_iter))
+    mean_potential_modified = np.zeros((len(potentials_history)+1, max_iter))
     std = np.zeros((len(potentials_history),max_iter))
     std_modified = np.zeros((len(potentials_history), max_iter))
+    conv_idx = np.zeros(len(potentials_history)+1)
+    conv_idx_modified = np.zeros(len(potentials_history)+1)
     
     print(potentials_history.shape)
     print(mean_potential.shape)
@@ -500,6 +501,13 @@ def visualise_coverage(read_folder, read_file_name_1, read_file_name_2, save, sa
         std[i] = np.std(potentials_history[i], 0)
         mean_potential_modified[i] = np.mean(potentials_history_modified[i], 0)
         std_modified[i] = np.std(potentials_history_modified[i], 0)
+        conv_idx[i+1] = np.argwhere(mean_potential[i] > 1 - eps)[0]
+        conv_idx_modified[i+1] = np.argwhere(mean_potential_modified[i] > 1 - eps)[0]
+    
+    mean_potential[len(potentials_history)] = np.ones(max_iter)*(1-eps)
+    mean_potential_modified[len(potentials_history)] = np.ones(max_iter)*(1-eps)
+    conv_idx[0] = 1 - eps
+    conv_idx_modified[0] = 1 - eps
         
     # # std[0] = np.std(potentials_history, 0)
     # # std[1] = np.std(potentials_history_binary, 0)
@@ -507,15 +515,15 @@ def visualise_coverage(read_folder, read_file_name_1, read_file_name_2, save, sa
     # # labels = ['Log linear learning', 'Log linear binary learning', r'$\Phi(a^*) - \epsilon$']
     # # labels = [ r'$U_i(a_i, a_{-i})$', r'$U_i(a_i, a_{-i}) + \xi_i(a_i, a_{-i})$', r'$\Phi(a^*) - \epsilon$']
     # labels = [ 'Log linear learning', 'Fixed-share log linear learning', r'$\Phi(a^*) - \epsilon$']
-    labels = ['N=50','N=100', 'N=200', 'N=300', 'N=400', 'N=500']
+    labels = ['N=100', 'N=200', 'N=300', 'N=400', 'N=500', r'$\Phi(a^*) - \epsilon$']
     
     plot_lines(mean_potential, labels, iter, plot_e_efficient = True, title = "Average potential")
     # plot_potential(potentials_history[4][0])
     plt.show()
-    plot_lines_with_std(mean_potential, std,  labels, iter,  title = "Expected potential value", save = save, folder = save_folder_name, file_name=save_file_name_1)
+    plot_lines_with_std(mean_potential, std,  labels, iter,  title = "Expected potential value", plot_e_efficient=True, conv_idx=conv_idx, save = save, folder = save_folder_name, file_name=save_file_name_1)
     plt.show(block = False)
     plt.pause(10)
-    plot_lines_with_std(mean_potential_modified, std_modified,  labels, iter, title = "Expected potential value", save = save, folder = save_folder_name, file_name=save_file_name_2)
+    plot_lines_with_std(mean_potential_modified, std_modified,  labels, iter, title = "Expected potential value", plot_e_efficient=True, conv_idx=conv_idx_modified, save = save, folder = save_folder_name, file_name=save_file_name_2)
     plt.show(block = False)
     plt.pause(10)
 

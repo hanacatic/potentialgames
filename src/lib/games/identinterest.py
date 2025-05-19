@@ -37,6 +37,8 @@ class IdenticalInterestGame:
         self.type = type
         self.noisy_utility = noisy_utility
         
+        self.symmetric = False
+        
         if self.noisy_utility:
             self.eta = eta
         elif eta is not None:

@@ -1,6 +1,5 @@
 import numpy as np
-from lib.player import Player
-from lib.games.trafficrouting import CongestionGame
+from mechanism.player import Player
 from lib.aux_functions.helpers import *
 from scipy.sparse import csr_matrix, csc_array
 
@@ -44,13 +43,7 @@ class Game:
         self.opponents_idx_map = [ np.delete(np.arange(self.gameSetup.no_players), player_id) for player_id in range(self.gameSetup.no_players) ]
         self.player_idx_map = np.arange(0, self.gameSetup.no_players) 
         
-        self.potentials_history = np.zeros((self.max_iter, 1)) 
-        
-        if isinstance(self.gameSetup, CongestionGame):
-            self.objectives_history = np.zeros((self.max_iter, 1))
-            for i in range(self.gameSetup.no_players):
-                self.players[i].min_payoff = self.gameSetup.min_travel_times[i]
-                self.players[i].max_payoff = self.gameSetup.max_travel_times[i]                            
+        self.potentials_history = np.zeros((self.max_iter, 1))                           
 
     def sample_initial_action_profile(self, mu):
         """
@@ -284,9 +277,6 @@ class Game:
         self.action_profile[player_id] = player.update_log_linear(beta, opponents_actions, self.gameSetup.eta, gamma) # update the players action
             
         self.potentials_history[i] = self.gameSetup.potential_function(self.action_profile) # compute the value of the potential function
-        
-        if isinstance(self.gameSetup, CongestionGame):
-            self.objectives_history[i] = self.gameSetup.objective(self.action_profile)
     
     def log_linear_binary(self, beta):
         """
@@ -323,9 +313,6 @@ class Game:
         self.action_profile[player_id] = player.update_log_linear_binary(beta, opponents_actions) # update the players action
             
         self.potentials_history[i] = self.gameSetup.potential_function(self.action_profile) # compute the value of the potential function
-        
-        if isinstance(self.gameSetup, CongestionGame):
-            self.objectives_history[i] = self.gameSetup.objective(self.action_profile)
             
     def log_linear_binary_fast(self, beta, scale_factor):
         """
@@ -443,8 +430,6 @@ class Game:
             if improvement == False:
                 self.potentials_history[i] = self.potentials_history[i-1]
                 
-                if isinstance(self.gameSetup, CongestionGame):
-                    self.objectives_history[i] = self.objectives_history[i-1]  
                 continue
 
             improvement = False
@@ -472,10 +457,7 @@ class Game:
                          
             self.action_profile[chosen_player] = chosen_player_action 
             
-            self.potentials_history[i] = self.gameSetup.potential_function(self.action_profile) # compute the value of the potential function
-
-            if isinstance(self.gameSetup, CongestionGame):
-                self.objectives_history[i] = self.gameSetup.objective(self.action_profile)      
+            self.potentials_history[i] = self.gameSetup.potential_function(self.action_profile) # compute the value of the potential function   
     
     def multiplicative_weight(self):
         """
@@ -517,9 +499,6 @@ class Game:
             self.potentials_history[i] =  (past_exp_potential*i + self.gameSetup.potential_function(self.action_profile))/(i+1) # compute the value of the potential function
 
             past_exp_potential = self.potentials_history[i]
-            
-            if isinstance(self.gameSetup, CongestionGame):
-                self.objectives_history[i] = self.gameSetup.objective(self.action_profile)
     
     def sample_from_mixed_strategy(self, mixed_strategies):
         """
@@ -590,9 +569,6 @@ class Game:
             self.potentials_history[i] =  (past_exp_potential*i + self.gameSetup.potential_function(self.action_profile))/(i+1) #rho@self.gameSetup.potential #self.gameSetup.potential_function(self.action_profile) # compute the value of the potential function
 
             past_exp_potential = self.potentials_history[i]
-
-            if isinstance(self.gameSetup, CongestionGame):
-                self.objectives_history[i] = self.gameSetup.objective(self.action_profile)
     
     def exp3p(self):
         """
@@ -639,10 +615,7 @@ class Game:
             
             self.potentials_history[i] = (past_exp_potential * i + self.gameSetup.potential_function(self.action_profile))/(i+1) # empirical expected value
 
-            past_exp_potential = self.potentials_history[i]
-
-            if isinstance(self.gameSetup, CongestionGame):
-                self.objectives_history[i] = self.gameSetup.objective(self.action_profile)   
+            past_exp_potential = self.potentials_history[i]  
         
     def compute_beta(self, epsilon):
         """
@@ -659,6 +632,9 @@ class Game:
         A = self.gameSetup.no_actions
         N = self.gameSetup.no_players
         delta = self.gameSetup.delta
+        
+        if self.gameSetup.symmetric is True:
+            1/max(epsilon, delta)*(A*np.log(N) - np.log(epsilon))
         
         return 1/max(epsilon, delta)*(N*np.log(A) - np.log(epsilon))
 
