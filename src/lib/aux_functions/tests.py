@@ -1,7 +1,8 @@
 from lib.aux_functions.experiments import *
 from lib.games import *
 from mechanism.player import *
-from lib.games.coverage import CoverageGame
+from mechanism.game_setup.coverage import CoverageSetup
+from mechanism.game_setup.identical_interest import IdenticalInterestSetup
 import matplotlib.pyplot as plt
 
 # TODO clean up tests
@@ -151,7 +152,7 @@ def test_log_linear():
     # payoff_matrix = generate_two_plateau_diagonal_payoff_matrix(delta = delta, no_actions = len(action_space), trench = 0.1)
     payoff_matrix = generate_two_plateau_payoff_matrix(delta = delta, no_actions = len(action_space))
 
-    gameSetup = IdenticalInterestGame(action_space, no_players, firstNE, secondNE, delta, noisy_utility=True, payoff_matrix = payoff_matrix)
+    gameSetup = IdenticalInterestSetup(action_space, no_players, firstNE, secondNE, delta, noisy_utility=True, payoff_matrix = payoff_matrix)
     
     game = Game(gameSetup, algorithm = "log_linear",  max_iter = 100000)
     game.set_initial_action_profile(secondNE)

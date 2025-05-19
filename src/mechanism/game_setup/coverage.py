@@ -3,15 +3,28 @@ import pickle
 import numpy as np
 from functools import partial
 
+from mechanism.game_setup.abstract_setup import AbstractGameSetup
+
+
 rng = np.random.default_rng()
 
 # TODO clean up
 # TODO docs
 
-class CoverageGame:
+
+class CoverageSetup(AbstractGameSetup):
     
     def __init__(self, no_resources, no_players, resource_values = None, noisy_utility = False, symmetric = False):
-        
+        """
+        Initializes the CoverageGame class.
+
+        Args:
+            no_resources (int): Number of resources in the game.
+            no_players (int): Number of players in the game.
+            resource_values (list or None): Values of the resources. If None, all resources are initialized with equal values.
+            noisy_utility (bool): Whether to use noisy utility functions. Defaults to False.
+            symmetric (bool): Whether the game is symmetric. Defaults to False.
+        """
         self.no_resources = no_resources
         self.no_players = no_players
         self.no_actions = self.no_resources
@@ -108,6 +121,17 @@ class CoverageGame:
             print("Error occurred")
             
     def compute_potentials(self):
+        """
+        Estimates the potential function values for a game setup by iterating 
+        through random action profiles. Computes the maximum potential, minimum 
+        potential, and the second minimum potential, and calculates the delta 
+        between the two smallest potentials. Saves the delta and potential values 
+        to specified file paths.
+        Args:
+            None
+        Returns:
+            None
+        """
         
         self.max_potential = 0
         self.min_potential = None
@@ -147,34 +171,35 @@ class CoverageGame:
 
 
     def success_probability(self, agent_id, resource, action):
-                
+        """
+        Calculate the success probability of an agent performing an action on a resource.
+        Args:
+            agent_id (int or None): The ID of the agent. If None, a default weight-based probability is returned.
+            resource (int): The resource being acted upon.
+            action (int): The action performed by the agent.
+        Returns:
+            float: The success probability of the action on the resource.
+        """
+        if not action == resource:
+            return 0
+
+        if agent_id is None:
+            return self.weights[resource]
+        else:
+            return self.weights[resource] * (agent_id + 1) * 2 / (self.no_players - 1)
         if not action == resource:
             return 0
         
-        # return 1/(np.mod(self.action_sets[action], 7)**(2*np.mod(resource, 2))+3)
-        
-        # return 1/(action*self.action_sets[action]+1)
-        
-        # return 1/(np.sin(self.action_sets[action]/10)+2)
-    
-        # prob = 1/(0.1*action**2 - action*resource + 0.2*resource**2 + 2) #* agent_id / self.no_players
-
-
-        # prob = 0.8*action/self.no_actions - 0.5*1 / (resource+2) - 0.1*1/(self.action_sets[action] + 2)
-
-        # prob = 1  - 1/(self.action_sets[action] + 2) - 1 / (resource+2) - 0.1*action / (self.no_actions)#* agent_id / self.no_players
-        # print(prob)
-        # prob = prob*agent_id*2/self.no_players/(self.no_players-1)
-        # return 0.5#np.clip(prob * self.resource_values[resource], 0, 1)
-        # return self.weights[action][resource]/(self.action_sets[action] + 1)#*(agent_id+1)*2/(self.no_players-1)
-        # return self.resource_values[resource]/(self.action_sets[action] + 1)#*(agent_id+1)*2/(self.no_players-1)
-        if agent_id is None:
-            return self.weights[resource] 
-        else:
-            return self.weights[resource]*(agent_id+1)*2/(self.no_players-1)
-    
     def utility_function(self, agent_id, action, opponents_actions):
-                
+        """
+        Computes the utility value for a given agent based on their action and the actions of their opponents.
+        Args:
+            agent_id (int): The ID of the agent for whom the utility is being calculated.
+            action (int): The action taken by the agent.
+            opponents_actions (list): A list of actions taken by the opponents.
+        Returns:
+            float: The computed utility value for the agent.
+        """
         utility = 0.0
         
         for t in range(self.no_resources):
@@ -192,6 +217,16 @@ class CoverageGame:
         return utility
     
     def modified_utility_function(self, agent_id, action, opponents_actions):
+        """
+        Computes the modified utility for a given agent based on their action, 
+        the actions of opponents, and the resource values.
+        Args:
+            agent_id (int): The ID of the agent for whom the utility is being calculated.
+            action (int): The action taken by the agent.
+            opponents_actions (list[int]): A list representing the actions of the opponents.
+        Returns:
+            float: The computed utility value for the given agent and action.
+        """
         
         utility = 0.0
         
@@ -209,6 +244,13 @@ class CoverageGame:
         return utility
             
     def potential_function_est(self, profile):
+        """
+        Estimates the potential function value for a given strategy profile.
+        Args:
+            profile (list): A list representing the strategy profile of all players.
+        Returns:
+            float: The computed potential value for the given profile.
+        """
         
         potential = 0.0
         
@@ -232,5 +274,13 @@ class CoverageGame:
         return potential
     
     def potential_function(self, profile):
+        """
+        Computes the normalized potential value for a given profile.
+        Args:
+            profile: The input profile for which the potential is calculated.
+        Returns:
+            float: The normalized potential value, scaled between 0 and 1.
+        """
+        
         potential =  self.potential_function_est(profile)
         return (potential - self.min_potential)/(self.max_potential-self.min_potential)

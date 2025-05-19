@@ -1,11 +1,12 @@
 import numpy as np
-from lib.aux_functions.helpers import *
+from lib.aux_functions.helpers import * 
+from mechanism.game_setup.abstract_setup import AbstractGameSetup
 from scipy.sparse import lil_matrix, csr_matrix
 from functools import partial
 
 rng = np.random.default_rng()
 
-class IdenticalInterestGame:
+class IdenticalInterestSetup(AbstractGameSetup):
     """
         Class representing the Identical Interest Matrix game.
         
