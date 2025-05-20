@@ -2,17 +2,25 @@ import numpy as np
 
 rng = np.random.default_rng()
 
+# todo - add docstrings to all functions
+# todo - add tests for all functions
+# todo - chosen action sometimes returns a list, sometimes an int 
 class Player:
     """
-        Class representing the Player.
-        
-        Includes information on the action spcae of the player, past actions, strategies etc.
-    """
-    
-    def __init__(self, player_id, action_space, utility, noisy_utility = False, fixed_share = False):
-        """
-        
+    Class representing the Player.
 
+    Includes information on the action space of the player, past actions, strategies etc.
+    """
+       
+    def __init__(
+        self,
+        player_id: int,
+        action_space: np.ndarray,
+        utility: callable,
+        noisy_utility: bool = False,
+        fixed_share: bool = False
+    ) -> None:
+        """
         Args:
             player_id (int): Player id.
             action_space (np.array(A)): Player's action space.
@@ -39,14 +47,20 @@ class Player:
         self.past_opponents_actions = None
         self.utilities = None
         
-    def update_log_linear(self, beta, opponents_actions, eta, gamma = 0): # choose a new action only based on the opponents action, in this case they will be the same as the actions in the previous step
+    def update_log_linear(
+        self,
+        beta: float,
+        opponents_actions: np.ndarray,
+        eta: float,
+        gamma: float = 0
+    ) -> int:
         """
             Update player's strategy and sample new action from the strategy - based on log-linear learning.
         Args:
-            beta (double): Player's rationality
-            opponents_actions (np.array(N-1)): Joint action profile of the opponents.
-            eta (double): Noise.
-            gamma (double, optional): Exploration factor. Defaults to 0.
+            beta (float): Player's rationality
+            opponents_actions (np.ndarray): Joint action profile of the opponents.
+            eta (float): Noise.
+            gamma (float, optional): Exploration factor. Defaults to 0.
 
         Raises:
             Exception: Noise bound not provided.
@@ -54,10 +68,10 @@ class Player:
         Returns:
             int: index of the chosen action
         """
-        if eta <= 0 and self.noisy_utility:
-            raise Exception("Sorry, you are using noisy utility, but haven't provided the bounds!")
+        if self.noisy_utility and eta <= 0:
+            raise ValueError("Noisy utility requires a positive noise bound (eta).")
 
-        if self.utilities is None or (self.past_opponents_actions != opponents_actions).any(): # caching
+        if self.utilities is None or not np.array_equal(self.past_opponents_actions, opponents_actions):
             # compute utilities
             self.utilities = np.array([self.utility(i, opponents_actions) for i in range(self.no_actions)]).reshape(1, self.no_actions)
             
@@ -66,34 +80,30 @@ class Player:
             
             self.utilities +=  rng.uniform(-eta, eta, self.no_actions)
 
-            # print(self.utilities)
-            # print(self.utilities - np.max(self.utilities))        
-            # print(beta)    
             # compute strategy        
             exp_values = np.exp(beta * (self.utilities - np.max(self.utilities)))
             self.prob = exp_values/np.sum(exp_values)
             
-            # print(self.prob)
             self.prob = gamma/self.no_actions + (1-gamma)*self.prob
             self.past_opponents_actions = opponents_actions
             
-            # print(self.prob)
+        chosen_action = rng.choice(self.action_space[0], size=1, p=self.prob[0]) # sample action from strategy
 
-        idx_a = rng.choice(self.action_space[0], size=1, p=self.prob[0]) # sample action from strategy
+        self.past_action = chosen_action
         
-        # print(idx_a)
-        # print("----------------------------")
-        self.past_action = idx_a
+        return chosen_action
         
-        return idx_a
-        
-    def update_log_linear_binary(self, beta, opponents_actions):
+    def update_log_linear_binary(
+        self,
+        beta: float,
+        opponents_actions: np.ndarray
+    ) -> int:
         """
             Update player's strategy and sample new action from the strategy - based on log-linear learning with two-point feedback.
 
         Args:
-            beta (double): Player's rationality
-            opponents_actions (np.array(N-1)): Joint action profiles of the opponents.
+            beta (float): Player's rationality
+            opponents_actions (np.ndarray): Joint action profiles of the opponents.
 
         Returns:
             int: Chosen action.
@@ -103,7 +113,7 @@ class Player:
         new_action = rng.integers(0, self.no_actions, 1).astype(int)[0]
         new_utility = self.utility(new_action, opponents_actions)
         
-        if self.utilities is None or (self.past_opponents_actions != opponents_actions).any():
+        if self.utilities is None or not np.array_equal(self.past_opponents_actions, opponents_actions):
             self.utilities = self.utility(self.past_action, opponents_actions)
         
         actions = [self.past_action, new_action]
@@ -113,24 +123,28 @@ class Player:
         exp_values = np.exp(beta * (utilities - np.max(utilities)))
         self.prob = exp_values/np.sum(exp_values)
         
-        idx_a = rng.choice(actions, size=1, p=self.prob.T[0]) # sample action
-        self.past_action = idx_a[0]
+        chosen_action = rng.choice(actions, size=1, p=self.prob.T[0]) # sample action
+        self.past_action = chosen_action[0]
         
-        return self.past_action
+        return chosen_action
     
-    def update_modified_log_linear(self, beta, opponents_actions):
+    def update_modified_log_linear(
+        self,
+        beta: float,
+        opponents_actions: np.ndarray
+    ) -> int:
         """
             Update player's strategy and sample new action from the strategy - based on modified log-linear learning.
 
         Args:
-            beta (double): Player's rationality
-            opponents_actions (np.array(N-1)): Joint action profiles of the opponents.
+            beta (float): Player's rationality
+            opponents_actions (np.ndarray): Joint action profiles of the opponents.
 
         Returns:
             int: Chosen action.
         """
         
-        if self.utilities is None or (self.past_opponents_actions != opponents_actions).any(): # caching
+        if self.utilities is None or not np.array_equal(self.past_opponents_actions, opponents_actions):
             # Compute utilities
             self.utilities = np.array([self.utility_modified(i, opponents_actions) for i in range(self.no_actions)]).reshape(1, self.no_actions)
             # Compute strategy
@@ -138,13 +152,13 @@ class Player:
             self.prob = exp_values/np.sum(exp_values)
             self.past_opponents_actions = opponents_actions
             
-        idx_a = rng.choice(self.action_space[0], size=1, p=self.prob[0]) # sample action
+        chosen_action = rng.choice(self.action_space[0], size=1, p=self.prob[0]) # sample action
 
-        self.past_action = idx_a
+        self.past_action = chosen_action
         
-        return idx_a
+        return chosen_action
     
-    def best_response(self, opponents_actions):
+    def best_response(self, opponents_actions: np.ndarray) -> int:
         """
             Compute the best response of the player given other players' actions.
 
@@ -156,27 +170,29 @@ class Player:
         """
         
         # compute utilities
-        if self.utilities is None or (self.past_opponents_actions != opponents_actions).any():
-        
+        if self.utilities is None or not np.array_equal(self.past_opponents_actions, opponents_actions):
+                    
             self.utilities = np.array([self.utility(i, opponents_actions) for i in range(self.no_actions)]).reshape(1, self.no_actions)
 
-            idx_a = np.argmax(self.utilities) # obtain the utility maximiser
+            chosen_action = np.argmax(self.utilities) # obtain the utility maximiser
         
-            self.past_action = idx_a
+            self.past_action = chosen_action
             self.past_opponents_actions = opponents_actions
         
         return self.past_action
     
-    def mixed_strategy(self):
+    def mixed_strategy(self) -> np.ndarray:
         """
-        
         Returns:
             np.array(A): Strategy.
         """
-        
         return self.prob
         
-    def update_mw(self, opponents_actions, gamma_t = 0.5):
+    def update_mw(
+        self,
+        opponents_actions: np.ndarray,
+        gamma_t: float = 0.5
+    ) -> None:
         """
             Update the player's strategy based on Hedge given other player's actions.
 
@@ -186,7 +202,8 @@ class Player:
         """
                 
         # compute utilities 
-        if self.utilities is None or (self.past_opponents_actions != opponents_actions).any(): # caching
+        # Efficiently cache utilities only if opponents' actions have changed
+        if self.utilities is None or not np.array_equal(self.past_opponents_actions, opponents_actions):
             
             self.utilities = np.array([self.utility(i, opponents_actions) for i in range(self.no_actions)]).reshape(1, self.no_actions)
             self.past_opponents_actions = opponents_actions
@@ -200,16 +217,22 @@ class Player:
         
         self.prob = self.prob / np.sum(self.prob)
     
-    def update_ewa(self, action, opponents_actions, gamma_n, eps_n):
+    def update_ewa(
+        self,
+        action: int,
+        opponents_actions: np.ndarray,
+        gamma_n: float,
+        eps_n: float
+    ) -> None:
         """
             Update the player's strategy based on Exponential weight with annealing given the past action and given the other players actions.
         Args:
             action (int): Action.
             opponents_actions (np.array(N-1)): Joint action profile of the opponents.
-            gamma_n (double): Step size.
-            eps_n (double): vanishing factor.
+            gamma_n (float): Step size.
+            eps_n (float): Vanishing factor.
         """
-        
+
         v = np.zeros(self.no_actions)
         v[action] = self.utility(action, opponents_actions)
         
@@ -225,16 +248,23 @@ class Player:
         self.prob = eps_n*self.ones/self.no_actions + (1-eps_n)*lambda_scores
         self.prob = self.prob / np.sum(self.prob)
         
-    def update_exp3p(self, action, opponents_actions, gamma, beta, eta):
+    def update_exp3p(
+        self,
+        action: int,
+        opponents_actions: np.ndarray,
+        gamma: float,
+        beta: float,
+        eta: float
+    ) -> None:
         """
             Update the player's strategy based on EXP3P algorithm.
 
         Args:
             action (int): Action.
             opponents_actions (np.array(N-1)): Joint action profile of the opponents.
-            gamma (double): Parameter of EXP3P
-            beta (double): Parameter of EXP3P
-            eta (double): Parameter of EXP3P
+            gamma (float): Parameter of EXP3P
+            beta (float): Parameter of EXP3P
+            eta (float): Parameter of EXP3P
         """
         
         v = np.zeros(self.no_actions)
@@ -254,7 +284,7 @@ class Player:
         
         self.prob = self.prob/np.sum(self.prob)
         
-    def set_modified_utility(self, utility_modified):
+        def set_modified_utility(self, utility_modified: callable) -> None:
         """
             Set utility function in the modified game case.
         Args:
@@ -278,7 +308,7 @@ class Player:
         self.past_opponents_actions = None
         self.utilities = None
         
-    def reset_player(self, no_actions, utility):
+    def reset_player(self, no_actions: int, utility: callable) -> None:
         """
             Reset the utility function of a player.
 
