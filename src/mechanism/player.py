@@ -284,7 +284,7 @@ class Player:
         
         self.prob = self.prob/np.sum(self.prob)
         
-        def set_modified_utility(self, utility_modified: callable) -> None:
+    def set_modified_utility(self, utility_modified: callable) -> None:
         """
             Set utility function in the modified game case.
         Args:

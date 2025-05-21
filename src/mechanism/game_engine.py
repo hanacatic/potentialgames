@@ -1,5 +1,5 @@
 import numpy as np
-from mechanism.player import Player
+from mechanism import Player
 from lib.aux_functions.helpers import *
 from scipy.sparse import csr_matrix, csc_array
 

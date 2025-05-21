@@ -1,7 +1,7 @@
 import numpy as np
 from mechanism.game_engine import *
 from mechanism.game_setup.identical_interest import *
-from lib.aux_functions.plot import *
+from utils.plot import *
 from mechanism.game_setup.coverage import *
 import sparse 
 

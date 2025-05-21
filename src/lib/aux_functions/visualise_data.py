@@ -1,7 +1,7 @@
 import os
 import pickle
 import numpy as np
-from lib.aux_functions.plot import *
+from utils.plot import *
 
 def visualise_potential_history():
     
