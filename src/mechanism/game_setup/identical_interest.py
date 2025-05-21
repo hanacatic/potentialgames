@@ -1,6 +1,6 @@
 import numpy as np
-from lib.aux_functions.helpers import * 
-from mechanism.game_setup import AbstractGameSetup
+from src.utils.helpers import * 
+from src.mechanism.game_setup import AbstractGameSetup
 from scipy.sparse import lil_matrix, csr_matrix
 from functools import partial
 

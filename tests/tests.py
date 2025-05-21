@@ -1,8 +1,6 @@
-from lib.aux_functions.experiments import *
-from lib.games import *
-from mechanism.player import *
-from mechanism.game_setup.coverage import CoverageSetup
-from mechanism.game_setup.identical_interest import IdenticalInterestSetup
+from scripts.experiments import *
+from src.mechanism.player import *
+from src.mechanism.game_setup import CoverageSetup, IdenticalInterestSetup
 import matplotlib.pyplot as plt
 
 # TODO clean up tests

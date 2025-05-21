@@ -1,8 +1,8 @@
 import numpy as np
-from mechanism.game_engine import *
-from mechanism.game_setup.identical_interest import *
-from utils.plot import *
-from mechanism.game_setup.coverage import *
+from src.mechanism.game_engine import *
+from src.mechanism.game_setup.identical_interest import *
+from src.utils.plot import *
+from src.mechanism.game_setup.coverage import *
 import sparse 
 
 # TODO clean up

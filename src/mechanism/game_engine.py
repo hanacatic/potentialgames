@@ -1,6 +1,6 @@
 import numpy as np
-from mechanism import Player
-from lib.aux_functions.helpers import *
+from src.mechanism import Player
+from src.utils.helpers import *
 from scipy.sparse import csr_matrix, csc_array
 
 rng = np.random.default_rng(seed = 2)
