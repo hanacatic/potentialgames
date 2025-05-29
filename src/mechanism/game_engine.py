@@ -11,7 +11,16 @@ class Game:
         
         Includes information on the game setup and the algorithms.
     """
-    
+
+    algorithm_registry = {}
+
+    @classmethod
+    def register_algorithm(cls, name):
+        def decorator(func):
+            cls.algorithm_registry[name] = func
+            return func
+        return decorator
+
     def __init__(self, gameSetup, algorithm = 'log_linear',  max_iter = 200000, mu = None): # mu - initial distribution
         """_summary_
         Args:
@@ -94,36 +103,18 @@ class Game:
         
         # Reset players (gameBase function play can have successive calls)
         for player_id in range(self.gameSetup.no_players):
-            
             player = self.players[player_id]
-            player.past_action = self.action_profile[player_id].copy()            
-        
-        # Mapping of algorithms to their corresponding methods
-        algorithm_methods = {
-            "log_linear": lambda: self.log_linear(beta, gamma),
-            "log_linear_t": lambda: (print(beta), self.log_linear_t(beta)),
-            "log_linear_tatarenko": self.log_linear_tatarenko,
-            "log_linear_fast": lambda: self.log_linear_fast(beta, scale_factor) if self.gameSetup.no_players == 2 else self.log_linear_fast_sparse(beta, scale_factor),
-            "log_linear_binary": lambda: self.log_linear_binary(beta),
-            "log_linear_binary_fast": lambda: self.log_linear_binary_fast(beta, scale_factor),
-            "modified_log_linear": lambda: (
-            [self.players[i].set_modified_utility(self.gameSetup.modified_utility_functions[i]) for i in self.player_idx_map],
-            self.modified_log_linear(beta=beta)
-            ),
-            "exponential_weight_annealing": self.exponential_weight_annealing,
-            "exp3p": self.exp3p,
-            "best_response": self.best_response,
-            "alpha_best_response": self.alpha_best_response,
-            "multiplicative_weight": self.multiplicative_weight,
-        }
+            player.previous_action = self.action_profile[player_id].copy()            
 
-        # Execute the selected algorithm
-        if self.algorithm in algorithm_methods:
-            algorithm_methods[self.algorithm]()
+        # Use the algorithm registry
+        if self.algorithm in self.algorithm_registry:
+            self.algorithm_registry[self.algorithm](self, beta, scale_factor, gamma)
         else:
             raise ValueError(f"Unknown algorithm: {self.algorithm}")
-        
-    def log_linear(self, beta, gamma = 0):
+
+    # --- Algorithm methods (now private) ---
+
+    def _log_linear(self, beta, gamma = 0):
         """
             Log-linear learning algorithm.
         Args:
@@ -147,9 +138,9 @@ class Game:
             if i % 50000 == 0:
                 print(str(i) + "th iteration")
             
-            self.log_linear_iteration(i, beta, gamma)
+            self._log_linear_iteration(i, beta, gamma)
     
-    def log_linear_t(self, beta_t):
+    def _log_linear_t(self, beta_t):
         """
             Log-linear learning with time-varying rationality as proposed in the project.
         Args:
@@ -163,9 +154,9 @@ class Game:
             
             # Proposed time-varying rationality
             beta = beta_t*(1/self.gameSetup.no_actions *np.log(i + self.gameSetup.no_actions)/(1 + 1/self.gameSetup.no_actions * np.log(i+self.gameSetup.no_actions)))
-            self.log_linear_iteration(i, beta)
+            self._log_linear_iteration(i, beta)
             
-    def log_linear_tatarenko(self):
+    def _log_linear_tatarenko(self):
         """
             Log-linear learning with time-varyin rationality as proposed in T. Tatarenko, Game-theoretic learning and distributed optimization in memoryless multi-agent systems.
         """
@@ -176,9 +167,9 @@ class Game:
                         
             # beta = min((i+1), 5000) #  T. Tatarenko, Game-theoretic learning and distributed optimization in memoryless multi-agent systems. (Theorem 3.5.3)
   
-            self.log_linear_iteration(i, beta, 0)
-    
-    def log_linear_fast(self, beta, scale_factor):
+            self._log_linear_iteration(i, beta, 0)
+
+    def _log_linear_fast(self, beta, scale_factor):
         """
             Log-linear learning utilising the Markov Chain approach.
         Args:
@@ -186,6 +177,12 @@ class Game:
             scale_factor (int): Scaling factor.
         """
         
+        if self.gameSetup.no_players == 2:
+            self._log_linear_fast_impl(beta, scale_factor)
+        else:
+            self._log_linear_fast_sparse(beta, scale_factor)
+
+    def _log_linear_fast_impl(self, beta, scale_factor):
         # Transition matrix of the Markov chain induced by log-linear learning for the game.
         P = self.gameSetup.formulate_transition_matrix(beta)
         mu0 = self.mu_matrix.copy()
@@ -205,8 +202,8 @@ class Game:
         
         self.expected_value = self.expected_value
         self.stationary = mu
-                
-    def log_linear_fast_sparse(self, beta, scale_factor):
+
+    def _log_linear_fast_sparse(self, beta, scale_factor):
         """_summary_
         Args:
             beta (double): Player rationality.
@@ -235,7 +232,7 @@ class Game:
         self.expected_value = self.expected_value.todense()
         self.stationary = mu.todense()
                            
-    def log_linear_iteration(self, i, beta, gamma = 0):
+    def _log_linear_iteration(self, i, beta, gamma = 0):
         """
             A single iteration of log-linear learning.
         Args:
@@ -244,17 +241,17 @@ class Game:
             gamma (int, optional): Exploration factor. Defaults to 0.
         """
         
-        player_id = rng.integers(0, len(self.players), 1) # randomly choose a player
+        player_id = rng.integers(0, len(self.players), 1)[0] # randomly choose a player
             
-        player = self.players[player_id][0] 
+        player = self.players[player_id]
         
-        opponents_actions = self.action_profile[self.opponents_idx_map[player_id[0]]] # extract the opponents actions from the action profile
+        opponents_actions = self.action_profile[self.opponents_idx_map[player_id]] # extract the opponents actions from the action profile
             
         self.action_profile[player_id] = player.update_log_linear(beta, opponents_actions, self.gameSetup.eta, gamma) # update the players action
             
         self.potentials_history[i] = self.gameSetup.potential_function(self.action_profile) # compute the value of the potential function
-    
-    def log_linear_binary(self, beta):
+
+    def _log_linear_binary(self, beta):
         """
             Log-linear learning with two-point feedback.
         Args:
@@ -268,9 +265,9 @@ class Game:
             if i % 100 == 0:
                 print(str(i) + "th iteration")
             
-            self.log_linear_binary_iteration(i, beta)
+            self._log_linear_binary_iteration(i, beta)
     
-    def log_linear_binary_iteration(self, i, beta):
+    def _log_linear_binary_iteration(self, i, beta):
         """
             A single iteration of log-linear learning with two-point feedback.
 
@@ -279,27 +276,32 @@ class Game:
             beta (double): Player rationality.
         """
         
-        player_id = rng.integers(0, len(self.players), 1) # randomly choose a player
+        player_id = rng.integers(0, len(self.players), 1)[0] # randomly choose a player
             
-        player = self.players[player_id][0] 
+        player = self.players[player_id]
         
-        opponents_actions = self.action_profile[self.opponents_idx_map[player_id[0]]] # extract the opponents actions from the action profile
+        opponents_actions = self.action_profile[self.opponents_idx_map[player_id]] # extract the opponents actions from the action profile
             
         self.action_profile[player_id] = player.update_log_linear_binary(beta, opponents_actions) # update the players action
             
         self.potentials_history[i] = self.gameSetup.potential_function(self.action_profile) # compute the value of the potential function
-            
-    def log_linear_binary_fast(self, beta, scale_factor):
+
+    def _log_linear_fast(self, beta, scale_factor):
         """
-            Binary log-linear learning utilising the Markov Chain approach.
-            
+            Log-linear learning utilising the Markov Chain approach.
         Args:
             beta (double): Player rationality.
             scale_factor (int): Scaling factor.
         """
         
+        if self.gameSetup.no_players == 2:
+            self._log_linear_fast_impl(beta, scale_factor)
+        else:
+            self._log_linear_fast_sparse(beta, scale_factor)
+
+    def _log_linear_fast_impl(self, beta, scale_factor):
         # Transition matrix of the Markov chain induced by log-linear learning for the game.
-        P = self.gameSetup.formulate_transition_matrix_binary(beta)
+        P = self.gameSetup.formulate_transition_matrix(beta)
         mu0 = self.mu_matrix.copy()
         
         self.expected_value = np.zeros((int(self.max_iter), 1))
@@ -317,8 +319,37 @@ class Game:
         
         self.expected_value = self.expected_value
         self.stationary = mu
-                
-    def modified_log_linear(self, beta):
+
+    def _log_linear_fast_sparse(self, beta, scale_factor):
+        """_summary_
+        Args:
+            beta (double): Player rationality.
+            scale_factor (int): Scale factor.
+        """
+        
+        # Transition matrix of the Markov chain induced by log-linear learning for the game.
+        P = self.gameSetup.formulate_transition_matrix_sparse(beta)
+        mu0 = csc_array(self.mu_matrix)
+        
+        self.expected_value = np.zeros((int(self.max_iter), 1))
+        self.expected_value = csr_matrix(self.expected_value)
+        
+        # Transition matrix modeling multiple transition steps at once has reduced sparsity and has negative impact on the computation time, thus it is not utilised.
+        if scale_factor != 1:
+            raise ValueError("For sparse implementation, the scale factor must be 1.")
+
+        # Main loop
+        for i in range(self.max_iter):
+            
+            mu = mu0 @ P          
+            mu0 = mu
+            
+            self.expected_value[i] = mu @ self.gameSetup.potential_vec
+
+        self.expected_value = self.expected_value.todense()
+        self.stationary = mu.todense()
+
+    def _modified_log_linear(self, beta):
         """
             Modified log-linear learning leveraging symmetry of the game.
 
@@ -326,6 +357,10 @@ class Game:
             beta (double): Player rationality.
         """
         
+        [self.players[i].set_modified_utility(self.gameSetup.modified_utility_functions[i]) for i in self.player_idx_map]
+        self._modified_log_linear_impl(beta=beta)
+
+    def _modified_log_linear_impl(self, beta):
         self.phi = np.zeros(self.gameSetup.no_actions) # histogram over the action space
         
         for a in self.action_profile:
@@ -334,9 +369,9 @@ class Game:
         # Main loop
         for i in range(self.max_iter):
             time = i
-            self.modified_log_linear_iteration(time, beta)
+            self._modified_log_linear_iteration(time, beta)
     
-    def modified_log_linear_iteration(self, i, beta):
+    def _modified_log_linear_iteration(self, i, beta):
         """
             A single iteration of modified log-linear learning.
 
@@ -350,9 +385,9 @@ class Game:
         player_clock = [1/self.gameSetup.no_players*self.phi[self.action_profile[i]] for i in range(self.gameSetup.no_players)]
         player_clock = player_clock/np.sum(player_clock)
                 
-        player_id = rng.choice(self.player_idx_map, size=1, p=player_clock) # chose the next player from the player_clock probability distribution
+        player_id = rng.choice(self.player_idx_map, size=1, p=player_clock)[0]
         
-        player = self.players[player_id][0] 
+        player = self.players[player_id]
         
         self.phi[self.action_profile[player_id]] -= 1
         
@@ -361,25 +396,25 @@ class Game:
         self.potentials_history[i] = self.gameSetup.potential_function(self.action_profile) # compute the value of the potential function
         
         self.phi[self.action_profile[player_id]] += 1 
-  
-    def best_response(self):
+
+    def _best_response(self):
         """
             Iterative best response algorithm.
         """
         # Main loop
         for i in range(self.max_iter):
             
-            player_id = rng.integers(0, len(self.players), 1) # randomly choose a player
+            player_id = rng.integers(0, len(self.players), 1)[0] # randomly choose a player
             
-            player = self.players[player_id][0] 
+            player = self.players[player_id]
             
-            opponents_actions = self.action_profile[self.opponents_idx_map[player_id[0]]] # extract the opponents actions from the action profile
+            opponents_actions = self.action_profile[self.opponents_idx_map[player_id]] # extract the opponents actions from the action profile
     
             self.action_profile[player_id] = player.best_response(opponents_actions) # update the players action
 
             self.potentials_history[i] = self.gameSetup.potential_function(self.action_profile) # compute the value of the potential function
 
-    def alpha_best_response(self):
+    def _alpha_best_response(self):
         """
             Alpha best response algorithm with largest gain dynamics.
              S. Chien and A. Sinclair, ‘Convergence to approximate nash equilibria in congestion games’
@@ -404,7 +439,6 @@ class Game:
             # For caching 
             if improvement == False:
                 self.potentials_history[i] = self.potentials_history[i-1]
-                
                 continue
 
             improvement = False
@@ -434,7 +468,7 @@ class Game:
             
             self.potentials_history[i] = self.gameSetup.potential_function(self.action_profile) # compute the value of the potential function   
     
-    def multiplicative_weight(self):
+    def _multiplicative_weight(self):
         """
             Multiplicative weight update Hedge implementation.
             Y. Freund and R. E. Schapire, ‘A decision-theoretic generalization of on-line learning and an application to boosting’
@@ -475,7 +509,7 @@ class Game:
 
             past_exp_potential = self.potentials_history[i]
     
-    def sample_from_mixed_strategy(self, mixed_strategies):
+    def _sample_from_mixed_strategy(self, mixed_strategies):
         """
             Samples an action for each player for its respective probability distribution.
 
@@ -496,7 +530,7 @@ class Game:
                 
             self.action_profile[player_id] = rng.choice(self.action_space[player_id], 1, p = mixed_strategies[player_id])              
     
-    def exponential_weight_annealing(self, b = 0.6, a = 0.25, p = 0.5): 
+    def _exponential_weight_annealing(self, b = 0.6, a = 0.25, p = 0.5): 
         """
             Exponential weight with annealing algorithm.
             A. Heliou, J. Cohen and P. Mertikopoulos, ‘Learning with bandit feedback in potential games’        
@@ -545,7 +579,7 @@ class Game:
 
             past_exp_potential = self.potentials_history[i]
     
-    def exp3p(self):
+    def _exp3p(self):
         """
             EXP3P.
             Algorithm  P. Auer, N. Cesa-Bianchi, Y. Freund and R. E. Schapire, ‘The nonstochastic multiarmed bandit problem’
@@ -666,3 +700,58 @@ class Game:
             self.gameSetup.set_payoff_matrix(delta, payoff_matrix)
 
         [self.players[i].reset_player(self.gameSetup.no_actions, self.gameSetup.utility_functions[i]) for i in range(0, self.gameSetup.no_players)]
+
+# --- Algorithm registration ---
+
+@Game.register_algorithm("log_linear")
+def _register_log_linear(game, beta, scale_factor, gamma):
+    game._log_linear(beta, gamma)
+
+@Game.register_algorithm("log_linear_t")
+def _register_log_linear_t(game, beta, scale_factor, gamma):
+    game._log_linear_t(beta)
+
+@Game.register_algorithm("log_linear_tatarenko")
+def _register_log_linear_tatarenko(game, beta, scale_factor, gamma):
+    game._log_linear_tatarenko()
+
+@Game.register_algorithm("log_linear_fast")
+def _register_log_linear_fast(game, beta, scale_factor, gamma):
+    if game.gameSetup.no_players == 2:
+        game._log_linear_fast(beta, scale_factor)
+    else:
+        game._log_linear_fast_sparse(beta, scale_factor)
+
+@Game.register_algorithm("log_linear_binary")
+def _register_log_linear_binary(game, beta, scale_factor, gamma):
+    game._log_linear_binary(beta)
+
+@Game.register_algorithm("log_linear_binary_fast")
+def _register_log_linear_binary_fast(game, beta, scale_factor, gamma):
+    game._log_linear_binary_fast(beta, scale_factor)
+
+@Game.register_algorithm("modified_log_linear")
+def _register_modified_log_linear(game, beta, scale_factor, gamma):
+    [game.players[i].set_modified_utility(game.gameSetup.modified_utility_functions[i]) for i in game.player_idx_map]
+    game._modified_log_linear(beta=beta)
+
+@Game.register_algorithm("exponential_weight_annealing")
+def _register_exponential_weight_annealing(game, beta, scale_factor, gamma):
+    game._exponential_weight_annealing()
+
+@Game.register_algorithm("exp3p")
+def _register_exp3p(game, beta, scale_factor, gamma):
+    game._exp3p()
+
+@Game.register_algorithm("best_response")
+def _register_best_response(game, beta, scale_factor, gamma):
+    game._best_response()
+
+@Game.register_algorithm("alpha_best_response")
+def _register_alpha_best_response(game, beta, scale_factor, gamma):
+    game._alpha_best_response()
+
+@Game.register_algorithm("multiplicative_weight")
+def _register_multiplicative_weight(game, beta, scale_factor, gamma):
+    game._multiplicative_weight()
+
