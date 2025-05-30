@@ -4,7 +4,7 @@ from src.utils.helpers import *
 from scipy.sparse import csr_matrix, csc_array
 from typing import Callable, Optional
 from src.mechanism.game_setup.abstract_setup import AbstractGameSetup
-from src.mechanism.algorithms import LogLinearAlgorithm, BinaryLogLinearAlgorithm
+from src.mechanism.algorithms import LogLinearAlgorithm, BinaryLogLinearAlgorithm, FastLogLinearAlgorithm
 from src.utils.logger import logger
 
 rng = np.random.default_rng(seed = 2)
@@ -120,138 +120,7 @@ class GameEngine:
             self.algorithm_registry[self.algorithm](self, beta, scale_factor, gamma)
         else:
             raise ValueError(f"Unknown algorithm: {self.algorithm}")
-
-    def _log_linear_fast(self, beta: float, scale_factor: int) -> None:
-        """
-            Log-linear learning utilising the Markov Chain approach.
-        Args:
-            beta (double): Player rationality.
-            scale_factor (int): Scaling factor.
-        """
         
-        if self.gameSetup.no_players == 2:
-            self._log_linear_fast_impl(beta, scale_factor)
-        else:
-            self._log_linear_fast_sparse(beta, scale_factor)
-
-    def _log_linear_fast_impl(self, beta: float, scale_factor: int) -> None:
-        """
-        Computes the expected value trajectory and stationary distribution of the Markov chain
-        induced by log-linear learning for the game, using a fast implementation with matrix powers.
-        Args:
-            beta (float): The inverse temperature parameter controlling the randomness of the log-linear learning.
-            scale_factor (int): The number of steps to model at once by raising the transition matrix to this power.
-        """
-        # Transition matrix of the Markov chain induced by log-linear learning for the game.
-        P = self.gameSetup.formulate_transition_matrix(beta)
-        mu0 = self.mu_matrix.copy()
-        
-        self.expected_value = np.zeros((int(self.max_iter), 1))
-        
-        # Transition matrix models scale_factor steps at once
-        P = np.linalg.matrix_power(P, scale_factor)
-        
-        # Main loop
-        for i in range(self.max_iter):
-            
-            mu = mu0 @ P
-            mu0 = mu
-            
-            self.expected_value[i] = mu @ self.gameSetup.potential_vec
-        
-        self.expected_value = self.expected_value
-        self.stationary = mu
-
-    def _log_linear_fast_sparse(self, beta: float, scale_factor: int) -> None:
-        """_summary_
-        Args:
-            beta (float): Player rationality.
-            scale_factor (int): Scale factor.
-        """
-        # Transition matrix of the Markov chain induced by log-linear learning for the game.
-        P = self.gameSetup.formulate_transition_matrix_sparse(beta)
-        mu0 = csc_array(self.mu_matrix)
-        
-        self.expected_value = np.zeros((int(self.max_iter), 1))
-        self.expected_value = csr_matrix(self.expected_value)
-        
-        # Transition matrix modeling multiple transition steps at once has reduced sparsity and has negative impact on the computation time, thus it is not utilised.
-        if scale_factor != 1:
-            raise ValueError("For sparse implementation, the scale factor must be 1.")
-
-        # Main loop
-        for i in range(self.max_iter):
-            
-            mu = mu0 @ P          
-            mu0 = mu
-            
-            self.expected_value[i] = mu @ self.gameSetup.potential_vec
-
-        self.expected_value = self.expected_value.todense()
-        self.stationary = mu.todense()
-    
-    def _log_linear_fast(self, beta: float, scale_factor: int) -> None:
-        """
-            Log-linear learning utilising the Markov Chain approach.
-        Args:
-            beta (float): Player rationality.
-            scale_factor (int): Scaling factor.
-        """
-        
-        if self.gameSetup.no_players == 2:
-            self._log_linear_fast_impl(beta, scale_factor)
-        else:
-            self._log_linear_fast_sparse(beta, scale_factor)
-
-    def _log_linear_fast_impl(self, beta, scale_factor):
-        # Transition matrix of the Markov chain induced by log-linear learning for the game.
-        P = self.gameSetup.formulate_transition_matrix(beta)
-        mu0 = self.mu_matrix.copy()
-        
-        self.expected_value = np.zeros((int(self.max_iter), 1))
-        
-        # Transition matrix models scale_factor steps at once
-        P = np.linalg.matrix_power(P, scale_factor)
-        
-        # Main loop
-        for i in range(self.max_iter):
-            
-            mu = mu0 @ P
-            mu0 = mu
-            
-            self.expected_value[i] = mu @ self.gameSetup.potential_vec
-        
-        self.expected_value = self.expected_value
-        self.stationary = mu
-
-    def _log_linear_fast_sparse(self, beta: float, scale_factor: int) -> None:
-        """_summary_
-        Args:
-            beta (float): Player rationality.
-            scale_factor (int): Scale factor.
-        """
-        # Transition matrix of the Markov chain induced by log-linear learning for the game.
-        P = self.gameSetup.formulate_transition_matrix_sparse(beta)
-        mu0 = csc_array(self.mu_matrix)
-        
-        self.expected_value = np.zeros((int(self.max_iter), 1))
-        self.expected_value = csr_matrix(self.expected_value)
-        
-        # Transition matrix modeling multiple transition steps at once has reduced sparsity and has negative impact on the computation time, thus it is not utilised.
-        if scale_factor != 1:
-            raise ValueError("For sparse implementation, the scale factor must be 1.")
-
-        # Main loop
-        for i in range(self.max_iter):
-            
-            mu = mu0 @ P          
-            mu0 = mu
-            
-            self.expected_value[i] = mu @ self.gameSetup.potential_vec
-
-        self.expected_value = self.expected_value.todense()
-        self.stationary = mu.todense()
-
     def _modified_log_linear(self, beta: float) -> None:
         """
             Modified log-linear learning leveraging symmetry of the game.
@@ -382,10 +251,7 @@ def _register_log_linear(game: 'Game', beta: Optional[float], scale_factor: int,
 
 @GameEngine.register_algorithm("log_linear_fast")
 def _register_log_linear_fast(game: 'Game', beta: Optional[float], scale_factor: int, gamma: float) -> None:
-    if game.gameSetup.no_players == 2:
-        game._log_linear_fast(beta, scale_factor)
-    else:
-        game._log_linear_fast_sparse(beta, scale_factor)
+    FastLogLinearAlgorithm.run(game, beta, scale_factor)
 
 @GameEngine.register_algorithm("log_linear_binary")
 def _register_log_linear_binary(game: 'Game', beta: Optional[float], scale_factor: int, gamma: float) -> None:
