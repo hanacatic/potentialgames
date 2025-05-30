@@ -1,1 +1,2 @@
 from .log_linear import LogLinearAlgorithm
+from .binary_log_linear import BinaryLogLinearAlgorithm

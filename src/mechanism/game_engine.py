@@ -4,7 +4,7 @@ from src.utils.helpers import *
 from scipy.sparse import csr_matrix, csc_array
 from typing import Callable, Optional
 from src.mechanism.game_setup.abstract_setup import AbstractGameSetup
-from src.mechanism.algorithms.log_linear import LogLinearAlgorithm
+from src.mechanism.algorithms import LogLinearAlgorithm, BinaryLogLinearAlgorithm
 from src.utils.logger import logger
 
 rng = np.random.default_rng(seed = 2)
@@ -189,38 +189,7 @@ class GameEngine:
 
         self.expected_value = self.expected_value.todense()
         self.stationary = mu.todense()
-                           
-    def _log_linear_binary(self, beta: float) -> None:
-        """
-            Log-linear learning with two-point feedback.
-        Args:
-            beta (double): Player rationality.
-        """
-        logger.info("Log linear binary")
-        for i in range(self.max_iter):
-            if i % 100 == 0:
-                logger.info(f"{i}th iteration")
-            self._log_linear_binary_iteration(i, beta)
     
-    def _log_linear_binary_iteration(self, i: int, beta: float) -> None:
-        """
-            A single iteration of log-linear learning with two-point feedback.
-
-        Args:
-            i (int): No. iteration.
-            beta (double): Player rationality.
-        """
-        
-        player_id = rng.integers(0, len(self.players), 1)[0] # randomly choose a player
-            
-        player = self.players[player_id]
-        
-        opponents_actions = self.action_profile[self.opponents_idx_map[player_id]] # extract the opponents actions from the action profile
-            
-        self.action_profile[player_id] = player.update_log_linear_binary(beta, opponents_actions) # update the players action
-            
-        self.potentials_history[i] = self.gameSetup.potential_function(self.action_profile) # compute the value of the potential function
-
     def _log_linear_fast(self, beta: float, scale_factor: int) -> None:
         """
             Log-linear learning utilising the Markov Chain approach.
@@ -649,7 +618,7 @@ def _register_log_linear_fast(game: 'Game', beta: Optional[float], scale_factor:
 
 @GameEngine.register_algorithm("log_linear_binary")
 def _register_log_linear_binary(game: 'Game', beta: Optional[float], scale_factor: int, gamma: float) -> None:
-    game._log_linear_binary(beta)
+    BinaryLogLinearAlgorithm.run(game, beta)
 
 @GameEngine.register_algorithm("log_linear_binary_fast")
 def _register_log_linear_binary_fast(game: 'Game', beta: Optional[float], scale_factor: int, gamma: float) -> None:
