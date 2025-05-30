@@ -8,9 +8,6 @@ class LogLinearAlgorithm(LearningAlgorithm):
     """
     Log-linear learning algorithm.
     """
-    
-    def __init__(self):
-        super().__init__()
 
     @classmethod
     def run(cls, game: "GameEngine", beta: float, gamma: float = 0) -> None:
@@ -43,3 +40,4 @@ class LogLinearAlgorithm(LearningAlgorithm):
             game.action_profile[player_id] = player.update_log_linear(beta, opponents_actions, game.gameSetup.eta, gamma) # update the players action
                 
             game.potentials_history[i] = game.gameSetup.potential_function(game.action_profile) # compute the value of the potential function
+
