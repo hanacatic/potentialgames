@@ -152,7 +152,7 @@ def test_log_linear():
 
     gameSetup = IdenticalInterestSetup(action_space, no_players, firstNE, secondNE, delta, noisy_utility=True, payoff_matrix = payoff_matrix)
     
-    game = Game(gameSetup, algorithm = "log_linear",  max_iter = 100000)
+    game = GameEngine(gameSetup, algorithm = "log_linear",  max_iter = 100000)
     game.set_initial_action_profile(secondNE)
 
     # game.set_initial_action_profile(np.array([1,4]))

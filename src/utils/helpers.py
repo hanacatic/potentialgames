@@ -1,6 +1,9 @@
 import numpy as np
 from itertools import permutations
 
+rng = np.random.default_rng(seed = 2)
+
+
 def rejection_sampling(prob_func, initial_profile, action_space, M = 1.0, iterations = 1000):
     
     current_profile = initial_profile

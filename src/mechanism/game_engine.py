@@ -4,13 +4,14 @@ from src.utils.helpers import *
 from scipy.sparse import csr_matrix, csc_array
 from typing import Callable, Optional
 from src.mechanism.game_setup.abstract_setup import AbstractGameSetup
+from src.mechanism.algorithms.log_linear import LogLinearAlgorithm
 from src.utils.logger import logger
 
 rng = np.random.default_rng(seed = 2)
 
-class Game:
+class GameEngine:
     """
-        Class representing the Game base.
+        Class representing the GameEngine base.
         
         Includes information on the game setup and the algorithms.
     """
@@ -120,29 +121,6 @@ class Game:
         else:
             raise ValueError(f"Unknown algorithm: {self.algorithm}")
 
-    def _log_linear(self, beta: float, gamma: float = 0) -> None:
-        """
-            Log-linear learning algorithm.
-        Args:
-            beta (double): Player rationality.
-            gamma (int, optional): Exploration factor. Defaults to 0.
-        Raises:
-            Exception: Missing arguments.
-        """
-        
-        if beta is None:
-            raise ValueError("Rationality parameter 'beta' must be provided.")
-
-        logger.info("Log linear learning")
-        if self.gameSetup.noisy_utility and self.gameSetup.eta is None:
-            self.gameSetup.eta = 1/2.0/beta
-       
-        for i in range(0, self.max_iter): 
-            
-            if i % 50000 == 0:
-                logger.info(f"{i}th iteration")
-            self._log_linear_iteration(i, beta, gamma)
-
     def _log_linear_fast(self, beta: float, scale_factor: int) -> None:
         """
             Log-linear learning utilising the Markov Chain approach.
@@ -212,25 +190,6 @@ class Game:
         self.expected_value = self.expected_value.todense()
         self.stationary = mu.todense()
                            
-    def _log_linear_iteration(self, i: int, beta: float, gamma: float = 0) -> None:
-        """
-            A single iteration of log-linear learning.
-        Args:
-            i (int): No. iteration.
-            beta (double): Player rationality.
-            gamma (int, optional): Exploration factor. Defaults to 0.
-        """
-        
-        player_id = rng.integers(0, len(self.players), 1)[0] # randomly choose a player
-            
-        player = self.players[player_id]
-        
-        opponents_actions = self.action_profile[self.opponents_idx_map[player_id]] # extract the opponents actions from the action profile
-            
-        self.action_profile[player_id] = player.update_log_linear(beta, opponents_actions, self.gameSetup.eta, gamma) # update the players action
-            
-        self.potentials_history[i] = self.gameSetup.potential_function(self.action_profile) # compute the value of the potential function
-
     def _log_linear_binary(self, beta: float) -> None:
         """
             Log-linear learning with two-point feedback.
@@ -665,55 +624,59 @@ class Game:
 
 # --- Algorithm registration ---
 
-@Game.register_algorithm("log_linear")
-def _register_log_linear(game: 'Game', beta: Optional[float], scale_factor: int, gamma: float) -> None:
-    game._log_linear(beta, gamma)
+# @GameEngine.register_algorithm("log_linear")
+# def _register_log_linear(game: 'Game', beta: Optional[float], scale_factor: int, gamma: float) -> None:
+#     game._log_linear(beta, gamma)
 
-@Game.register_algorithm("log_linear_t")
+@GameEngine.register_algorithm("log_linear")
+def _register_log_linear(game: 'Game', beta: Optional[float], scale_factor: int, gamma: float) -> None:
+    LogLinearAlgorithm.run(game, beta, gamma)
+
+@GameEngine.register_algorithm("log_linear_t")
 def _register_log_linear_t(game: 'Game', beta: Optional[float], scale_factor: int, gamma: float) -> None:
     game._log_linear_t(beta)
 
-@Game.register_algorithm("log_linear_tatarenko")
+@GameEngine.register_algorithm("log_linear_tatarenko")
 def _register_log_linear_tatarenko(game: 'Game', beta: Optional[float], scale_factor: int, gamma: float) -> None:
     game._log_linear_tatarenko()
 
-@Game.register_algorithm("log_linear_fast")
+@GameEngine.register_algorithm("log_linear_fast")
 def _register_log_linear_fast(game: 'Game', beta: Optional[float], scale_factor: int, gamma: float) -> None:
     if game.gameSetup.no_players == 2:
         game._log_linear_fast(beta, scale_factor)
     else:
         game._log_linear_fast_sparse(beta, scale_factor)
 
-@Game.register_algorithm("log_linear_binary")
+@GameEngine.register_algorithm("log_linear_binary")
 def _register_log_linear_binary(game: 'Game', beta: Optional[float], scale_factor: int, gamma: float) -> None:
     game._log_linear_binary(beta)
 
-@Game.register_algorithm("log_linear_binary_fast")
+@GameEngine.register_algorithm("log_linear_binary_fast")
 def _register_log_linear_binary_fast(game: 'Game', beta: Optional[float], scale_factor: int, gamma: float) -> None:
     game._log_linear_binary_fast(beta, scale_factor)
 
-@Game.register_algorithm("modified_log_linear")
+@GameEngine.register_algorithm("modified_log_linear")
 def _register_modified_log_linear(game: 'Game', beta: Optional[float], scale_factor: int, gamma: float) -> None:
     [game.players[i].set_modified_utility(game.gameSetup.modified_utility_functions[i]) for i in game.player_idx_map]
     game._modified_log_linear(beta=beta)
 
-@Game.register_algorithm("exponential_weight_annealing")
+@GameEngine.register_algorithm("exponential_weight_annealing")
 def _register_exponential_weight_annealing(game: 'Game', beta: Optional[float], scale_factor: int, gamma: float) -> None:
     game._exponential_weight_annealing()
 
-@Game.register_algorithm("exp3p")
+@GameEngine.register_algorithm("exp3p")
 def _register_exp3p(game: 'Game', beta: Optional[float], scale_factor: int, gamma: float) -> None:
     game._exp3p()
 
-@Game.register_algorithm("best_response")
+@GameEngine.register_algorithm("best_response")
 def _register_best_response(game: 'Game', beta: Optional[float], scale_factor: int, gamma: float) -> None:
     game._best_response()
 
-@Game.register_algorithm("alpha_best_response")
+@GameEngine.register_algorithm("alpha_best_response")
 def _register_alpha_best_response(game: 'Game', beta: Optional[float], scale_factor: int, gamma: float) -> None:
     game._alpha_best_response()
 
-@Game.register_algorithm("multiplicative_weight")
+@GameEngine.register_algorithm("multiplicative_weight")
 def _register_multiplicative_weight(game: 'Game', beta: Optional[float], scale_factor: int, gamma: float) -> None:
     game._multiplicative_weight()
 
