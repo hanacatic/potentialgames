@@ -4,6 +4,7 @@ from src.utils.helpers import *
 from scipy.sparse import csr_matrix, csc_array
 from typing import Callable, Optional
 from src.mechanism.game_setup.abstract_setup import AbstractGameSetup
+from src.utils.logger import logger
 
 rng = np.random.default_rng(seed = 2)
 
@@ -132,17 +133,14 @@ class Game:
         if beta is None:
             raise ValueError("Rationality parameter 'beta' must be provided.")
 
-        print("Log linear learning")
-        
-        # Noisy utility 
+        logger.info("Log linear learning")
         if self.gameSetup.noisy_utility and self.gameSetup.eta is None:
             self.gameSetup.eta = 1/2.0/beta
-                            
+       
         for i in range(0, self.max_iter): 
             
             if i % 50000 == 0:
-                print(str(i) + "th iteration")
-            
+                logger.info(f"{i}th iteration")
             self._log_linear_iteration(i, beta, gamma)
 
     def _log_linear_fast(self, beta: float, scale_factor: int) -> None:
@@ -239,13 +237,10 @@ class Game:
         Args:
             beta (double): Player rationality.
         """
-        print("Log linear binary")
-        
+        logger.info("Log linear binary")
         for i in range(self.max_iter):
-            
             if i % 100 == 0:
-                print(str(i) + "th iteration")
-            
+                logger.info(f"{i}th iteration")
             self._log_linear_binary_iteration(i, beta)
     
     def _log_linear_binary_iteration(self, i: int, beta: float) -> None:
@@ -409,7 +404,7 @@ class Game:
         for i in range(self.max_iter):
             
             if i % 20 == 0:
-                print(str(i) + "th iteration")
+                logger.info(f"{i}th iteration")
                         
             chosen_player = 0
             chosen_player_action = self.action_profile[chosen_player]
@@ -453,7 +448,7 @@ class Game:
             Y. Freund and R. E. Schapire, ‘A decision-theoretic generalization of on-line learning and an application to boosting’
         """
         
-        print("Multiplicative weight update")
+        logger.info("Multiplicative weight update")
         
         gamma_t = np.sqrt(8*np.log(self.gameSetup.no_actions)/self.max_iter) # exploration factor
          
@@ -469,10 +464,9 @@ class Game:
         for i in range(self.max_iter):  
                       
             if i % 20 == 0:
-                print(str(i) + "th iteration")
+                logger.info(f"{i}th iteration")
                         
-            player_id = rng.integers(0, len(self.players), 1)[0] # randomly choose a player
-            
+            player_id = rng.integers(0, len(self.players), 1)[0]
             player = self.players[player_id] 
             
             mixed_strategies[player_id] = player.mixed_strategy() # obtain players mixed strategy
@@ -519,9 +513,7 @@ class Game:
             a (float, optional): Parameter that defines the vanishing factor. Defaults to 0.25.
             p (float, optional): Parameter that defines the vanishing factor. Defaults to 0.5.
         """
-        
-        print("Exponential weight with annealing")
-        
+        logger.info("Exponential weight with annealing")
         gamma_n = 1
         eps_n = 1 
         mixed_strategies = np.zeros([self.gameSetup.no_players, self.gameSetup.no_actions])
@@ -531,15 +523,12 @@ class Game:
         for player_id in range(self.gameSetup.no_players):
             player = self.players[player_id]
             player.reset()
-
-        # Main loop
-        for i in range(self.max_iter):
             
-            gamma_n = 1/(i+1)**b  # Proposed step size sequence
-            eps_n = 1/(1+(i+1)**a*np.log(i+2)**p)  # Proposed step vanishing factor
-
+        for i in range(self.max_iter):
+            gamma_n = 1/(i+1)**b
+            eps_n = 1/(1+(i+1)**a*np.log(i+2)**p)
             if i % 500 == 0:
-                print(str(i) + "th iteration")
+                logger.info(f"{i}th iteration")
             
             player_id = rng.integers(0, len(self.players), 1)[0] # randomly choose a player
             
@@ -564,12 +553,9 @@ class Game:
             Algorithm  P. Auer, N. Cesa-Bianchi, Y. Freund and R. E. Schapire, ‘The nonstochastic multiarmed bandit problem’
             Parameters  S. Bubeck, N. Cesa-Bianchi et al., ‘Regret analysis of stochastic and nonstochastic multi-armed bandit problems’ (Yheorem 3.3)
         """
-        
-        print("EXP3P")  
-          
+        logger.info("EXP3P")  
         A = self.gameSetup.no_actions
-
-        # Parameters
+        
         beta = np.sqrt(np.log(A)/(self.max_iter*A))
         gamma = 1.05*np.sqrt(np.log(A)*A/self.max_iter)
         eta = 0.95*np.sqrt(np.log(A)/(self.max_iter*A))
@@ -582,14 +568,11 @@ class Game:
             
         past_exp_potential = 0
         
-        # Main loop
         for i in range(self.max_iter):
 
             if i % 500 == 0:
-                print(str(i) + "th iteration")
-            
-            player_id = rng.integers(0, len(self.players), 1)[0] # randomly choose a player
-            
+                logger.info(f"{i}th iteration")
+            player_id = rng.integers(0, len(self.players), 1)[0]
             player = self.players[player_id] 
             
             mixed_strategies[player_id] = player.mixed_strategy() # obtain the players strategy
