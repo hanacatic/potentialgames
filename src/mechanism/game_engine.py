@@ -1,10 +1,9 @@
 import numpy as np
 from src.mechanism import Player
 from src.utils.helpers import *
-from scipy.sparse import csr_matrix, csc_array
 from typing import Callable, Optional
 from src.mechanism.game_setup.abstract_setup import AbstractGameSetup
-from src.mechanism.algorithms import LogLinearAlgorithm, BinaryLogLinearAlgorithm, FastLogLinearAlgorithm, FastBinaryLogLinearAlgorithm
+from src.mechanism.algorithms import LogLinearAlgorithm, BinaryLogLinearAlgorithm, FastLogLinearAlgorithm, FastBinaryLogLinearAlgorithm, ModifiedLogLinearAlgorithm
 from src.utils.logger import logger
 
 rng = np.random.default_rng(seed = 2)
@@ -120,53 +119,6 @@ class GameEngine:
             self.algorithm_registry[self.algorithm](self, beta, scale_factor, gamma)
         else:
             raise ValueError(f"Unknown algorithm: {self.algorithm}")
-        
-    def _modified_log_linear(self, beta: float) -> None:
-        """
-            Modified log-linear learning leveraging symmetry of the game.
-
-        Args:
-            beta (double): Player rationality.
-        """
-        [self.players[i].set_modified_utility(self.gameSetup.modified_utility_functions[i]) for i in self.player_idx_map]
-        self._modified_log_linear_impl(beta=beta)
-
-    def _modified_log_linear_impl(self, beta: float) -> None:
-        self.phi = np.zeros(self.gameSetup.no_actions) # histogram over the action space
-        
-        for a in self.action_profile:
-            self.phi[a] += 1
-        
-        # Main loop
-        for i in range(self.max_iter):
-            time = i
-            self._modified_log_linear_iteration(time, beta)
-    
-    def _modified_log_linear_iteration(self, i: int, beta: float) -> None:
-        """
-            A single iteration of modified log-linear learning.
-
-        Args:
-            i (int): No. iteration.
-            beta (double): Player rationality.
-        """
-        
-        # determine the probability that the player is going to change change his action based on the action they played in the previous round
-        # implemented based on section 3.1 in Dynamics in Congestion Games, D. Shah and J. Shin
-        player_clock = [1/self.gameSetup.no_players*self.phi[self.action_profile[i]] for i in range(self.gameSetup.no_players)]
-        player_clock = player_clock/np.sum(player_clock)
-                
-        player_id = rng.choice(self.player_idx_map, size=1, p=player_clock)[0]
-        
-        player = self.players[player_id]
-        
-        self.phi[self.action_profile[player_id]] -= 1
-        
-        self.action_profile[player_id] = player.update_modified_log_linear(beta, self.phi) # update chosen players strategy
-        
-        self.potentials_history[i] = self.gameSetup.potential_function(self.action_profile) # compute the value of the potential function
-        
-        self.phi[self.action_profile[player_id]] += 1 
 
     def compute_beta(self, epsilon: float) -> float:
         """
@@ -259,9 +211,9 @@ def _register_log_linear_binary(game: 'Game', beta: Optional[float], scale_facto
 
 @GameEngine.register_algorithm("log_linear_binary_fast")
 def _register_log_linear_binary_fast(game: 'Game', beta: Optional[float], scale_factor: int, gamma: float) -> None:
-    FastBinaryLogLinearAlgorithm(game, beta, scale_factor)
+    FastBinaryLogLinearAlgorithm.run(game, beta, scale_factor)
 
 @GameEngine.register_algorithm("modified_log_linear")
 def _register_modified_log_linear(game: 'Game', beta: Optional[float], scale_factor: int, gamma: float) -> None:
     [game.players[i].set_modified_utility(game.gameSetup.modified_utility_functions[i]) for i in game.player_idx_map]
-    game._modified_log_linear(beta=beta)
+    ModifiedLogLinearAlgorithm.run(game, beta)
