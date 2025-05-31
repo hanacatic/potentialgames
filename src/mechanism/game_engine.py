@@ -4,7 +4,7 @@ from src.utils.helpers import *
 from scipy.sparse import csr_matrix, csc_array
 from typing import Callable, Optional
 from src.mechanism.game_setup.abstract_setup import AbstractGameSetup
-from src.mechanism.algorithms import LogLinearAlgorithm, BinaryLogLinearAlgorithm, FastLogLinearAlgorithm
+from src.mechanism.algorithms import LogLinearAlgorithm, BinaryLogLinearAlgorithm, FastLogLinearAlgorithm, FastBinaryLogLinearAlgorithm
 from src.utils.logger import logger
 
 rng = np.random.default_rng(seed = 2)
@@ -259,7 +259,7 @@ def _register_log_linear_binary(game: 'Game', beta: Optional[float], scale_facto
 
 @GameEngine.register_algorithm("log_linear_binary_fast")
 def _register_log_linear_binary_fast(game: 'Game', beta: Optional[float], scale_factor: int, gamma: float) -> None:
-    game._log_linear_binary_fast(beta, scale_factor)
+    FastBinaryLogLinearAlgorithm(game, beta, scale_factor)
 
 @GameEngine.register_algorithm("modified_log_linear")
 def _register_modified_log_linear(game: 'Game', beta: Optional[float], scale_factor: int, gamma: float) -> None:
