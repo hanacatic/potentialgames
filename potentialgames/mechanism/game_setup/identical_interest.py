@@ -3,7 +3,7 @@ from functools import partial
 from scipy.sparse import lil_matrix, csr_matrix
 
 from potentialgames.utils.helpers import * 
-from potentialgames.mechanism.game_setup import AbstractGameSetup
+from potentialgames.mechanism.game_setup import AbstractGameSetup, PayoffMatrix
 
 
 class IdenticalInterestSetup(AbstractGameSetup):
@@ -27,15 +27,15 @@ class IdenticalInterestSetup(AbstractGameSetup):
             eta (double, optional): Noise range. Defaults to None.
             payoff_matrix (_type_, optional): payoff matrix. Defaults to None.
         """
+            
+        if payoff_matrix is None:
+            self.payoff = PayoffMatrix(no_players, len(action_space), firstNE, secondNE, delta, symmetric)
+            self.payoff.regenerate()
+        else:
+            self.payoff = payoff_matrix
         
-        self.no_players = no_players
-        self.no_actions = len(action_space)
         self.no_action_profiles = self.no_actions**self.no_players
         self.action_space = [action_space]*self.no_players
-        self.firstNE = firstNE
-        self.secondNE = secondNE
-        self.delta = delta
-        self.symmetric = symmetric
         self.noisy_utility = noisy_utility
                 
         if self.noisy_utility:
@@ -50,16 +50,23 @@ class IdenticalInterestSetup(AbstractGameSetup):
 
         self.opponents_idx_map = [ np.delete(np.arange(self.no_players), player_id) for player_id in range(self.no_players) ]
 
-        # If payoff matrix has not been defined then generate a random payoff matrix
-        if payoff_matrix is None:
-            self.generate_payoff_matrix()
-        else:
-            self.set_payoff_matrix(delta, payoff_matrix)
-
         # Array of player utility functions, formulated based on a general utility function
         self.utility_functions = []
         for i in range(0, self.no_players):
             self.utility_functions.append(partial(self.utility_function, i))
+    
+    @property
+    def no_players(self):
+        return self.payoff.no_players
+    @property
+    def no_actions(self):
+        return self.payoff.no_actions
+    @property
+    def delta(self):
+        return self.payoff.delta
+    @property
+    def symmetric(self):
+        return self.payoff.symmetric
     
     def formulate_transition_matrix(self, beta): 
         """
@@ -192,46 +199,21 @@ class IdenticalInterestSetup(AbstractGameSetup):
                 
         return self.P
            
-    def generate_payoff_matrix(self):
-        """
-            Generate random payoff matrix.
-        """
-        
-        self.payoff_player_1 = np.random.uniform(0.0, 1 - self.delta, size = [self.no_actions] * self.no_players)
-        
-        self.payoff_player_1[tuple(self.firstNE)] = 1
-        self.payoff_player_1[tuple(self.secondNE)] = 1 - self.delta
-        
-        if self.symmetric: 
-            self.payoff_player_1 = make_symmetric_nd(self.payoff_player_1)
-    
     def reset_payoff_matrix(self, delta = None):
         """
             Generate a new random payoff matrix for the game.
         Args:
             delta (_type_, optional): the difference of potential between the first NE and second NE. Defaults to None.
-        """
-
-        if delta:
-            self.delta = delta
-            
-        self.generate_payoff_matrix()
+        """            
+        self.payoff.regenerate(delta=delta)
      
-    def set_payoff_matrix(self, delta, payoff):
+    def set_payoff_matrix(self, payoff):
         """
             Set new payoff matrix.
         Args:
             payoff(AxAx...A): payoff matrix.
         """
-        
-        # Get dimensions of the payoff matrix and update N, A and action space accordingly
-
-        self.payoff_player_1 = payoff.copy()
-        self.delta = delta
-        
-        # Make the payoff matrix symmetric
-        if self.symmetric:
-            self.payoff_player_1 = make_symmetric_nd(self.payoff_player_1)
+        self.payoff = payoff.copy()
 
     def potential_function(self, action_profile):
         """
@@ -242,7 +224,7 @@ class IdenticalInterestSetup(AbstractGameSetup):
         Returns:
             double: value of the potential function.
         """
-        return self.payoff_player_1[tuple(action_profile)]
+        return self.payoff.matrix[tuple(action_profile)]
     
     def utility_function(self, player_id, player_action, opponents_action):
         """

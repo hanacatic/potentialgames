@@ -16,12 +16,12 @@ def test_initialization():
     
     gameSetup = IdenticalInterestSetup(action_space, no_players, firstNE, secondNE, delta)
     
-    assert gameSetup.no_players == no_players
-    assert gameSetup.no_actions == len(action_space)
-    assert gameSetup.firstNE == firstNE
-    assert gameSetup.secondNE == secondNE
-    assert gameSetup.delta == delta
-    assert gameSetup.payoff_player_1.shape == (6, 6)
+    assert gameSetup.payoff.no_players == no_players
+    assert gameSetup.payoff.no_actions == len(action_space)
+    assert gameSetup.payoff.firstNE == firstNE
+    assert gameSetup.payoff.secondNE == secondNE
+    assert gameSetup.payoff.delta == delta
+    assert gameSetup.payoff.matrix.shape == (6, 6)
     
 def test_payoff_matrix():
     
@@ -33,7 +33,7 @@ def test_payoff_matrix():
     
     gameSetup = IdenticalInterestSetup(action_space, no_players, firstNE, secondNE, delta)
     
-    plot_payoff(gameSetup.payoff_player_1)
+    plot_payoff(gameSetup.payoff.matrix)
     plt.show()
     
 def test_potential_function():
@@ -152,4 +152,3 @@ def test_symmetric_setup():
             phi_ji = gameSetup.potential_function([j, i])
             
             assert np.isclose(phi_ij, phi_ji), f"Potential function is not symmetric for actions {i} and {j}: {phi_ij} != {phi_ji}"
-
