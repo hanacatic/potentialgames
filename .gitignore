@@ -8,3 +8,4 @@ build/
 _old/
 SiouxFallsSymmetric/
 games/
+*.egg-info

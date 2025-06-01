@@ -3,7 +3,7 @@ import pickle
 import numpy as np
 from functools import partial
 
-from src.mechanism.game_setup import AbstractGameSetup
+from potentialgames.mechanism.game_setup import AbstractGameSetup
 
 
 rng = np.random.default_rng()

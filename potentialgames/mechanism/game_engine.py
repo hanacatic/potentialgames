@@ -1,12 +1,10 @@
 import numpy as np
-from src.mechanism import Player
-from src.utils.helpers import *
+from potentialgames.mechanism import Player
+from potentialgames.utils.helpers import *
 from typing import Callable, Optional
-from src.mechanism.game_setup.abstract_setup import AbstractGameSetup
-from src.mechanism.algorithms import LogLinearAlgorithm, BinaryLogLinearAlgorithm, FastLogLinearAlgorithm, FastBinaryLogLinearAlgorithm, ModifiedLogLinearAlgorithm
-from src.utils.logger import logger
-
-rng = np.random.default_rng(seed = 2)
+from potentialgames.mechanism.game_setup.abstract_setup import AbstractGameSetup
+from potentialgames.mechanism.algorithms import LogLinearAlgorithm, BinaryLogLinearAlgorithm, FastLogLinearAlgorithm, FastBinaryLogLinearAlgorithm, ModifiedLogLinearAlgorithm
+from potentialgames.utils.logger import logger
 
 class GameEngine:
     """
@@ -78,6 +76,7 @@ class GameEngine:
             initial_action_profile (np.array(N)): Joint action profile.
         """
         self.initial_action_profile = initial_action_profile
+        
     def set_mu_matrix(self, mu_matrix: np.ndarray) -> None:
         """
             Sets the initial joint action profile matrix distribution to the given distribution.
@@ -198,22 +197,22 @@ class GameEngine:
 # --- Algorithm registration ---
 
 @GameEngine.register_algorithm("log_linear")
-def _register_log_linear(game: 'Game', beta: Optional[float], scale_factor: int, gamma: float) -> None:
+def _register_log_linear(game: 'GameEngine', beta: Optional[float], scale_factor: int, gamma: float) -> None:
     LogLinearAlgorithm.run(game, beta, gamma)
 
-@GameEngine.register_algorithm("log_linear_fast")
-def _register_log_linear_fast(game: 'Game', beta: Optional[float], scale_factor: int, gamma: float) -> None:
+@GameEngine.register_algorithm("fast_log_linear")
+def _register_log_linear_fast(game: 'GameEngine', beta: Optional[float], scale_factor: int, gamma: float) -> None:
     FastLogLinearAlgorithm.run(game, beta, scale_factor)
 
-@GameEngine.register_algorithm("log_linear_binary")
-def _register_log_linear_binary(game: 'Game', beta: Optional[float], scale_factor: int, gamma: float) -> None:
+@GameEngine.register_algorithm("binary_log_linear")
+def _register_log_linear_binary(game: 'GameEngine', beta: Optional[float], scale_factor: int, gamma: float) -> None:
     BinaryLogLinearAlgorithm.run(game, beta)
 
-@GameEngine.register_algorithm("log_linear_binary_fast")
-def _register_log_linear_binary_fast(game: 'Game', beta: Optional[float], scale_factor: int, gamma: float) -> None:
+@GameEngine.register_algorithm("fast_binary_log_linear")
+def _register_log_linear_binary_fast(game: 'GameEngine', beta: Optional[float], scale_factor: int, gamma: float) -> None:
     FastBinaryLogLinearAlgorithm.run(game, beta, scale_factor)
 
 @GameEngine.register_algorithm("modified_log_linear")
-def _register_modified_log_linear(game: 'Game', beta: Optional[float], scale_factor: int, gamma: float) -> None:
+def _register_modified_log_linear(game: 'GameEngine', beta: Optional[float], scale_factor: int, gamma: float) -> None:
     [game.players[i].set_modified_utility(game.gameSetup.modified_utility_functions[i]) for i in game.player_idx_map]
     ModifiedLogLinearAlgorithm.run(game, beta)

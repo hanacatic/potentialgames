@@ -1,8 +1,8 @@
 import numpy as np
 
-from src.mechanism.algorithms.abstract_algorithm import LearningAlgorithm
-from src.utils.logger import logger
-from src.utils.helpers import rng
+from potentialgames.mechanism.algorithms.abstract_algorithm import LearningAlgorithm
+from potentialgames.utils.logger import logger
+from potentialgames.utils.helpers import rng
 
 
 class BinaryLogLinearAlgorithm(LearningAlgorithm):

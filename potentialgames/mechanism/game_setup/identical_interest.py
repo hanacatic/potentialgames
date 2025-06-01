@@ -1,10 +1,10 @@
 import numpy as np
-from src.utils.helpers import * 
-from src.mechanism.game_setup import AbstractGameSetup
-from scipy.sparse import lil_matrix, csr_matrix
 from functools import partial
+from scipy.sparse import lil_matrix, csr_matrix
 
-rng = np.random.default_rng()
+from potentialgames.utils.helpers import * 
+from potentialgames.mechanism.game_setup import AbstractGameSetup
+
 
 class IdenticalInterestSetup(AbstractGameSetup):
     """
@@ -13,7 +13,7 @@ class IdenticalInterestSetup(AbstractGameSetup):
         Includes information on the number of players and actions, utility functions and potential function.
     """
     
-    def __init__(self, action_space, no_players, firstNE, secondNE, delta, type = "Asymmetrical", noisy_utility = False, eta = None, payoff_matrix = None): 
+    def __init__(self, action_space, no_players, firstNE, secondNE, delta, symmetric = False, noisy_utility = False, eta = None, payoff_matrix = None): 
         """
             Identical Interest game constructor. 
         Args:
@@ -22,7 +22,7 @@ class IdenticalInterestSetup(AbstractGameSetup):
             firstNE (_type_): coordinates of the largest Nash equilibrium.
             secondNE (_type_): coordinates of the second largest Nash equilibrium.
             delta (_type_): the difference of potential between the first NE and second NE.
-            type (str, optional): type of game. Defaults to "Asymmetrical".
+            symmetric (bool, optional): If True, the game is symmetric. Defaults to False.
             noisy_utility (bool, optional): Use noisy utilities. Defaults to False.
             eta (double, optional): Noise range. Defaults to None.
             payoff_matrix (_type_, optional): payoff matrix. Defaults to None.
@@ -35,15 +35,13 @@ class IdenticalInterestSetup(AbstractGameSetup):
         self.firstNE = firstNE
         self.secondNE = secondNE
         self.delta = delta
-        self.type = type
+        self.symmetric = symmetric
         self.noisy_utility = noisy_utility
-        
-        self.symmetric = False
-        
+                
         if self.noisy_utility:
             self.eta = eta
         elif eta is not None:
-            raise Exception("Sorry, the eta is not null, but the noisy utility mode is not enabled!")
+            raise ValueError("Sorry, the eta is not null, but the noisy utility mode is not enabled!")
         else:
             self.eta = 0
         
@@ -204,7 +202,7 @@ class IdenticalInterestSetup(AbstractGameSetup):
         self.payoff_player_1[tuple(self.firstNE)] = 1
         self.payoff_player_1[tuple(self.secondNE)] = 1 - self.delta
         
-        if self.type == "Symmetrical": 
+        if self.symmetric: 
             self.payoff_player_1 = make_symmetric_nd(self.payoff_player_1)
     
     def reset_payoff_matrix(self, delta = None):
@@ -232,7 +230,7 @@ class IdenticalInterestSetup(AbstractGameSetup):
         self.delta = delta
         
         # Make the payoff matrix symmetric
-        if self.type == "Symmetrical":
+        if self.symmetric:
             self.payoff_player_1 = make_symmetric_nd(self.payoff_player_1)
 
     def potential_function(self, action_profile):

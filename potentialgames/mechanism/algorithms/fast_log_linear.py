@@ -1,8 +1,10 @@
-from mechanism.algorithms.abstract_algorithm import LearningAlgorithm
 import numpy as np
 from scipy.sparse import csr_matrix, csc_array
 
-class FastLogLinear(LearningAlgorithm):
+from potentialgames.mechanism.algorithms.abstract_algorithm import LearningAlgorithm
+
+
+class FastLogLinearAlgorithm(LearningAlgorithm):
     """
         Log-linear learning utilising the Markov Chain approach.
     """
