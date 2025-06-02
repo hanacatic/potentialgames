@@ -69,7 +69,7 @@ class AbstractGameSetup(ABC):
         pass
 
     @abstractmethod
-    def formulate_transition_matrix_binary(self, beta):
+    def formulate_binary_transition_matrix(self, beta):
         """
         Formulate a binary transition matrix for the game based on player rationality.
 

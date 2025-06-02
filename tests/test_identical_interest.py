@@ -152,3 +152,60 @@ def test_symmetric_setup():
             phi_ji = gameSetup.potential_function([j, i])
             
             assert np.isclose(phi_ij, phi_ji), f"Potential function is not symmetric for actions {i} and {j}: {phi_ij} != {phi_ji}"
+
+def test_transition_matrix():
+    
+    action_space = np.arange(6)
+    no_players = 2
+    firstNE = [1, 1]
+    secondNE = [4, 4]
+    
+    delta = 0.1
+    beta = 10
+    
+    gameSetup = IdenticalInterestSetup(action_space, no_players, firstNE, secondNE, delta, symmetric=True)
+   
+    transition_matrix = gameSetup.formulate_transition_matrix(10)
+    
+    plot_payoff(transition_matrix)
+    plt.show()
+    
+    assert (transition_matrix[7, 7] > 0.5), "Transition matrix diagonal element is not greater than 0.5"
+    assert np.allclose(np.sum(transition_matrix, axis=1), 1.0), "Each row of the transition matrix should sum to 1"
+
+def test_sparse_transition_matrix():
+    
+    action_space = np.arange(6)
+    no_players = 2
+    firstNE = [1, 1]
+    secondNE = [4, 4]
+    
+    delta = 0.1
+    beta = 10
+    
+    gameSetup = IdenticalInterestSetup(action_space, no_players, firstNE, secondNE, delta, symmetric=True)
+   
+    transition_matrix = gameSetup.formulate_transition_matrix(beta)
+    sparse_transition_matrix = gameSetup.formulate_transition_matrix_sparse(beta).toarray()
+    
+    assert np.allclose(transition_matrix, sparse_transition_matrix), "Sparse and dense transition matrices differ"
+
+def test_binary_transition_matrix():
+    
+    action_space = np.arange(6)
+    no_players = 2
+    firstNE = [1, 1]
+    secondNE = [4, 4]
+    
+    delta = 0.1
+    beta = 10
+    
+    gameSetup = IdenticalInterestSetup(action_space, no_players, firstNE, secondNE, delta, symmetric=True)
+   
+    binary_transition_matrix = gameSetup.formulate_binary_transition_matrix(beta)
+        
+    plot_payoff(binary_transition_matrix)
+    plt.show()
+    
+    assert (binary_transition_matrix[7, 7] > 0.5), "Transition matrix diagonal element is not greater than 0.5"
+    assert np.allclose(np.sum(binary_transition_matrix, axis=1), 1.0), "Each row of the transition matrix should sum to 1"

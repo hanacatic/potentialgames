@@ -20,7 +20,7 @@ class FastBinaryLogLinearAlgorithm(LearningAlgorithm):
         """
         
         # Transition matrix of the Markov chain induced by log-linear learning for the game.
-        P = self.gameSetup.formulate_transition_matrix_binary(beta)
+        P = self.gameSetup.formulate_binary_transition_matrix(beta)
         mu0 = self.mu_matrix.copy()
         
         self.expected_value = np.zeros((int(self.max_iter), 1))

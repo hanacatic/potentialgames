@@ -131,19 +131,19 @@ class IdenticalInterestSetup(AbstractGameSetup):
                 
                 exp_values = np.exp(beta * (utilities - np.max(utilities)))
         
-                p = exp_values/np.sum(exp_values)
+                p = (exp_values/np.sum(exp_values)).flatten()
                 
                 stride = strides[player_id]
                 idx = opponents_actions @ strides[self.opponents_idx_map[player_id]]
                                 
-                for j, prob in enumerate(p):
+                for j, prob in enumerate(p): 
                     P_row.extend(idx + np.multiply(action_space, stride))
                     P_col.extend([idx + j * stride]*self.no_actions)
                     P_data.extend([prob / self.no_players]*self.no_actions)
                       
             i += 1 
         P_data = P_data 
-        
+                
         P = csr_matrix((P_data, (P_row, P_col)), shape=(self.no_action_profiles, self.no_action_profiles))
         P.sum_duplicates()
         self.P = P
@@ -151,7 +151,7 @@ class IdenticalInterestSetup(AbstractGameSetup):
         self.formulate_potential_vec()
         return self.P
 
-    def formulate_transition_matrix_binary(self, beta): 
+    def formulate_binary_transition_matrix(self, beta): 
         """
         Generate transition matrix for the binary log linear game with given rationality.
 
