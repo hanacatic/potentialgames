@@ -20,51 +20,64 @@ def save_figure(fig, folder, file_name):
     fig.savefig(f'../{folder}/{file_name}.png', dpi=600)
     fig.savefig(f'../{folder}/{file_name}.svg', dpi=600)
 
-def plot_matrix(matrix, xlabel, ylabel, title="Matrix", folder=None, file_name=None, save=False):
+def plot_matrix(matrix, xlabel='', ylabel='', title="Matrix", folder=None, file_name=None, save=False):
     """
     Plot a matrix as an image.
 
     Parameters:
         matrix (array-like): The matrix to plot.
-        xlabel (str): Label for the x-axis.
-        ylabel (str): Label for the y-axis.
+        xlabel (str, optional): Label for the x-axis. Default is "" (empty).
+        ylabel (str, optional): Label for the y-axis. Default is "" (empty).
         title (str, optional): Title for the plot. Default is "Matrix".
         folder (str, optional): Folder to save the file in. Default is None.
         file_name (str, optional): Name for saving the file (without extension). Default is None.
         save (bool, optional): Whether to save the plot (True) or show it (False). Default is False.
     """
     with plt.style.context(["science"]):
+        
         fig, ax = plt.subplots()
         ax.set_xlabel(xlabel)
         ax.set_ylabel(ylabel)
         plt.imshow(matrix)
         plt.colorbar()
+        
         if save:
             save_figure(fig, folder, file_name)
         else:
-            fig.show()
+            plt.show(block=False)
+            plt.pause(10)
 
-def plot_potential(mean_potential, title='Average potential', file_name=None, folder=None, save=False):
+
+def plot_line(line, xlabel='', ylabel='', title='Line', lim=None, save=False, folder=None, file_name=None):
     """
-    Plot the mean potential over time.
+    Plot a line over time.
 
     Parameters:
-        mean_potential (array-like): The mean potential values.
-        title (str): Plot title (currently unused).
-        file_name (str): Name for saving the file (without extension).
-        folder (str): Folder to save the file in.
+        line (array-like): The values to plot.
+        xlabel (str): Label for the x-axis. Default is "" (empty).
+        ylabel (str): Label for the y-axis. Default is "" (empty).
+        title (str): Plot title. Default is "Line".
+        lim (tuple, optional): y-axis limits as (min, max). Default is None.
         save (bool): Whether to save the plot or show it.
+        folder (str): Folder to save the file in.
+        file_name (str): Name for saving the file (without extension).
     """
     with plt.style.context(["science"]):
+        
         fig, ax = plt.subplots()
-        ax.plot(mean_potential)
-        ax.set_ylabel('Expected potential value')
-        ax.set_xlabel('T')
-        ax.set_ylim(0.8, 1.1)
+        ax.plot(line)
+        ax.set_xlabel(xlabel)
+        ax.set_ylabel(ylabel)
+        ax.set_title(title)
+        
+        if lim is not None:
+            ax.set_ylim(lim)
+            
         if save:
             save_figure(fig, folder, file_name)
         else:
-            fig.show()
+            plt.show(block=False)
+            plt.pause(10)
 
 def plot_potential_with_std(mean_potential, std, title='Average potential', file_name=None, folder=None, save=False):
     """

@@ -1,3 +1,3 @@
 from .logger import logger
 from .helpers import *
-from .plot import plot_matrix
+from .plot import plot_matrix, plot_line

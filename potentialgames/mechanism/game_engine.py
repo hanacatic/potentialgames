@@ -4,7 +4,7 @@ from potentialgames.utils.helpers import *
 from typing import Callable, Optional
 from potentialgames.mechanism.game_setup.abstract_setup import AbstractGameSetup
 from potentialgames.mechanism.algorithms import LogLinearAlgorithm, BinaryLogLinearAlgorithm, FastLogLinearAlgorithm, FastBinaryLogLinearAlgorithm, ModifiedLogLinearAlgorithm
-from potentialgames.utils.logger import logger
+from potentialgames.utils import logger, plot_line
 
 class GameEngine:
     """
@@ -193,6 +193,21 @@ class GameEngine:
             self.gameSetup.set_payoff_matrix(delta, payoff_matrix)
 
         [self.players[i].reset_player(self.gameSetup.no_actions, self.gameSetup.utility_functions[i]) for i in range(0, self.gameSetup.no_players)]
+        
+    def plot(self):
+        """
+            Plots the potentials history.
+        """
+        if "fast" in self.algorithm:
+            if self.expected_value is not None:
+                plot_line(self.expected_value, title="Expected Value", ylabel="Expected Value", xlabel="T")
+            else:
+                logger.warning("Expected value not available to plot.")
+        else:
+            if self.potentials_history is not None:
+                plot_line(self.potentials_history, title="Potentials History", ylabel="Potential", xlabel="T")
+            else:
+                logger.warning("Potentials history not available to plot.")
 
 # --- Algorithm registration ---
 

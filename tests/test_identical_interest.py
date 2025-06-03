@@ -1,6 +1,5 @@
 import numpy as np
 import pytest
-import matplotlib.pyplot as plt 
 
 from potentialgames.mechanism.game_setup.identical_interest import IdenticalInterestSetup
 from potentialgames.utils.plot import *
@@ -34,7 +33,6 @@ def test_payoff_matrix():
     gameSetup = IdenticalInterestSetup(action_space, no_players, firstNE, secondNE, delta)
     
     gameSetup.payoff.plot()
-    plt.show()
     
 def test_potential_function():
     
@@ -168,7 +166,6 @@ def test_transition_matrix():
     transition_matrix = gameSetup.formulate_transition_matrix(10)
     
     plot_matrix(transition_matrix, xlabel="Player 2", ylabel="Player 1", title="Transition Matrix")
-    plt.show()
     
     assert (transition_matrix[7, 7] > 0.5), "Transition matrix diagonal element is not greater than 0.5"
     assert np.allclose(np.sum(transition_matrix, axis=1), 1.0), "Each row of the transition matrix should sum to 1"
@@ -205,7 +202,6 @@ def test_binary_transition_matrix():
     binary_transition_matrix = gameSetup.formulate_binary_transition_matrix(beta)
         
     plot_matrix(binary_transition_matrix, xlabel="Player 2", ylabel="Player 1", title="Transition Matrix")
-    plt.show()
     
     assert (binary_transition_matrix[7, 7] > 0.5), "Transition matrix diagonal element is not greater than 0.5"
     assert np.allclose(np.sum(binary_transition_matrix, axis=1), 1.0), "Each row of the transition matrix should sum to 1"
