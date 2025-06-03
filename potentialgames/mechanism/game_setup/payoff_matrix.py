@@ -1,5 +1,6 @@
 import numpy as np
-from potentialgames.utils import make_symmetric_nd
+
+from potentialgames.utils import make_symmetric_nd, plot_matrix
 
 class PayoffMatrix:
     
@@ -54,3 +55,9 @@ class PayoffMatrix:
                 raise ValueError(f"Method {method} not found in PayoffMatrix.")
         else:
             raise ValueError("method must be None, a callable, or a string naming a method.")
+        
+    def plot(self):
+        """
+        Plot the payoff matrix.
+        """
+        plot_matrix(self.matrix, xlabel="Player 2", ylabel="Player 1", title="Payoff Matrix")

@@ -20,22 +20,24 @@ def save_figure(fig, folder, file_name):
     fig.savefig(f'../{folder}/{file_name}.png', dpi=600)
     fig.savefig(f'../{folder}/{file_name}.svg', dpi=600)
 
-def plot_payoff(payoff, title="Payoff matrix", folder=None, save=False, file_name="Payoff matrix"):
+def plot_matrix(matrix, xlabel, ylabel, title="Matrix", folder=None, file_name=None, save=False):
     """
-    Plot a payoff matrix as an image.
+    Plot a matrix as an image.
 
     Parameters:
-        payoff (array-like): The payoff matrix.
-        title (str): Plot title (currently unused).
-        folder (str): Folder to save the file in.
-        save (bool): Whether to save the plot or show it.
-        file_name (str): Name for saving the file (without extension).
+        matrix (array-like): The matrix to plot.
+        xlabel (str): Label for the x-axis.
+        ylabel (str): Label for the y-axis.
+        title (str, optional): Title for the plot. Default is "Matrix".
+        folder (str, optional): Folder to save the file in. Default is None.
+        file_name (str, optional): Name for saving the file (without extension). Default is None.
+        save (bool, optional): Whether to save the plot (True) or show it (False). Default is False.
     """
     with plt.style.context(["science"]):
         fig, ax = plt.subplots()
-        ax.set_xlabel('Player 2')
-        ax.set_ylabel('Player 1')
-        plt.imshow(payoff)
+        ax.set_xlabel(xlabel)
+        ax.set_ylabel(ylabel)
+        plt.imshow(matrix)
         plt.colorbar()
         if save:
             save_figure(fig, folder, file_name)
