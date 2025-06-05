@@ -104,38 +104,57 @@ def plot_potential_with_std(mean_potential, std, title='Average potential', file
         else:
             fig.show()
 
-def plot_lines(lines_to_plot, list_labels, iter=None, plot_e_efficient=False, title='Average potential', file_name=None, folder=None, save=False):
+def compare_lines(
+    lines,
+    lines_legend,
+    special_lines=None,
+    special_lines_legend=None,
+    title='Lines',
+    xlabel='',
+    ylabel='',
+    save=False,
+    folder=None,
+    file_name=None
+):
     """
-    Plot multiple lines, optionally with an efficient frontier.
+    Plot multiple lines, optionally with special lines (e.g., efficient frontier).
 
     Parameters:
-        lines_to_plot (list of array-like): Data for each line.
-        list_labels (list of str): Labels for each line.
-        iter (int): Number of iterations to plot.
-        plot_e_efficient (bool): Whether to plot the efficient frontier.
-        title (str): Plot title (currently unused).
-        file_name (str): Name for saving the file (without extension).
-        folder (str): Folder to save the file in.
+        lines (list of array-like): Data for each line.
+        lines_legend (list of str): Labels for each line.
+        special_lines (list of array-like, optional): Special lines to plot (e.g., efficient frontier). Default is None.
+        special_lines_legend (list of str, optional): Labels for special lines. Default is None.
+        title (str): Plot title. Default is "Lines".
+        xlabel (str, optional): Label for the x-axis. Default is "" (empty).
+        ylabel (str, optional): Label for the y-axis. Default is "" (empty).
         save (bool): Whether to save the plot or show it.
+        folder (str): Folder to save the file in.
+        file_name (str): Name for saving the file (without extension).
     """
     with plt.style.context(["science"]):
-        if iter is None:
-            iter = len(lines_to_plot[0])
+        
         fig, ax = plt.subplots()
-        t = np.arange(iter)
-        for idx, element in enumerate(lines_to_plot):
-            if idx < len(list_labels) - 1:
-                ax.plot(t[::100], element[0:iter:100], label=list_labels[idx], markevery=10000)
-            elif plot_e_efficient:
-                ax.plot(element[0:iter], 'k--', label=list_labels[idx])
-        ax.set_xlabel('T')
-        ax.set_ylabel('Expected potential value')
+        
+        for idx, element in enumerate(lines):
+            t = np.arange(len(element))
+            ax.plot(t, element, label=lines_legend[idx])
+        
+        if special_lines is not None and special_lines_legend is not None:
+            for idx, element in enumerate(special_lines):
+                t = np.arange(len(element))
+                ax.plot(t, element, 'k--', label=special_lines_legend[idx])
+        
+        ax.set_xlabel(xlabel)
+        ax.set_ylabel(ylabel)
+        ax.set_title(title)
         ax.legend(fontsize='x-small', loc="lower right", frameon=True)
+        
         if save:
             save_figure(fig, folder, file_name)
         else:
-            fig.show()
-   
+            plt.show(block=False)
+            plt.pause(10)
+
 def plot_lines_with_std(lines_to_plot, std, list_labels, iter=None, step=1, plot_e_efficient=False, conv_idx=None, title='Average potential', file_name=None, folder=None, save=False, legend="lower right"):
     """
     Plot multiple lines with standard deviation shading, optionally with an efficient frontier.

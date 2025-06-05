@@ -259,3 +259,7 @@ class IdenticalInterestSetup(AbstractGameSetup):
         for idx in np.arange(self.no_action_profiles):
             element = np.unravel_index(idx, (self.no_actions,)*(self.no_players))
             self.potential_vec[idx] = self.potential_function(element)
+    
+    def get_uniform_mu_matrix(self):
+        n = self.no_actions ** self.no_players
+        return np.ones(n) / n

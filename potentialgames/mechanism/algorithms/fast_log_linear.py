@@ -2,6 +2,7 @@ import numpy as np
 from scipy.sparse import csr_matrix, csc_array
 
 from potentialgames.mechanism.algorithms.abstract_algorithm import LearningAlgorithm
+from potentialgames.utils import logger
 
 
 class FastLogLinearAlgorithm(LearningAlgorithm):
@@ -17,7 +18,11 @@ class FastLogLinearAlgorithm(LearningAlgorithm):
             beta (double): Player rationality.
             scale_factor (int): Scaling factor.
         """
-        if game.gameSetup.no_players == 2:
+        if not hasattr(game, "mu_matrix") or game.mu_matrix is None:
+            game.mu_matrix = game.gameSetup.get_uniform_mu_matrix()
+            logger.warning("Initial distribution 'mu_matrix' not set. Using default uniform distribution.")
+
+        if game.no_players == 2:
             cls.log_linear_fast_impl(game, beta, scale_factor)
         else:
             cls.log_linear_fast_sparse(game, beta, scale_factor)
@@ -31,6 +36,9 @@ class FastLogLinearAlgorithm(LearningAlgorithm):
             beta (float): The inverse temperature parameter controlling the randomness of the log-linear learning.
             scale_factor (int): The number of steps to model at once by raising the transition matrix to this power.
         """
+        if not hasattr(game, "mu_matrix") or game.mu_matrix is None:
+            raise ValueError("Initial distribution 'mu_matrix' must be set for FastLogLinearAlgorithm.")
+        
         # Transition matrix of the Markov chain induced by log-linear learning for the game.
         P = game.gameSetup.formulate_transition_matrix(beta)
         mu0 = game.mu_matrix.copy()
@@ -58,6 +66,9 @@ class FastLogLinearAlgorithm(LearningAlgorithm):
             beta (float): Player rationality.
             scale_factor (int): Scale factor.
         """
+        if not hasattr(game, "mu_matrix") or game.mu_matrix is None:
+            raise ValueError("Initial distribution 'mu_matrix' must be set for FastLogLinearAlgorithm.")
+        
         # Transition matrix of the Markov chain induced by log-linear learning for the game.
         P = game.gameSetup.formulate_transition_matrix_sparse(beta)
         mu0 = csc_array(game.mu_matrix)

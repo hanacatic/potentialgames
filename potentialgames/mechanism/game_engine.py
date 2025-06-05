@@ -54,6 +54,19 @@ class GameEngine:
         
         self.potentials_history = np.zeros((self.max_iter, 1))                           
 
+    @property
+    def no_players(self) -> int:
+        """
+            Returns the number of players in the game.
+        """
+        return self.gameSetup.no_players
+    @property
+    def no_actions(self) -> int:
+        """
+            Returns the number of actions in the game.
+        """
+        return self.gameSetup.no_actions
+
     def sample_initial_action_profile(self, mu: Callable) -> np.ndarray:
         """
             Samples a joint action profile from the given distribution.
