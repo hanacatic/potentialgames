@@ -39,7 +39,44 @@ class PayoffMatrix:
         
         if self.symmetric: 
             self._payoff_player_1 = make_symmetric_nd(self._payoff_player_1)
+
+    def generate_plateau_matrix(self, no_players=None, no_actions=None, firstNE=None, secondNE=None, delta=None, symmetric=None, plateau_size=3):
+        """
+        Generate a two-plateau payoff matrix for N players.
+        """
+        if no_players is not None:
+            self.no_players = no_players
+        if no_actions is not None:
+            self.no_actions = no_actions
+        if firstNE is not None:
+            self.firstNE = firstNE
+        if secondNE is not None:
+            self.secondNE = secondNE
+        if delta is not None:
+            self.delta = delta
+        if symmetric is not None:
+            self.symmetric = symmetric
+
+        if plateau_size < 1 or plateau_size > self.no_actions // 2:
+            raise ValueError("The size of the plateau must be between 1 and half the number of actions.")
+        
+        shape = [self.no_actions] * self.no_players
+        payoff = np.random.random(size=shape) * 0.275 + 0.625 - self.delta
+
+        first_slice = tuple(slice(0, plateau_size) for _ in range(self.no_players))
+        second_slice = tuple(slice(self.no_actions - plateau_size, self.no_actions) for _ in range(self.no_players))
+
+        payoff[first_slice] = np.random.random(size=[plateau_size]*self.no_players) * 0.15 + 0.85 - self.delta
+        payoff[second_slice] = np.random.random(size=[plateau_size]*self.no_players) * 0.15 + 0.85 - self.delta
+        
+        payoff[tuple(self.firstNE)] = 1
+        payoff[tuple(self.secondNE)] = 1 - self.delta
+        
+        if self.symmetric:
+            payoff = make_symmetric_nd(payoff)
             
+        self._payoff_player_1 = payoff
+        
     def regenerate(self, method=None, **kwargs):
         """
         Regenerate the matrix, possibly with new properties.
@@ -52,9 +89,9 @@ class PayoffMatrix:
             if hasattr(self, method):
                 getattr(self, method)(**kwargs)
             else:
-                raise ValueError(f"Method {method} not found in PayoffMatrix.")
+                raise ValueError("Method not found in PayoffMatrix.")
         else:
-            raise ValueError("method must be None, a callable, or a string naming a method.")
+            raise ValueError("Method must be None, a callable, or a string naming a method.")
         
     def plot(self):
         """
