@@ -13,7 +13,7 @@ class IdenticalInterestSetup(AbstractGameSetup):
         Includes information on the number of players and actions, utility functions and potential function.
     """
     
-    def __init__(self, action_space, no_players, firstNE, secondNE, delta, symmetric = False, noisy_utility = False, eta = None, payoff_matrix = None): 
+    def __init__(self, action_space=None, no_players=None, firstNE=None, secondNE=None, delta=None, symmetric=False, use_noisy_utility=False, eta=None, payoff_matrix=None):
         """
             Identical Interest game constructor. 
         Args:
@@ -23,7 +23,7 @@ class IdenticalInterestSetup(AbstractGameSetup):
             secondNE (_type_): coordinates of the second largest Nash equilibrium.
             delta (_type_): the difference of potential between the first NE and second NE.
             symmetric (bool, optional): If True, the game is symmetric. Defaults to False.
-            noisy_utility (bool, optional): Use noisy utilities. Defaults to False.
+            use_noisy_utility (bool, optional): Use noisy utilities. Defaults to False.
             eta (double, optional): Noise range. Defaults to None.
             payoff_matrix (_type_, optional): payoff matrix. Defaults to None.
         """
@@ -34,11 +34,16 @@ class IdenticalInterestSetup(AbstractGameSetup):
         else:
             self.payoff = payoff_matrix
         
+        if action_space is None:
+            action_space = np.arange(self.no_actions)
+        elif not len(action_space) == self.no_actions:
+            raise ValueError("Action space does not match the number of actions in the payoff matrix!") 
+        
         self.no_action_profiles = self.no_actions**self.no_players
         self.action_space = [action_space]*self.no_players
-        self.noisy_utility = noisy_utility
+        self.use_noisy_utility = use_noisy_utility
                 
-        if self.noisy_utility:
+        if self.use_noisy_utility:
             self.eta = eta
         elif eta is not None:
             raise ValueError("Sorry, the eta is not null, but the noisy utility mode is not enabled!")

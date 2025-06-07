@@ -4,7 +4,7 @@ from potentialgames.utils.helpers import *
 from typing import Callable, Optional
 from potentialgames.mechanism.game_setup.abstract_setup import AbstractGameSetup
 from potentialgames.mechanism.algorithms import LogLinearAlgorithm, BinaryLogLinearAlgorithm, FastLogLinearAlgorithm, FastBinaryLogLinearAlgorithm, ModifiedLogLinearAlgorithm
-from potentialgames.utils import logger, plot_line
+from potentialgames.utils import logger, plot_line, compute_t, compute_beta
 
 class GameEngine:
     """
@@ -36,12 +36,12 @@ class GameEngine:
         self.max_iter = int(max_iter)
         
         # define the players
-        self.players = np.array([ Player(i, self.gameSetup.action_space[i], gameSetup.utility_functions[i], gameSetup.noisy_utility) for i in range(0, self.gameSetup.no_players)], dtype = object)
+        self.players = np.array([ Player(i, self.gameSetup.action_space[i], gameSetup.utility_functions[i], self.use_noisy_utility) for i in range(0, self.no_players)], dtype = object)
         # define the action space
-        self.action_space = [np.arange(len(self.gameSetup.action_space[player_id])) for player_id in range(self.gameSetup.no_players)]
+        self.action_space = [np.arange(len(self.gameSetup.action_space[player_id])) for player_id in range(self.no_players)]
 
         # initial joint action profile
-        self.action_profile = [0] * self.gameSetup.no_players
+        self.action_profile = [0] * self.no_players
         
         if mu is not None: 
             self.action_profile = self.sample_initial_action_profile(mu)
@@ -49,8 +49,8 @@ class GameEngine:
         # initialise properties required by the algorithms
         self.expected_value = None
         # maps for caching data reused by the algorithm for speed up
-        self.opponents_idx_map = [ np.delete(np.arange(self.gameSetup.no_players), player_id) for player_id in range(self.gameSetup.no_players) ]
-        self.player_idx_map = np.arange(0, self.gameSetup.no_players) 
+        self.opponents_idx_map = [ np.delete(np.arange(self.no_players), player_id) for player_id in range(self.no_players) ]
+        self.player_idx_map = np.arange(0, self.no_players) 
         
         self.potentials_history = np.zeros((self.max_iter, 1))                           
 
@@ -66,7 +66,25 @@ class GameEngine:
             Returns the number of actions in the game.
         """
         return self.gameSetup.no_actions
-
+    @property
+    def delta(self) -> float:
+        """
+            Returns the suboptimality gap of the game.
+        """
+        return self.gameSetup.delta
+    @property
+    def symmetric(self) -> bool:
+        """
+            Returns whether the game is symmetric or not.
+        """
+        return self.gameSetup.symmetric
+    @property
+    def use_noisy_utility(self) -> bool:
+        """
+            Returns whether the game uses noisy utility or not.
+        """
+        return self.gameSetup.use_noisy_utility
+    
     def sample_initial_action_profile(self, mu: Callable) -> np.ndarray:
         """
             Samples a joint action profile from the given distribution.
@@ -122,7 +140,7 @@ class GameEngine:
             self.action_profile = initial_action_profile.copy()
         
         # Reset players (gameBase function play can have successive calls)
-        for player_id in range(self.gameSetup.no_players):
+        for player_id in range(self.no_players):
             player = self.players[player_id]
             player.previous_action = self.action_profile[player_id].copy()            
 
@@ -131,45 +149,29 @@ class GameEngine:
             self.algorithm_registry[self.algorithm](self, beta, scale_factor, gamma)
         else:
             raise ValueError(f"Unknown algorithm: {self.algorithm}")
-
+    
     def compute_beta(self, epsilon: float) -> float:
-        """
-            Computes the lower bound on rationality that guarantees finite time convergence.
-        Args:
-            epsilon (double): Desired precision.
-
-        Returns:
-            double: Lower bound on players rationality.
-        """
         
-        A = self.gameSetup.no_actions
-        N = self.gameSetup.no_players
-        delta = self.gameSetup.delta
+        A = self.no_actions
+        N = self.no_players
+        delta = self.delta
+        symmetric = self.symmetric
+        use_noisy_utility = self.use_noisy_utility
         
-        if self.gameSetup.symmetric is True:
-            1/max(epsilon, delta)*(A*np.log(N) - np.log(epsilon))
+        return compute_beta(A, N, delta, epsilon, symmetric, use_noisy_utility)
+
+    def compute_t(self, epsilon: float) -> int:
         
-        return 1/max(epsilon, delta)*(N*np.log(A) - np.log(epsilon))
-
-    def compute_t(self, epsilon: float) -> float:
-        """
-            Computes the maximum time until convergence.
-        Args:
-            epsilon (double): Desired precision
-
-        Returns:
-            double: Maximum time until convergence
-        """
-        A = self.gameSetup.no_actions
-        N = self.gameSetup.no_players
-        delta = self.gameSetup.delta
+        A = self.no_actions
+        N = self.no_players
+        delta = self.delta
+        symmetric = self.symmetric
+        use_noisy_utility = self.use_noisy_utility
+        
         beta = self.compute_beta(epsilon)
         
-        if self.gameSetup.noisy_utility:
-            return np.log(N**1.5*A**3) + N + beta*(1+1/beta)*(N+3) * np.log(-2*np.log(epsilon))
-        
-        return np.log(N**2*A**5) + (1/max(epsilon, delta))*N*np.log(A/epsilon)
-
+        return compute_t(A, N, delta, epsilon, beta, symmetric, use_noisy_utility)
+    
     def set_max_iter(self, epsilon: float) -> None:
         """
             Set the number of iterations based the convergence guarantee for the desired precision of the game.
@@ -178,7 +180,7 @@ class GameEngine:
         """
         self.max_iter = int(min(1e5, self.compute_t(epsilon)))
         
-        self.action_profile_history = np.zeros((self.max_iter, self.gameSetup.no_players))
+        self.action_profile_history = np.zeros((self.max_iter, self.no_players))
         self.player_id_history = np.zeros((self.max_iter, 1))
         
         self.potentials_history = np.zeros((self.max_iter, 1))
@@ -192,7 +194,7 @@ class GameEngine:
         """
         self.algorithm = algorithm
         
-    def reset_game(self, delta: Optional[float] = None, payoff_matrix: Optional[np.ndarray] = None) -> None:
+    def reset_game(self, payoff_matrix: Optional[np.ndarray] = None) -> None:
         """
             Reset the game to its initial state.
         Args:
@@ -200,12 +202,10 @@ class GameEngine:
             payoff_matrix (np.array(AxAxA...(Nd)), optional): Payoff matrix of the game. Defaults to None.
         """
         
-        if delta is None:
-            delta = self.gameSetup.delta
         if payoff_matrix is not None:
-            self.gameSetup.set_payoff_matrix(delta, payoff_matrix)
+            self.gameSetup.set_payoff_matrix(payoff_matrix)
 
-        [self.players[i].reset_player(self.gameSetup.no_actions, self.gameSetup.utility_functions[i]) for i in range(0, self.gameSetup.no_players)]
+        [self.players[i].reset_player(self.no_actions, self.gameSetup.utility_functions[i]) for i in range(0, self.no_players)]
         
     def plot(self):
         """

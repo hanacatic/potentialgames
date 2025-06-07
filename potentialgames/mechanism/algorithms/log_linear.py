@@ -24,7 +24,7 @@ class LogLinearAlgorithm(LearningAlgorithm):
 
         logger.info("Log-linear learning")
         
-        if game.gameSetup.noisy_utility and game.gameSetup.eta is None:
+        if game.use_noisy_utility and game.gameSetup.eta is None:
             game.gameSetup.eta = 1/2.0/beta
        
         for i in range(0, game.max_iter): 

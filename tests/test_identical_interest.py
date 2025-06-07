@@ -81,7 +81,7 @@ def test_utility_function_noisy():
     secondNE = [4, 4]
     delta = 0.1
     
-    gameSetup = IdenticalInterestSetup(action_space, no_players, firstNE, secondNE, delta, noisy_utility=True)
+    gameSetup = IdenticalInterestSetup(action_space, no_players, firstNE, secondNE, delta, use_noisy_utility=True)
 
     for i in action_space:
         for j in action_space:
@@ -104,7 +104,7 @@ def test_utility_function_noisy_eta():
     
     eta = 0.5
     
-    gameSetup = IdenticalInterestSetup(action_space, no_players, firstNE, secondNE, delta, noisy_utility=True, eta=eta)
+    gameSetup = IdenticalInterestSetup(action_space, no_players, firstNE, secondNE, delta, use_noisy_utility=True, eta=eta)
 
     for i in action_space:
         for j in action_space:
