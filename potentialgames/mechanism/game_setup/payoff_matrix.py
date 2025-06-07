@@ -1,6 +1,9 @@
 import numpy as np
+from pathlib import Path
+import pickle
 
 from potentialgames.utils import make_symmetric_nd, plot_matrix
+
 
 class PayoffMatrix:
     
@@ -92,7 +95,17 @@ class PayoffMatrix:
                 raise ValueError("Method not found in PayoffMatrix.")
         else:
             raise ValueError("Method must be None, a callable, or a string naming a method.")
-        
+    
+    def save(self, file_path):        
+        with open(file_path, 'wb') as f:
+            pickle.dump(self, f)
+    
+    @classmethod
+    def load(cls, file_path):
+        with open(file_path, 'rb') as f:
+            return pickle.load(f)
+                        
+         
     def plot(self):
         """
         Plot the payoff matrix.
