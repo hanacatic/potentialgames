@@ -1,0 +1,11 @@
+__pycache__ 
+*.txt
+*.c
+*.pyx
+*.pyd
+logs/
+build/
+_old/
+SiouxFallsSymmetric/
+games/
+*.egg-info
