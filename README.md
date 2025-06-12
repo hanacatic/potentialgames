@@ -9,7 +9,6 @@ The project was tested on Windows 11 and is written in Python 3.12. Other requir
 * pandas
 * scipy
 * networkx
-* [Transportation Networks](https://github.com/bstabler/TransportationNetworks)
 * [SciencePlots](https://github.com/garrettj403/SciencePlots)
 
 Recommended:
