@@ -3,8 +3,8 @@ import pickle
 import numpy as np
 from functools import partial
 
-from potentialgames.mechanism.game_setup import AbstractGameSetup
-from potentialgames.utils import rng, logger
+from ...mechanism.game_setup import AbstractGameSetup
+from ...utils import rng, logger
 
 
 # TODO docs

@@ -1,8 +1,8 @@
 import numpy as np
 from scipy.sparse import csr_matrix, csc_array
 
-from potentialgames.mechanism.algorithms.abstract_algorithm import LearningAlgorithm
-from potentialgames.utils import logger
+from ...mechanism.algorithms.abstract_algorithm import LearningAlgorithm
+from ...utils import logger
 
 
 class FastBinaryLogLinearAlgorithm(LearningAlgorithm):

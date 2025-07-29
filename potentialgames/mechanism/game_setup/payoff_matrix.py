@@ -2,7 +2,7 @@ import numpy as np
 from pathlib import Path
 import pickle
 
-from potentialgames.utils import make_symmetric_nd, plot_matrix
+from ...utils import make_symmetric_nd, plot_matrix
 
 
 class PayoffMatrix:

@@ -2,8 +2,8 @@ import numpy as np
 from functools import partial
 from scipy.sparse import lil_matrix, csr_matrix
 
-from potentialgames.utils.helpers import * 
-from potentialgames.mechanism.game_setup import AbstractGameSetup, PayoffMatrix
+from ...utils.helpers import * 
+from ...mechanism.game_setup import AbstractGameSetup, PayoffMatrix
 import copy
 
 

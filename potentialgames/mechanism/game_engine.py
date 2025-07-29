@@ -1,10 +1,11 @@
 import numpy as np
-from potentialgames.mechanism import Player
-from potentialgames.utils.helpers import *
 from typing import Callable, Optional
-from potentialgames.mechanism.game_setup.abstract_setup import AbstractGameSetup
-from potentialgames.mechanism.algorithms import LogLinearAlgorithm, BinaryLogLinearAlgorithm, FastLogLinearAlgorithm, FastBinaryLogLinearAlgorithm, ModifiedLogLinearAlgorithm
-from potentialgames.utils import logger, plot_line, compute_t, compute_beta
+
+from ..mechanism import Player
+from ..utils.helpers import *
+from ..mechanism.game_setup.abstract_setup import AbstractGameSetup
+from ..mechanism.algorithms import LogLinearAlgorithm, BinaryLogLinearAlgorithm, FastLogLinearAlgorithm, FastBinaryLogLinearAlgorithm, ModifiedLogLinearAlgorithm
+from ..utils import logger, plot_line, compute_t, compute_beta
 
 class GameEngine:
     """

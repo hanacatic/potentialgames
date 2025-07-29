@@ -1,6 +1,6 @@
 import numpy as np
 
-from potentialgames.utils import logger, rng
+from ..utils import logger, rng
 
 class Player:
     """
