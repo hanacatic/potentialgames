@@ -3,3 +3,4 @@ from .binary_log_linear import BinaryLogLinearAlgorithm
 from .fast_log_linear import FastLogLinearAlgorithm
 from .fast_binary_log_linear import FastBinaryLogLinearAlgorithm
 from .modified_log_linear import ModifiedLogLinearAlgorithm
+from .hedge import HedgeAlgorithm

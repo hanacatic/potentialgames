@@ -4,7 +4,7 @@ from typing import Callable, Optional
 from ..mechanism import Player
 from ..utils.helpers import *
 from ..mechanism.game_setup.abstract_setup import AbstractGameSetup
-from ..mechanism.algorithms import LogLinearAlgorithm, BinaryLogLinearAlgorithm, FastLogLinearAlgorithm, FastBinaryLogLinearAlgorithm, ModifiedLogLinearAlgorithm
+from ..mechanism.algorithms import LogLinearAlgorithm, BinaryLogLinearAlgorithm, FastLogLinearAlgorithm, FastBinaryLogLinearAlgorithm, ModifiedLogLinearAlgorithm, HedgeAlgorithm
 from ..utils import logger, plot_line, compute_t, compute_beta
 
 class GameEngine:
@@ -265,3 +265,7 @@ def _register_modified_log_linear(game: 'GameEngine', beta: Optional[float], sca
     for i in game.player_idx_map:
         game.players[i].utility = game.gameSetup.modified_utility_functions[i]
     ModifiedLogLinearAlgorithm.run(game, beta)
+
+@GameEngine.register_algorithm("hedge")
+def _register_hedge(game: 'GameEngine', beta: Optional[float], scale_factor: int, gamma: float) -> None:
+    HedgeAlgorithm.run(game, scale_factor)

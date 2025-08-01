@@ -1,4 +1,9 @@
+import numpy as np
+
 from ...mechanism.algorithms.abstract_algorithm import LearningAlgorithm
+from ...mechanism.game_setup import CoverageSetup
+from ...utils.helpers import rng
+
 
 class HedgeAlgorithm(LearningAlgorithm):
     """
@@ -6,7 +11,7 @@ class HedgeAlgorithm(LearningAlgorithm):
         Y. Freund and R. E. Schapire, ‘A decision-theoretic generalization of on-line learning and an application to boosting’
     """
     @classmethod
-    def run(cls, game: "GameEngine", beta: float, scale_factor: int) -> None:
+    def run(cls, game: "GameEngine", scale_factor: int) -> None:
 
         gamma_t = np.sqrt(8*np.log(game.no_actions)/game.max_iter) # exploration factor
 
@@ -29,16 +34,16 @@ class HedgeAlgorithm(LearningAlgorithm):
 
             opponents_actions = game.action_profile[game.opponents_idx_map[player_id]] # extract the opponents actions from the action profile
 
-            cls.update_mw(player, gamma_t, opponents_actions) # update players mixed strategy
+            cls.update_player(player, gamma_t, opponents_actions) # update players mixed strategy
 
-            game.potentials_history[i] =  (past_exp_potential*i + game.potential_function(game.action_profile))/(i+1) # compute the value of the potential function
+            game.potentials_history[i] =  (past_exp_potential*i + game.gameSetup.potential_function(game.action_profile))/(i+1) # compute the value of the potential function
 
             past_exp_potential = game.potentials_history[i]
 
-            if isinstance(game.gameSetup, CongestionGame):
+            if isinstance(game.gameSetup, CoverageSetup):
                 game.objectives_history[i] = game.gameSetup.objective(game.action_profile)
                 
-     @classmethod
+    @classmethod
     def update_player(cls, player, gamma_t, opponents_actions):
         
         if player.utilities is None or not np.array_equal(player.previous_opponents_actions, opponents_actions):
