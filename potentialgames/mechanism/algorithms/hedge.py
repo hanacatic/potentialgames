@@ -12,7 +12,7 @@ class HedgeAlgorithm(LearningAlgorithm):
         Y. Freund and R. E. Schapire, ‘A decision-theoretic generalization of on-line learning and an application to boosting’
     """
     @classmethod
-    def run(cls, game: "GameEngine", scale_factor: int) -> None:
+    def run(cls, game: "GameEngine") -> None:
         
         logger.info("Hedge")
         

@@ -268,4 +268,4 @@ def _register_modified_log_linear(game: 'GameEngine', beta: Optional[float], sca
 
 @GameEngine.register_algorithm("hedge")
 def _register_hedge(game: 'GameEngine', beta: Optional[float], scale_factor: int, gamma: float) -> None:
-    HedgeAlgorithm.run(game, scale_factor)
+    HedgeAlgorithm.run(game)
