@@ -2,6 +2,7 @@ import numpy as np
 
 from ...mechanism.algorithms.abstract_algorithm import LearningAlgorithm
 from ...mechanism.game_setup import CoverageSetup
+from ...utils.logger import logger
 from ...utils.helpers import rng
 
 
@@ -12,7 +13,9 @@ class HedgeAlgorithm(LearningAlgorithm):
     """
     @classmethod
     def run(cls, game: "GameEngine", scale_factor: int) -> None:
-
+        
+        logger.info("Hedge")
+        
         gamma_t = np.sqrt(8*np.log(game.no_actions)/game.max_iter) # exploration factor
 
         for player_id in range(game.no_players):
@@ -24,7 +27,7 @@ class HedgeAlgorithm(LearningAlgorithm):
         for i in range(game.max_iter):
 
             if i % 20 == 0:
-                print(str(i) + "th iteration")
+                logger.info(f"{i}th iteration")
                         
             player_id = rng.integers(0, len(game.players), 1)[0] # randomly choose a player
 
@@ -36,7 +39,7 @@ class HedgeAlgorithm(LearningAlgorithm):
 
             cls.update_player(player, gamma_t, opponents_actions) # update players mixed strategy
 
-            game.potentials_history[i] =  (past_exp_potential*i + game.gameSetup.potential_function(game.action_profile))/(i+1) # compute the value of the potential function
+            game.potentials_history[i] = (past_exp_potential*i + game.gameSetup.potential_function(game.action_profile))/(i+1) # compute the value of the potential function
 
             past_exp_potential = game.potentials_history[i]
 
