@@ -1,10 +1,11 @@
 import numpy as np
 
 from ...mechanism.algorithms.abstract_algorithm import LearningAlgorithm
+from ...mechanism.game_setup.coverage import CoverageSetup
 from ...utils.logger import logger
 from ...utils.helpers import rng
 
-class EXP3P(LearningAlgorithm):
+class EXP3PAlgorithm(LearningAlgorithm):
     
     @classmethod
     def run(cls, game: "GameEngine"):
@@ -59,13 +60,13 @@ class EXP3P(LearningAlgorithm):
         if player.min_payoff is not None:
             v[action] = (v[action] - player.min_payoff)/(player.max_payoff - player.min_payoff)
 
-        v[action] = v[action]/player.prob[0][action]
+        v[action] = v[action]/player.probabilities[0][action]
 
-        player.rewards_estimate = player.rewards_estimate + beta * np.divide(player.ones, player.prob) + v
+        player.rewards_estimate = player.rewards_estimate + beta * np.divide(player.ones_vector, player.probabilities) + v
 
         temp = np.multiply(eta, player.rewards_estimate)
         player.weights = np.exp(temp - np.max(temp))
         player.weights = player.weights / np.sum(player.weights)
-        player.probabilities = (1 - gamma) * player.weights + gamma / player.no_actions * player.ones
+        player.probabilities = (1 - gamma) * player.weights + gamma / player.n_actions * player.ones_vector
 
         player.probabilities = player.probabilities / np.sum(player.probabilities)
