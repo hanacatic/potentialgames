@@ -4,7 +4,7 @@ from typing import Callable, Optional
 from ..mechanism import Player
 from ..utils.helpers import *
 from ..mechanism.game_setup.abstract_setup import AbstractGameSetup
-from ..mechanism.algorithms import LogLinearAlgorithm, BinaryLogLinearAlgorithm, FastLogLinearAlgorithm, FastBinaryLogLinearAlgorithm, ModifiedLogLinearAlgorithm, HedgeAlgorithm, EXP3PAlgorithm
+from ..mechanism.algorithms import LogLinearAlgorithm, BinaryLogLinearAlgorithm, FastLogLinearAlgorithm, FastBinaryLogLinearAlgorithm, ModifiedLogLinearAlgorithm, HedgeAlgorithm, EXP3PAlgorithm, ExponentialWeightWithAnnealingAlgorithm
 from ..utils import logger, plot_line, compute_t, compute_beta
 
 class GameEngine:
@@ -273,3 +273,7 @@ def _register_hedge(game: 'GameEngine', beta: Optional[float], scale_factor: int
 @GameEngine.register_algorithm("exp3p")
 def _register_exp3p(game: 'GameEngine', beta: Optional[float], scale_factor: int, gamma: float) -> None:
     EXP3PAlgorithm.run(game)
+    
+@GameEngine.register_algorithm("exponential_weight_with_annealing")
+def _register_exponential_weight_with_annealing(game: 'GameEngine', beta: Optional[float], scale_factor: int, gamma: float) -> None:
+    ExponentialWeightWithAnnealingAlgorithm.run(game)

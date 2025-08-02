@@ -5,3 +5,4 @@ from .fast_binary_log_linear import FastBinaryLogLinearAlgorithm
 from .modified_log_linear import ModifiedLogLinearAlgorithm
 from .hedge import HedgeAlgorithm
 from .exp3p import EXP3PAlgorithm
+from .exponential_weight_with_annealing import ExponentialWeightWithAnnealingAlgorithm
