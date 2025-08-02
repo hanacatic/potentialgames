@@ -14,12 +14,12 @@ def make_simple_game():
     
     setup = IdenticalInterestSetup(action_space, no_players, firstNE, secondNE, delta)
     
-    game = GameEngine(setup, algorithm="hedge", max_iter=1e4)
+    game = GameEngine(setup, algorithm="exp3p", max_iter=1e4)
     game.set_initial_action_profile(np.array([0, 0]))
     
     return game
 
-def test_hedge_algorithm():
+def test_exp3p_algorithm():
     
     game = make_simple_game()
     
@@ -28,7 +28,7 @@ def test_hedge_algorithm():
     
     assert len(game.potentials_history) == game.max_iter
     
-def test_hedge_algorithm_convergence():
+def test_exp3p_algorithm_convergence():
     
     game = make_simple_game()
     
@@ -41,4 +41,3 @@ def test_hedge_algorithm_convergence():
     second_half_var = np.var(potentials[len(potentials)//2:])
     
     assert first_half_var > second_half_var, f"Expected variance to decrease, got {first_half_var} and {second_half_var}"
-    
