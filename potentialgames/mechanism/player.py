@@ -35,12 +35,13 @@ class Player:
         """
         self.previous_action = None
         self.action_space = np.arange(self.n_actions).reshape(1, self.n_actions)
-        self.probabilities = 1/self.n_actions*np.ones([1, self.n_actions])
-        self.weights = 1/self.n_actions*np.ones([1, self.n_actions])
+        self.probabilities = np.ascontiguousarray(1/self.n_actions*np.ones([1, self.n_actions]))
+        self.weights = np.ascontiguousarray(1/self.n_actions*np.ones([1, self.n_actions]))
         self.scores = 1/self.n_actions*np.ones([1, self.n_actions])
         self.initial_action = np.array([0])
-        self.ones_vector = np.ones(self.n_actions)
-        self.rewards_estimate = np.zeros(self.n_actions)
+        self.ones_vector = np.ascontiguousarray(np.ones(self.n_actions))
+        self.zeros_vector = np.zeros(self.n_actions)
+        self.rewards_estimate = np.ascontiguousarray(np.zeros(self.n_actions))
         self.min_payoff = None
         self.max_payoff = None
         self.previous_opponents_actions = None
@@ -58,6 +59,7 @@ class Player:
             raise ValueError("Noisy utility requires a positive noise bound (eta).")
 
         self.utilities = np.array([self.utility(i, opponents_actions) for i in range(self.n_actions)]).reshape(1, self.n_actions)
+        self.utilities = np.ascontiguousarray(self.utilities)
 
         if self.min_payoff is not None and self.max_payoff is not None and self.max_payoff != self.min_payoff:
             self.utilities = (self.utilities - self.min_payoff) / (self.max_payoff - self.min_payoff)
