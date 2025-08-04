@@ -15,7 +15,6 @@ class ExponentialWeightWithAnnealingAlgorithm(LearningAlgorithm):
         
         gamma_n = 1
         eps_n = 1
-        mixed_strategies = np.zeros([game.no_players, game.no_actions])
 
         past_exp_potential = 0
 

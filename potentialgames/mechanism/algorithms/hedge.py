@@ -55,6 +55,6 @@ class HedgeAlgorithm(LearningAlgorithm):
 
         losses = player.ones_vector - player.utilities
 
-        player.probabilities = np.multiply(player.probabilities, np.exp(np.multiply(gamma_t, -losses))) # update straetgy
+        player.probabilities = np.multiply(player.probabilities, np.exp(np.multiply(gamma_t, -losses))) # update strategy
 
         player.probabilities = player.probabilities / np.sum(player.probabilities)
