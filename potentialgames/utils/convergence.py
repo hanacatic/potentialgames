@@ -2,8 +2,8 @@ import numpy as np
 
 def compute_beta(A: int, N: int, delta: float, epsilon: float, symmetric: bool = False, use_noisy_utility: bool = False):
     if symmetric:
-        return 1 / max(epsilon, delta) * (A * np.log(N) - np.log(epsilon))
-    return 1 / max(epsilon, delta) * (N * np.log(A) - np.log(epsilon))
+        return 1 / delta * (A * np.log(N) + np.log(2-epsilon) - np.log(epsilon))
+    return 1 / delta * (N * np.log(A) + np.log(2-epsilon) - np.log(epsilon))
 
 def compute_t(A: int, N: int, delta: float, epsilon: float, beta: float, symmetric:bool=False, use_noisy_utility: bool = False):
     if use_noisy_utility:
