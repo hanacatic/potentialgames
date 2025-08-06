@@ -8,7 +8,7 @@ from potentialgames.mechanism.game_setup import PayoffMatrix, IdenticalInterestS
 from potentialgames.mechanism.game_engine import GameEngine
 from potentialgames.utils import compute_beta, logger, compare_lines
 
-    """
+"""
     Runs a series of experiments to evaluate the effect of different delta values on the convergence of a specified game-theoretic algorithm.
     The function simulates repeated plays of a potential game for various delta values, using either pre-generated or newly generated payoff matrices.
     It supports both deterministic and noisy utility settings.
@@ -27,7 +27,8 @@ from potentialgames.utils import compute_beta, logger, compare_lines
         verbose (bool): Whether to print progress and plot results (default: True).
     Saves:
         The potential history of experiments to a pickle file in the data/experiments/delta directory.
-    """    
+""" 
+   
 def delta_experiment(algorithm = "fast_log_linear", no_actions = 10, no_players = 2, deltas = [0.15, 0.1, 0.075], use_noisy_utility = False, symmetric = False, eps = 0.05, max_iter = 1000000, n_exp = 30, load_games=True, verbose=True): 
 
     logger.info("Delta experiments for algorithm: " + algorithm)

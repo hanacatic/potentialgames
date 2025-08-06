@@ -26,7 +26,7 @@ class HedgeAlgorithm(LearningAlgorithm):
         # Main loop
         for i in range(game.max_iter):
 
-            if i % 20 == 0:
+            if i % 5000 == 0:
                 logger.info(f"{i}th iteration")
                         
             player_id = rng.integers(0, len(game.players), 1)[0] # randomly choose a player

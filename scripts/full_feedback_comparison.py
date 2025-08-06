@@ -85,7 +85,6 @@ def full_feedback_comparison(no_actions=10, no_players=2, delta=0.1, symmetric =
         for j in range(10):
             
             game_hedge.play()
-            
             game_hedge.reset_game()
             
             potentials_hedge[j] = np.transpose(game_hedge.potentials_history)
@@ -108,7 +107,7 @@ def full_feedback_comparison(no_actions=10, no_players=2, delta=0.1, symmetric =
     potentials_lll_path = repo_root / "data" / "experiments" / "full_feedback_comparison" / "potentials_lll.pckl"
     potentials_hedge_path = repo_root / "data" / "experiments" / "full_feedback_comparison" / "potentials_hedge.pckl"
     
-    potentials_llll_path.parent.mkdir(parents=True, exist_ok=True)
+    potentials_lll_path.parent.mkdir(parents=True, exist_ok=True)
     potentials_hedge_path.parent.mkdir(parents=True, exist_ok=True)
     
     with open(potentials_lll_path, "wb") as f:
