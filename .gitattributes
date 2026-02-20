@@ -1,0 +1,11 @@
+*mean_data.pckl filter=lfs diff=lfs merge=lfs -text
+*meta_data.pckl filter=lfs diff=lfs merge=lfs -text
+*t_data.pckl filter=lfs diff=lfs merge=lfs -text
+*std_data.pckl filter=lfs diff=lfs merge=lfs -text
+*markers.pckl filter=lfs diff=lfs merge=lfs -text
+**/*mean_data.pckl filter=lfs diff=lfs merge=lfs -text
+**/*meta_data.pckl filter=lfs diff=lfs merge=lfs -text
+**/*t_data.pckl filter=lfs diff=lfs merge=lfs -text
+**/*std_data.pckl filter=lfs diff=lfs merge=lfs -text
+**/*markers_data.pckl filter=lfs diff=lfs merge=lfs -text
+**/*markers.pckl filter=lfs diff=lfs merge=lfs -text
