@@ -1,7 +1,6 @@
 import numpy as np
 
 from ...mechanism.algorithms.abstract_algorithm import LearningAlgorithm
-from ...mechanism.game_setup import CoverageSetup
 from ...utils.logger import logger
 from ...utils.helpers import rng
 
@@ -43,8 +42,6 @@ class HedgeAlgorithm(LearningAlgorithm):
 
             past_exp_potential = game.potentials_history[i]
 
-            if isinstance(game.gameSetup, CoverageSetup):
-                game.objectives_history[i] = game.gameSetup.objective(game.action_profile)
                 
     @classmethod
     def update_player(cls, player, gamma_t, opponents_actions):

@@ -1,6 +1,5 @@
-from scripts import (delta_experiment, epsilon_experiment, coverage_experiment,
-                     full_feedback_comparison, reduced_feedback_comparison,
-                     delta_estimation_experiment)
+from scripts import (delta_experiment, epsilon_experiment, full_feedback_comparison, 
+                     reduced_feedback_comparison, delta_estimation_experiment)
 
 from potentialgames.utils import (visualise_delta_experiment, visualise_epsilon_experiment,
                                   visualise_full_feedback_comparison, visualise_reduced_feedback_comparison,

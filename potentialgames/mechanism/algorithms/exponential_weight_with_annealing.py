@@ -1,7 +1,6 @@
 import numpy as np
 
 from ...mechanism.algorithms.abstract_algorithm import LearningAlgorithm
-from ...mechanism.game_setup.coverage import CoverageSetup
 from ...utils.logger import logger
 from ...utils.helpers import rng
 
@@ -45,9 +44,6 @@ class ExponentialWeightWithAnnealingAlgorithm(LearningAlgorithm):
             game.potentials_history[i] =  (past_exp_potential*i + game.gameSetup.potential_function(game.action_profile))/(i+1) #rho@self.gameSetup.potential #self.gameSetup.potential_function(self.action_profile) # compute the value of the potential function
 
             past_exp_potential = game.potentials_history[i]
-
-            if isinstance(game.gameSetup, CoverageSetup):
-                game.objectives_history[i] = game.gameSetup.objective(game.action_profile)
                 
     @classmethod
     def update_player(cls, player, action, opponents_actions, gamma_n=1, eps_n=1):
