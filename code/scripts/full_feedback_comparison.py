@@ -24,7 +24,8 @@ from potentialgames.utils import logger, compare_lines
         n_exp (int): Number of independent game experiments.
         load_games (bool): Whether to load existing payoff matrices from disk.
         verbose (bool): Whether to compute statistics and generate plots.
-
+        data_folder (str): The folder name within the repository where game data is stored (default: "data").
+        results_folder (str): The folder name within the repository where experiment results will be saved (default: "data").
     Saves:
         The potential history of experiments to a pickle file in the data/experiments/full_feedback_comparison/ directory.
 
@@ -94,6 +95,8 @@ def full_feedback_comparison(
     n_exp = 30, 
     load_games=True, 
     verbose=True,
+    data_folder="data",
+    results_folder="data",
     n_processes=None
     ):
     """
@@ -110,7 +113,7 @@ def full_feedback_comparison(
     secondNE = np.array([no_actions - 2, no_actions - 2])  
                      
     repo_root = REPO_ROOT
-    data_path = repo_root / "data" / "IdenticalInterest" / "games"
+    data_path = repo_root / data_folder / "IdenticalInterest" / "games"
     
     folder = "delta_" + str(int(delta * 1000)).zfill(4)
     
@@ -182,7 +185,7 @@ def full_feedback_comparison(
         conv_markers[0, 1] = mean_potential_history[0][int(conv_markers[0, 0])] if len(index) > 0 else None
         std[0] = np.std(potential_history[0], 0)
 
-    potentials_path = repo_root / "data" / "experiments" / "full_feedback_comparison" / f"{algorithm}_potentials.pckl"
+    potentials_path = repo_root / results_folder / "experiments" / "full_feedback_comparison" / f"{algorithm}_potentials.pckl"
     potentials_path.parent.mkdir(parents=True, exist_ok=True)
     
     with open(potentials_path, 'wb') as f:

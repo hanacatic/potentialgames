@@ -6,7 +6,7 @@ from pathlib import Path
 from utils import REPO_ROOT
 from potentialgames.utils import compare_lines
 
-def visualise_delta_experiment(algorithm, deltas = [0.15, 0.1, 0.075], eps = 0.05, iter = 1500000, title = "Expected potential value"):
+def visualise_delta_experiment(algorithm, deltas = [0.15, 0.1, 0.075], eps = 0.05, iter = 1500000, title = "Expected potential value", data_folder="data", save_folder="data"):
     """
     Visualise the results of delta experiment obtained with function delta_experiment in potentialgames/scripts/delta_experiments.py.
     
@@ -20,15 +20,17 @@ def visualise_delta_experiment(algorithm, deltas = [0.15, 0.1, 0.075], eps = 0.0
         eps (float, optional): The tolerance value (epsilon) for convergence. Defaults to 0.05.
         iter (int, optional): The number of iterations to visualise. Defaults to 1500000.
         title (str, optional): The title of the plot. Defaults to "Expected potential value".
+        data_folder (str, optional): The folder name within the repository where experiment data is stored. Defaults to "data".
+        save_folder (str, optional): The folder name within the repository where visualisations will be saved. Defaults to "data".
     """
     repo_root  = REPO_ROOT
-    data_path = repo_root / "data" / "experiments" / "delta"
+    data_path = repo_root / data_folder / "experiments" / "delta"
     
     file_name = f"{algorithm}_potentials.pckl"
     
     legend = [fr'$\Delta = {delta}$' for delta in deltas] 
 
-    save_root = repo_root / "data" / "visualisations" / "delta"
+    save_root = repo_root / save_folder / "visualisations" / "delta"
     save_file_name = f"{algorithm}_delta_experiment"
     
     visualise_data(data_path, [file_name], {
@@ -47,7 +49,7 @@ def visualise_delta_experiment(algorithm, deltas = [0.15, 0.1, 0.075], eps = 0.0
         save_file_name=save_file_name
     )
     
-def visualise_epsilon_experiment(algorithm, epsilons = [0.1, 0.05, 0.025, 0.01], delta = 0.1, iter = 4500000, title = "Expected potential value"):
+def visualise_epsilon_experiment(algorithm, epsilons = [0.1, 0.05, 0.025, 0.01], delta = 0.1, iter = 4500000, title = "Expected potential value", data_folder="data", save_folder="data"):
     """
     Visualise the results of epsilon experiment obtained with function epsilon_experiment in potentialgames/scripts/epsilon_experiments.py.
     
@@ -61,15 +63,17 @@ def visualise_epsilon_experiment(algorithm, epsilons = [0.1, 0.05, 0.025, 0.01],
         delta (float, optional): The suboptimality gap (delta) value for which to visualise the experiments. Defaults to 0.1.
         iter (int, optional): The number of iterations to visualise. Defaults to 4500000.
         title (str, optional): The title of the plot. Defaults to "Expected potential value".
+        data_folder (str, optional): The folder name within the repository where experiment data is stored. Defaults to "data".
+        save_folder (str, optional): The folder name within the repository where visualisations will be saved. Defaults to "data".
     """
     repo_root  = REPO_ROOT
-    data_path = repo_root / "data" / "experiments" / "epsilon"
+    data_path = repo_root / data_folder / "experiments" / "epsilon"
     
     file_name = f"{algorithm}_potentials.pckl"
 
     legend = [fr'$\epsilon = {epsilon}$' for epsilon in epsilons]
     conv_val = [1-epsilon for epsilon in epsilons]
-    save_root = repo_root / "data" / "visualisations" / "epsilon"
+    save_root = repo_root / save_folder / "visualisations" / "epsilon"
     save_file_name = f"{algorithm}_epsilon_experiment"
     
     visualise_data(data_path, [file_name], {
@@ -89,7 +93,7 @@ def visualise_epsilon_experiment(algorithm, epsilons = [0.1, 0.05, 0.025, 0.01],
         save_file_name=save_file_name
     )
 
-def visualise_full_feedback_comparison(iter = 200000, epsilon = 0.05, title="Expected potential value"):
+def visualise_full_feedback_comparison(iter = 200000, epsilon = 0.05, title="Expected potential value", data_folder="data", save_folder="data"):
     """
     Visualise the results of full feedback comparison obtained with function full_feedback_comparison in potentialgames/scripts/full_feedback_comparison_experiments.py.
     
@@ -100,18 +104,20 @@ def visualise_full_feedback_comparison(iter = 200000, epsilon = 0.05, title="Exp
         iter (int, optional): The number of iterations to visualise. Defaults to 200000.
         epsilon (float, optional): The tolerance value (epsilon) for which to visualise the experiments. Defaults to 0.05.
         title (str, optional): The title of the plot. Defaults to "Expected potential value".
+        data_folder (str, optional): The folder name within the repository where experiment data is stored. Defaults to "data".
+        save_folder (str, optional): The folder name within the repository where visualisations will be saved. Defaults to "data".
     """
     algorithms = ["fast_log_linear", "hedge"]
     
     repo_root  = REPO_ROOT
-    data_path = repo_root / "data" / "experiments" / "full_feedback_comparison"
+    data_path = repo_root / data_folder / "experiments" / "full_feedback_comparison"
 
     file_names = [f"{algorithm}_potentials.pckl" for algorithm in algorithms]
 
     legend = [r"Log-linear learning ($\beta = \tilde{\Omega}(\frac{1}{\Delta}\log{\frac{A^N}{\epsilon}}) $)", "Hedge"]
 
     conv_val = [1-epsilon]*len(algorithms)
-    save_root = repo_root / "data" / "visualisations" / "full_feedback_comparison"
+    save_root = repo_root / save_folder / "visualisations" / "full_feedback_comparison"
     save_file_name = f"full_feedback_comparison_experiment"
 
     visualise_data(data_path, file_names, {
@@ -131,7 +137,7 @@ def visualise_full_feedback_comparison(iter = 200000, epsilon = 0.05, title="Exp
         save_file_name=save_file_name
     )
 
-def visualise_delta_estimation_experiment(algorithm, est = [1, 1.5, 2., 2.5, 3., 3.5], delta = 0.1, epsilon = 0.05, iter = 10000, title = "Expected potential value"):
+def visualise_delta_estimation_experiment(algorithm, est = [1, 1.5, 2., 2.5, 3., 3.5], delta = 0.1, epsilon = 0.05, iter = 10000, title = "Expected potential value", data_folder="data", save_folder="data"):
     """
     Visualise the results of experiments with estimated deltas obtained with function delta_estimation_experiment in potentialgames/scripts/delta_estimation_experiments.py.
     
@@ -145,16 +151,18 @@ def visualise_delta_estimation_experiment(algorithm, est = [1, 1.5, 2., 2.5, 3.,
         epsilon (float, optional): The tolerance value (epsilon) for which to visualise the experiments. Defaults to 0.05.
         iter (int, optional): The number of iterations to visualise. Defaults to 10000.
         title (str, optional): The title of the plot. Defaults to "Expected potential value".
+        data_folder (str, optional): The folder name within the repository where experiment data is stored. Defaults to "data".
+        save_folder (str, optional): The folder name within the repository where visualisations will be
     """
     repo_root = REPO_ROOT
-    data_path = repo_root / "data" / "experiments" / "delta_est"
+    data_path = repo_root / data_folder / "experiments" / "delta_est"
 
     file_name = f"{algorithm}_potentials.pckl"
 
     legend = [fr'$\hat{{\Delta}} = {e}\cdot\Delta$' for e in est]
         
     conv_val = [1-epsilon]*len(est)
-    save_root = repo_root / "data" / "visualisations" / "delta_est"
+    save_root = repo_root / save_folder / "visualisations" / "delta_est"
     save_file_name = f"{algorithm}_delta_estimation_experiment"
     
     visualise_data(data_path, [file_name],{
@@ -174,7 +182,7 @@ def visualise_delta_estimation_experiment(algorithm, est = [1, 1.5, 2., 2.5, 3.,
         save_file_name=save_file_name
     )
 
-def visualise_reduced_feedback_comparison(iter=20000, epsilon = 0.05, title="Expected potential value"):
+def visualise_reduced_feedback_comparison(iter=20000, epsilon = 0.05, title="Expected potential value", data_folder="data", save_folder="data"):
     """
     Visualise the results of reduced feeback comparison obtained with function reduced_feedback_comparison in potentialgames/scripts/reduced_feedback_comparison.py.
     
@@ -189,14 +197,14 @@ def visualise_reduced_feedback_comparison(iter=20000, epsilon = 0.05, title="Exp
     algorithms = ["fast_binary_log_linear", "exp3p", "exponential_weight_with_annealing"]
 
     repo_root = REPO_ROOT
-    data_path = repo_root / "data" / "experiments" / "reduced_feedback_comparison"
+    data_path = repo_root / data_folder/ "experiments" / "reduced_feedback_comparison"
 
     file_names = [f"{algorithm}_potentials.pckl" for algorithm in algorithms]
 
     legend = [r"Binary log-linear ($\beta = \tilde{\Omega}(\frac{1}{\Delta}\log{\frac{A^N}{\epsilon}}) $)", "EXP3", "Exponential weight with annealing"]
 
     conv_val = [1-epsilon]*len(algorithms)
-    save_root = repo_root / "data" / "visualisations" / "reduced_feedback_comparison"
+    save_root = repo_root / save_folder / "visualisations" / "reduced_feedback_comparison"
     save_file_name = f"reduced_feedback_comparison_experiment"
 
     visualise_data(data_path, file_names, {
@@ -307,12 +315,15 @@ def visualise_data(folder_root, file_names, meta_data, save_root=None, save_file
         prefix = file_names[0].split(".")[0]
     else:
         prefix = "comparison"
-        
-    mean_root = folder_root / f"{prefix}_mean_data.pckl"
-    std_root = folder_root / f"{prefix}_std_data.pckl"
-    conv_markers_root = folder_root / f"{prefix}_conv_markers.pckl"
-    t_root = folder_root / f"{prefix}_t_data.pckl"
-    meta_root = folder_root / f"{prefix}_meta_data.pckl"
+    
+    save_processed_root = folder_root / "processed"
+    save_processed_root.mkdir(parents=True, exist_ok=True)
+            
+    mean_root = save_processed_root / f"{prefix}_mean_data.pckl"
+    std_root = save_processed_root / f"{prefix}_std_data.pckl"
+    conv_markers_root = save_processed_root / f"{prefix}_conv_markers.pckl"
+    t_root = save_processed_root / f"{prefix}_t_data.pckl"
+    meta_root = save_processed_root / f"{prefix}_meta_data.pckl"
     
     with open(mean_root, 'wb') as f:
         pickle.dump(mean_data, f, pickle.HIGHEST_PROTOCOL)
@@ -337,11 +348,11 @@ def visualise_data(folder_root, file_names, meta_data, save_root=None, save_file
                   title=meta_data["title"], title_fontsize=meta_data["title_fontsize"],
                   markers=conv_markers, save=save, folder=save_root, file_name=save_file_name)
     
-def visualise_experiment(experiment, algorithm, save_root=None, save_file_name=None):
+def visualise_experiment(experiment, algorithm, processed_data_folder = "data/experiments", save_root=None, save_file_name=None):
     """Visualise preprocessed experiment data."""
     
     repo_root = REPO_ROOT
-    data_path = repo_root / "data" / "experiments" / experiment
+    data_path = repo_root / processed_data_folder / experiment / "processed"
     
     if algorithm == "comparison":
         suffix = f"comparison"

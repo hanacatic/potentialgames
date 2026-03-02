@@ -24,11 +24,13 @@ from potentialgames.utils import compute_beta, logger, compare_lines
         n_exp (int): Number of experiments to run for each delta value (default: 30).
         load_games (bool): Whether to load pre-generated games from disk or generate new ones (default: True).
         verbose (bool): Whether to print progress and plot results (default: True).
+        data_folder (str): The folder name within the repository where game data is stored (default: "data").
+        results_folder (str): The folder name within the repository where experiment results will be saved (default: "data").
     Saves:
         The potential history of experiments to a pickle file in the data/experiments/delta directory.
 """ 
    
-def delta_experiment(algorithm = "fast_log_linear", no_actions = 10, no_players = 2, deltas = [0.15, 0.1, 0.075], use_noisy_utility = False, symmetric = False, eps = 0.05, max_iter = 1000000, n_exp = 30, load_games=True, verbose=True): 
+def delta_experiment(algorithm = "fast_log_linear", no_actions = 10, no_players = 2, deltas = [0.15, 0.1, 0.075], use_noisy_utility = False, symmetric = False, eps = 0.05, max_iter = 1000000, n_exp = 30, load_games=True, verbose=True, data_folder="data", results_folder="data"): 
 
     logger.info("Delta experiments for algorithm: " + algorithm)
     
@@ -74,7 +76,7 @@ def delta_experiment(algorithm = "fast_log_linear", no_actions = 10, no_players 
         conv_markers = np.zeros((len(deltas), 2))
         
     repo_root = REPO_ROOT
-    data_path = repo_root / "data" / "IdenticalInterest" / "games"
+    data_path = repo_root / data_folder / "IdenticalInterest" / "games"
     
     for idx, delta in enumerate(deltas):
         
@@ -125,7 +127,7 @@ def delta_experiment(algorithm = "fast_log_linear", no_actions = 10, no_players 
     if use_noisy_utility:
         algorithm = algorithm + "_noisy"
         
-    potentials_path = repo_root / "data" / "experiments" / "delta" / f"{algorithm}_potentials.pckl"
+    potentials_path = repo_root / results_folder / "experiments" / "delta" / f"{algorithm}_potentials.pckl"
     potentials_path.parent.mkdir(parents=True, exist_ok=True)
 
     with open(potentials_path, 'wb') as f:

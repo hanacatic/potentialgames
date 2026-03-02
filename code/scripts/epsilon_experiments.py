@@ -26,6 +26,8 @@ Parameters:
     max_iter (int): Maximum number of iterations for each experiment (default: 1,000,000).
     n_exp (int): Number of experiments (games) to run for each epsilon (default: 30).
     load_games (bool): Whether to load existing games from disk or generate new ones (default: True).
+    data_folder (str): The folder name within the repository where game data is stored (default: "data").
+    results_folder (str): The folder name within the repository where experiment results will be saved (default: "data").
     verbose (bool): Whether to print progress and plot results (default: True).
 Saves:
     The potential history of experiments to a pickle file in the data/experiments/delta directory.
@@ -105,6 +107,8 @@ def epsilon_experiment(
     n_exp=30, 
     load_games=True, 
     verbose=True,
+    data_folder="data",
+    results_folder="data",
     n_processes=None
 ):
     """
@@ -119,7 +123,7 @@ def epsilon_experiment(
     
     # Setup paths and parameters
     repo_root = REPO_ROOT
-    data_path = repo_root / "data" / "IdenticalInterest" / "games"
+    data_path = repo_root / data_folder / "IdenticalInterest" / "games"
     folder = "delta_" + str(int(delta*1000)).zfill(4)
     
     firstNE = np.array([1, 1])
@@ -214,7 +218,7 @@ def epsilon_experiment(
     if use_noisy_utility:
         algorithm_name = algorithm + "_noisy"
         
-    potentials_path = repo_root / "data" / "experiments" / "epsilon" / f"{algorithm_name}_potentials.pckl"
+    potentials_path = repo_root / results_folder / "experiments" / "epsilon" / f"{algorithm_name}_potentials.pckl"
     potentials_path.parent.mkdir(parents=True, exist_ok=True)
     
     with open(potentials_path, 'wb') as f:

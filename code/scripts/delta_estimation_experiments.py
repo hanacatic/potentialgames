@@ -24,6 +24,8 @@ from potentialgames.utils import compute_beta, logger, compare_lines
         load_games (bool): Whether to load pre-generated games from disk or generate new ones (default: True).
         easy_game (bool): Whether to generate easier games with larger basins of attraction for the NE (default: False).
         verbose (bool): Whether to print progress and plot results (default: True).
+        data_folder (str): The folder name within the repository where game data is stored (default: "data").
+        results_folder (str): The folder name within the repository where experiment results will be saved (default: "data").
         n_processes (int or None): Number of parallel processes to use for running experiments. If None, uses all available CPU cores.
 
     Saves:
@@ -97,6 +99,8 @@ def delta_estimation_experiment(
     load_games=True,
     easy_game=False,
     verbose=True,
+    data_folder="data",
+    results_folder="data",
     n_processes=None,
     ):
     """
@@ -113,7 +117,7 @@ def delta_estimation_experiment(
     secondNE = np.array([2, 2])  
                      
     repo_root = REPO_ROOT
-    data_path = repo_root / "data" / "IdenticalInterest" / "games"
+    data_path = repo_root / data_folder / "IdenticalInterest" / "games"
     
     folder = "delta_" + str(int(delta * 1000)).zfill(4)
     
@@ -204,7 +208,7 @@ def delta_estimation_experiment(
     if easy_game:
         file_name = "easy_" + file_name
     
-    potentials_path = repo_root / "data" / "experiments" / "delta_est" / f"{file_name}_potentials.pckl"
+    potentials_path = repo_root / results_folder / "experiments" / "delta_est" / f"{file_name}_potentials.pckl"
     potentials_path.parent.mkdir(parents=True, exist_ok=True)
     
     with open(potentials_path, 'wb') as f:
